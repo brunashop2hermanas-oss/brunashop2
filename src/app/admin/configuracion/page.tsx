@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Settings, QrCode, Building, ShieldCheck, Upload, Save, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getConfiguracion, updateConfiguracion } from "@/app/actions/config";
-import { getUsuarios, createUsuario, updateUsuario } from "@/app/actions/usuarios";
+import { getUsuarios, createUsuario, updateUsuario, deleteUsuario } from "@/app/actions/usuarios";
 import { uploadImage } from "@/app/actions/upload";
 
 export default function AdminConfiguracion() {
@@ -132,6 +132,17 @@ export default function AdminConfiguracion() {
       }
     }
     setSavingUsr(false);
+  };
+
+  const handleBorrarUsuario = async (id: string, nombre: string) => {
+    if (confirm(`¿Estás segura de que quieres borrar al usuario ${nombre}?`)) {
+      const res = await deleteUsuario(id);
+      if (res.success) {
+        fetchData();
+      } else {
+        alert("Error al borrar: " + res.error);
+      }
+    }
   };
 
   const abrirModalNuevo = () => {
@@ -285,8 +296,9 @@ export default function AdminConfiguracion() {
                         {u.role === "ADMIN" ? "Administrador" : "Cajera"}
                       </span>
                     </td>
-                    <td className="p-4 text-right">
+                    <td className="p-4 text-right flex justify-end gap-3 items-center">
                       <button onClick={() => abrirModalVer(u)} className="text-sm font-bold text-foreground/50 hover:text-brand-primary">Ver / Editar</button>
+                      <button onClick={() => handleBorrarUsuario(u.id, u.nombres)} className="text-sm font-bold text-red-500/70 hover:text-red-500">Borrar</button>
                     </td>
                   </tr>
                 ))}
