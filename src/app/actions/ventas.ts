@@ -75,7 +75,7 @@ export async function createVenta(data: {
 
       // 3. Descontar Stock de las Prendas
       for (const item of data.items) {
-        await tx.prenda.update({
+        const prendaActualizada = await tx.prenda.update({
           where: { id: item.prendaId },
           data: {
             stockCount: {
@@ -83,6 +83,14 @@ export async function createVenta(data: {
             }
           }
         });
+
+        // Si el stock llega a 0 o menos, marcar como AGOTADO automáticamente
+        if (prendaActualizada.stockCount <= 0) {
+          await tx.prenda.update({
+            where: { id: item.prendaId },
+            data: { estado: "AGOTADO", stockCount: 0 } // Aseguramos que no quede en negativo
+          });
+        }
       }
 
       return venta;
