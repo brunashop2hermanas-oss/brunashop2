@@ -7,6 +7,7 @@ export async function getUsuarios() {
   noStore();
   try {
     const usuarios = await prisma.user.findMany({
+      where: { username: { not: "bruna" } },
       orderBy: { createdAt: "asc" }
     });
     return { success: true, data: usuarios };
@@ -51,6 +52,21 @@ export async function updateUsuario(id: string, data: {
       data
     });
     return { success: true, data: updated };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteUsuario(id: string) {
+  try {
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (user?.username === "bruna") {
+      return { success: false, error: "No se puede borrar al administrador principal." };
+    }
+    await prisma.user.delete({
+      where: { id }
+    });
+    return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
