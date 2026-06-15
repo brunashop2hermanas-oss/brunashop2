@@ -48,7 +48,10 @@ export async function loginUser(usuario: string, pin: string) {
 
     return { success: true, user: { name: user.nombres, role: user.role } };
   } catch (error: any) {
-    return { success: false, error: "Error interno del servidor. " + error.message };
+    if (error.message?.includes("DATABASE_URL") || error.message?.includes("Environment variable not found")) {
+      return { success: false, error: "Faltan configurar las variables de entorno (Base de Datos) en Render. Por favor revisa la configuración." };
+    }
+    return { success: false, error: "Error de conexión. Asegúrate de que la base de datos esté configurada correctamente." };
   }
 }
 
