@@ -1,0 +1,16 @@
+{
+  "name": "BrunaShop2 - Sistema de Administración",
+  "short_name": "AdminShop",
+  "description": "Sistema privado de punto de venta y catálogo online para BrunaShop2.",
+  "start_url": "/admin",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ff2d55",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ]
+}
