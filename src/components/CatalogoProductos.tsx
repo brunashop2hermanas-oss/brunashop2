@@ -174,9 +174,23 @@ export default function CatalogoProductos() {
 
 // Componente Reutilizable para la Tarjeta de Producto
 function ProductoCard({ producto, index, agregarAlCarrito }: { producto: any, index: number, agregarAlCarrito: (p:any) => void }) {
-  const imagen = producto.imagenes && producto.imagenes.length > 0 
-    ? producto.imagenes[0] 
-    : "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80";
+  const [imagenActual, setImagenActual] = useState(0);
+  
+  const imagenes = producto.imagenes && producto.imagenes.length > 0 
+    ? producto.imagenes 
+    : ["https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"];
+
+  const nextImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setImagenActual((prev) => (prev === imagenes.length - 1 ? 0 : prev + 1));
+  };
+
+  const prevImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setImagenActual((prev) => (prev === 0 ? imagenes.length - 1 : prev - 1));
+  };
 
   return (
     <motion.div
@@ -200,19 +214,47 @@ function ProductoCard({ producto, index, agregarAlCarrito }: { producto: any, in
         </div>
       )}
 
-      {/* Imagen del Producto */}
+      {/* Imagen del Producto con Carrusel */}
       <div className="relative h-72 w-full overflow-hidden">
-        <img 
-          src={imagen} 
-          alt={producto.nombre} 
-          className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${producto.stockCount === 0 && !producto.enPreventa ? 'grayscale opacity-70' : ''}`}
-        />
-        {/* Overlay oscuro al hacer hover */}
-        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <AnimatePresence mode="wait">
+          <motion.img 
+            key={imagenActual}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            src={imagenes[imagenActual]} 
+            alt={`${producto.nombre} - vista ${imagenActual + 1}`} 
+            className={`absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${producto.stockCount === 0 && !producto.enPreventa ? 'grayscale opacity-70' : ''}`}
+          />
+        </AnimatePresence>
+        
+        {/* Controles del Carrusel (Solo si hay más de 1 imagen) */}
+        {imagenes.length > 1 && (
+          <>
+            <div className="absolute inset-0 flex items-center justify-between px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+              <button onClick={prevImage} className="bg-black/50 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/80 transition-colors backdrop-blur-sm">
+                &#10094;
+              </button>
+              <button onClick={nextImage} className="bg-black/50 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/80 transition-colors backdrop-blur-sm">
+                &#10095;
+              </button>
+            </div>
+            {/* Indicadores (Puntitos) */}
+            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1 z-10">
+              {imagenes.map((_: any, i: number) => (
+                <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all ${i === imagenActual ? 'bg-white w-3' : 'bg-white/50'}`} />
+              ))}
+            </div>
+          </>
+        )}
+        
+        {/* Overlay oscuro al hacer hover (debajo de los controles) */}
+        <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
       </div>
 
       {/* Detalles del Producto */}
-      <div className="p-5 flex flex-col flex-1 bg-surface">
+      <div className="p-5 flex flex-col flex-1 bg-surface relative z-20">
         <h3 className="font-bold text-lg text-foreground line-clamp-1">{producto.nombre}</h3>
         <p className="text-sm text-brand-primary font-medium mt-1 mb-4">{producto.categoria}</p>
         
