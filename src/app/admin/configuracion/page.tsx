@@ -70,14 +70,27 @@ export default function AdminConfiguracion() {
     setMensajeConfig("");
     try {
       let finalUrl = config.qrImagen;
+      
+      // Si qrFile existe, significa que seleccionó una nueva foto
       if (qrFile) {
         const compressedFile = await compressImage(qrFile);
         const formData = new FormData();
         formData.append("file", compressedFile);
         const upRes = await uploadImage(formData);
+        
         if (upRes.success && upRes.url) {
-          finalUrl = upRes.url;
+          finalUrl = upRes.url; // URL real de Supabase
+        } else {
+          // Si falla la subida, detenemos todo y mostramos error real
+          setMensajeConfig("Error subiendo el QR a Supabase: " + (upRes.error || "Desconocido"));
+          setSavingConfig(false);
+          return; // Abortar guardado
         }
+      } else if (finalUrl?.startsWith('blob:')) {
+        // Por precaución, si por alguna razón intenta guardar un blob sin archivo
+        setMensajeConfig("Error: La imagen es inválida.");
+        setSavingConfig(false);
+        return;
       }
 
       const res = await updateConfiguracion({
