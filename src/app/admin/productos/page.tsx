@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { Plus, Video, EyeOff, Edit, Trash2, X, Palette, Scaling } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getPrendas, createPrenda, updatePrenda, deletePrenda } from "@/app/actions/productos";
+import { uploadImage } from "@/app/actions/upload";
+import { compressImage } from "@/lib/imageCompression";
 
 export default function AdminProductos() {
   const [productos, setProductos] = useState<any[]>([]);
@@ -114,19 +116,19 @@ export default function AdminProductos() {
       const uploadedUrls: string[] = [];
       
       for (const file of filesArray) {
+        // Comprimir imagen antes de enviarla
+        const compressedFile = await compressImage(file);
+        
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("file", compressedFile);
         
         try {
-          const res = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-          });
-          const data = await res.json();
-          if (data.success) {
-            uploadedUrls.push(data.url);
+          // Reemplazamos la ruta local por la Server Action directa a Supabase Storage
+          const res = await uploadImage(formData);
+          if (res.success && res.url) {
+            uploadedUrls.push(res.url);
           } else {
-            console.error("Error al subir:", data.error);
+            console.error("Error al subir:", res.error);
           }
         } catch (error) {
           console.error("Error en la petición de subida:", error);

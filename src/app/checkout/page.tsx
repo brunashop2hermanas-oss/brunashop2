@@ -7,6 +7,8 @@ import { useState, useEffect } from "react";
 import { getPrendas } from "@/app/actions/productos";
 import { createVenta } from "@/app/actions/ventas";
 import { getConfiguracion } from "@/app/actions/config";
+import { uploadImage } from "@/app/actions/upload";
+import { compressImage } from "@/lib/imageCompression";
 
 const DEPARTAMENTOS = [
   "La Paz", "Santa Cruz", "Cochabamba", "Oruro", "Potosí", "Chuquisaca", "Tarija", "Beni", "Pando"
@@ -71,6 +73,25 @@ export default function CheckoutPage() {
 
     setIsSubmitting(true);
     
+    let comprobanteRealUrl = "";
+    try {
+      const compressedFile = await compressImage(comprobante);
+      const fileData = new FormData();
+      fileData.append("file", compressedFile);
+      const resUpload = await uploadImage(fileData);
+      if (resUpload.success && resUpload.url) {
+        comprobanteRealUrl = resUpload.url;
+      } else {
+        alert("Error subiendo el comprobante: " + resUpload.error);
+        setIsSubmitting(false);
+        return;
+      }
+    } catch (err) {
+      alert("Error inesperado subiendo el comprobante.");
+      setIsSubmitting(false);
+      return;
+    }
+    
     const formData = new FormData(e.currentTarget);
     const data = {
       nombres: formData.get("nombres") as string,
@@ -79,8 +100,7 @@ export default function CheckoutPage() {
       ci: formData.get("ci") as string,
       celular: formData.get("celular") as string,
       ciudadDestino: formData.get("ciudadDestino") as string,
-      // Como no tenemos Supabase Storage configurado aún, usamos un string simulado para el comprobante
-      comprobanteUrl: "https://comprobante-simulado.com/foto.jpg", 
+      comprobanteUrl: comprobanteRealUrl, 
       items: carrito,
       total: totalAPagar
     };

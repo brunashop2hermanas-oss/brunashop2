@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { getConfiguracion, updateConfiguracion } from "@/app/actions/config";
 import { getUsuarios, createUsuario, updateUsuario, deleteUsuario } from "@/app/actions/usuarios";
 import { uploadImage } from "@/app/actions/upload";
+import { compressImage } from "@/lib/imageCompression";
 
 export default function AdminConfiguracion() {
   const [config, setConfig] = useState({
@@ -70,8 +71,9 @@ export default function AdminConfiguracion() {
     try {
       let finalUrl = config.qrImagen;
       if (qrFile) {
+        const compressedFile = await compressImage(qrFile);
         const formData = new FormData();
-        formData.append("file", qrFile);
+        formData.append("file", compressedFile);
         const upRes = await uploadImage(formData);
         if (upRes.success && upRes.url) {
           finalUrl = upRes.url;
