@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Montserrat:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  /* Fondo principal y texto (Ultra Femenino y Boutique) */
+  --background: #FFF5F7; /* Blush pink muy suave y elegante */
+  --foreground: #4A2B2D; /* Ciruela/Borgoña profundo en lugar de negro */
+  
+  /* Colores de Marca: BrunaShop2 (Femenino, Moda y Elegancia) */
+  --brand-primary: #D49A9A; /* Rosa viejo / Rose Gold */
+  --brand-secondary: #FDE8E9; /* Rosado pastel muy claro */
+  --brand-accent: #B86A6D; /* Fucsia apagado/frambuesa para resaltar */
+  
+  /* Superficies (Tarjetas, Paneles) */
+  --surface: rgba(255, 255, 255, 0.85); /* Blanco semi-transparente para dar toque de cristal */
+  --surface-border: #F5E1E3; /* Bordes rosa pálido */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-brand-accent: var(--brand-accent);
+  --color-surface: var(--surface);
+  --color-surface-border: var(--surface-border);
+  
+  --font-sans: 'Montserrat', sans-serif;
+  --font-serif: 'Bodoni Moda', serif;
+}
+
+body {
+  background: radial-gradient(circle at top right, #FFF1F3 0%, #FFF5F7 100%);
+  color: var(--foreground);
+  font-family: 'Montserrat', sans-serif;
+  transition: background-color 0.5s ease, color 0.5s ease;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6, .font-serif {
+  font-family: 'Bodoni Moda', serif;
+}
+
+/* Efectos 3D y Glassmorphism - Estilo Femenino de Lujo */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(253, 232, 233, 0.8);
+  box-shadow: 0 10px 40px -10px rgba(212, 154, 154, 0.2);
+}
+
+.shadow-3d {
+  box-shadow: 0 20px 50px -10px rgba(212, 154, 154, 0.25), 
+              0 10px 20px -5px rgba(212, 154, 154, 0.15),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}

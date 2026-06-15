@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  nombres   String
+  apellidos String
+  ci        String   @unique
+  telefono  String
+  username  String   @unique
+  pin       String
+  role      String   @default("CAJERA") // "ADMIN", "CAJERA"
+  ventas    Venta[]
+  createdAt DateTime @default(now())
+}
+
+model Clienta {
+  id        String   @id @default(cuid())
+  nombres   String
+  apellidos String
+  ci        String   @unique
+  celular   String
+  puntos    Int      @default(0)
+  nivel     String   @default("Bronce")
+  ventas    Venta[]
+  createdAt DateTime @default(now())
+}
+
+model Prenda {
+  id              String   @id @default(cuid())
+  nombre          String
+  costoProveedor  Float
+  precioVenta     Float
+  categoria       String
+  coleccion       String?
+  tallas          String[] // Arreglo de strings nativo de PostgreSQL
+  colores         String[]
+  material        String?
+  imagenes        String[] // URLs de las fotos subidas
+  stockCount      Int      @default(0)
+  enLive          Boolean  @default(false)
+  enPreventa      Boolean  @default(false)
+  
+  estado          String   @default("DISPONIBLE")
+  createdAt       DateTime @default(now())
+  
+  ventaItems      VentaItem[]
+}
+
+model Venta {
+  id            String      @id @default(cuid())
+  fecha         DateTime    @default(now())
+  total         Float
+  metodoPago    String      // "QR", "EFECTIVO", "TRANSFERENCIA"
+  comprobante   String?     // URL de la imagen del pago
+  estado        String      @default("PENDIENTE_VERIFICACION") // PENDIENTE_VERIFICACION, PREPARANDO, ENVIADO, ENTREGADO, CANCELADO
+  
+  origen        String      @default("WEB") // "WEB", "POS", "TIKTOK"
+  tipoEntrega   String      @default("RECOJO_TIENDA") // "RECOJO_TIENDA", "ENVIO"
+  destino       String?     // Dirección de envío
+  
+  vendedorId    String?
+  vendedor      User?       @relation(fields: [vendedorId], references: [id])
+  
+  clientaId     String?
+  clienta       Clienta?    @relation(fields: [clientaId], references: [id])
+  
+  items         VentaItem[]
+}
+
+model VentaItem {
+  id        String  @id @default(cuid())
+  ventaId   String
+  venta     Venta   @relation(fields: [ventaId], references: [id], onDelete: Cascade)
+  prendaId  String
+  prenda    Prenda  @relation(fields: [prendaId], references: [id])
+  precio    Float
+  cantidad  Int     @default(1)
+  empaquetado Boolean @default(false)
+}
+
+model Configuracion {
+  id              Int      @id @default(1)
+  bancoNombre     String   @default("Banco Unión")
+  bancoCuenta     String   @default("10000012345678")
+  bancoTitular    String   @default("BrunaShop2")
+  qrImagen        String?
+  updatedAt       DateTime @updatedAt
+}
