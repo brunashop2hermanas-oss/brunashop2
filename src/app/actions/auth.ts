@@ -5,22 +5,7 @@ import prisma from "@/lib/prisma";
 
 export async function loginUser(usuario: string, pin: string) {
   try {
-    // 1. Check if ANY user exists. If none, create the default "bruna" / "bruna123"
-    const totalUsuarios = await prisma.user.count();
-    
-    if (totalUsuarios === 0) {
-      await prisma.user.create({
-        data: {
-          nombres: "Dueña",
-          apellidos: "Bruna",
-          ci: "000000",
-          telefono: "00000000",
-          username: "bruna",
-          pin: "bruna123",
-          role: "ADMIN"
-        }
-      });
-    }
+    // 1. Validar usuario en la Base de Datos (La creación inicial ya se realizó)
 
     // 2. Validate against Database
     const user = await prisma.user.findUnique({
