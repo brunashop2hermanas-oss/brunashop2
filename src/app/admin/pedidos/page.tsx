@@ -439,10 +439,13 @@ export default function AdminDashboard() {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative bg-surface border border-surface-border p-6 rounded-3xl shadow-2xl max-w-lg w-full z-10 flex flex-col max-h-[90vh] overflow-y-auto"
+              className="relative bg-surface border border-surface-border rounded-3xl shadow-2xl max-w-lg w-full z-10 flex flex-col max-h-[90vh]"
             >
-              <h2 className="text-2xl font-bold text-foreground mb-4">Verificar Pago: {pedidoSeleccionado.id.slice(-6).toUpperCase()}</h2>
-              <div className="bg-background rounded-xl p-4 mb-6 flex justify-between items-center border border-surface-border">
+              <div className="p-6 border-b border-surface-border shrink-0">
+                <h2 className="text-2xl font-bold text-foreground">Verificar Pago: {pedidoSeleccionado.id.slice(-6).toUpperCase()}</h2>
+              </div>
+              <div className="p-6 overflow-y-auto flex-1">
+                <div className="bg-background rounded-xl p-4 mb-6 flex justify-between items-center border border-surface-border">
                 <div>
                   <p className="text-sm text-foreground/70">Monto a verificar:</p>
                   <p className="text-3xl font-black text-green-500">Bs. {pedidoSeleccionado.total.toFixed(2)}</p>
@@ -522,7 +525,9 @@ export default function AdminDashboard() {
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className="relative bg-surface border border-surface-border p-6 rounded-3xl shadow-2xl max-w-2xl w-full z-10 flex flex-col max-h-[90vh] overflow-hidden"
             >
-              <div className="flex justify-between items-center mb-6">
+              className="relative bg-surface border border-surface-border rounded-3xl shadow-2xl max-w-2xl w-full z-10 flex flex-col max-h-[90vh]"
+            >
+              <div className="p-6 border-b border-surface-border shrink-0 flex justify-between items-center">
                 <div>
                   <h2 className="text-2xl font-bold text-foreground">Lista de Empaque</h2>
                   <p className="text-foreground/60 text-sm">Pedido: <span className="font-mono text-brand-primary font-bold">{pedidoEmpaquetando.id.slice(-6).toUpperCase()}</span> - {pedidoEmpaquetando.cliente}</p>
@@ -532,7 +537,7 @@ export default function AdminDashboard() {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto pr-2 space-y-3">
+              <div className="flex-1 overflow-y-auto p-6 space-y-3">
                 {(pedidoEmpaquetando.articulos || []).map((art: any) => (
                   <div key={art.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-colors ${art.empaquetado ? 'bg-green-500/10 border-green-500/30' : 'bg-background border-surface-border'}`}>
                     <div className="flex items-center gap-4">
@@ -567,7 +572,7 @@ export default function AdminDashboard() {
                 ))}
               </div>
 
-              <div className="mt-6 pt-6 border-t border-surface-border">
+              <div className="p-6 border-t border-surface-border shrink-0">
                 <button 
                   onClick={() => setPedidoEmpaquetando(null)}
                   className="w-full bg-brand-primary text-white font-bold py-4 rounded-xl shadow-lg hover:brightness-110 transition-colors"

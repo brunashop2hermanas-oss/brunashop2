@@ -420,10 +420,9 @@ export default function AdminProductos() {
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
             <motion.div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
             <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="bg-background w-full max-w-2xl rounded-3xl overflow-hidden relative z-10 shadow-2xl border border-surface-border flex flex-col max-h-[90vh] overflow-y-auto"
+              className="bg-background w-full max-w-2xl rounded-3xl overflow-hidden relative z-10 shadow-2xl border border-surface-border flex flex-col max-h-[90vh]"
             >
-              <div className="p-6 border-b border-surface-border flex justify-between items-center bg-surface/50">
+              <div className="p-6 border-b border-surface-border flex justify-between items-center bg-surface/50 shrink-0">
                 <h2 className="text-2xl font-black text-foreground">
                   {productoEditando ? `Editar: ${productoEditando.nombre}` : 'Agregar Nueva Prenda'}
                 </h2>
@@ -432,7 +431,7 @@ export default function AdminProductos() {
                 </button>
               </div>
 
-              <div className="p-6 overflow-y-auto space-y-6">
+              <div className="p-6 overflow-y-auto flex-1 space-y-6">
                 <div>
                   <label className="block text-sm font-bold text-foreground mb-2">Fotos de la Prenda (Por ahora usa URLs o el botón)</label>
                   <div className="flex gap-4 flex-wrap">
@@ -746,7 +745,7 @@ export default function AdminProductos() {
                 </div>
               </div>
 
-              <div className="p-6 border-t border-surface-border bg-surface/50 flex justify-end gap-4">
+              <div className="p-6 border-t border-surface-border bg-surface/50 flex justify-end gap-4 shrink-0">
                 <button onClick={() => setIsModalOpen(false)} className="px-6 py-3 rounded-full font-bold text-foreground/70 hover:bg-surface-border transition-colors">Cancelar</button>
                 <button onClick={manejarGuardar} className="bg-brand-primary text-background px-8 py-3 rounded-full font-bold shadow-lg hover:brightness-90 transition-all">
                   {productoEditando ? 'Actualizar Prenda' : 'Guardar Prenda'}

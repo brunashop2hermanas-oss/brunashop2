@@ -606,9 +606,10 @@ export default function NuevaVenta() {
             <motion.div 
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              className="bg-background w-full max-w-md rounded-3xl p-8 border border-surface-border shadow-2xl relative my-auto text-center flex flex-col items-center"
+              className="bg-background w-full max-w-md rounded-3xl border border-surface-border shadow-2xl relative my-auto text-center flex flex-col items-center max-h-[90vh]"
             >
-              <div className="w-20 h-20 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mb-6">
+              <div className="p-8 overflow-y-auto w-full flex flex-col items-center">
+                <div className="w-20 h-20 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mb-6 shrink-0">
                 <CheckCircle2 className="w-10 h-10" />
               </div>
               <h2 className="text-3xl font-black font-serif text-foreground mb-2">¡Venta Exitosa!</h2>
@@ -665,14 +666,15 @@ export default function NuevaVenta() {
             <motion.div 
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              className="bg-background w-full max-w-lg rounded-3xl p-6 border border-surface-border shadow-2xl relative my-auto flex flex-col"
+              className="bg-background w-full max-w-lg rounded-3xl border border-surface-border shadow-2xl relative my-auto flex flex-col max-h-[90vh]"
             >
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex justify-between items-center p-6 border-b border-surface-border shrink-0">
                 <h2 className="text-2xl font-black font-serif text-foreground">Buscar Clienta</h2>
                 <button onClick={() => setShowClientModal(false)} className="text-foreground/50 hover:text-foreground">X</button>
               </div>
               
-              <div className="relative mb-4 flex gap-2">
+              <div className="p-6 overflow-y-auto flex-1">
+                <div className="relative mb-4 flex gap-2">
                 <input 
                   type="text" 
                   value={ci}
@@ -724,8 +726,9 @@ export default function NuevaVenta() {
             <motion.div 
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              className="bg-background w-full max-w-lg rounded-3xl p-6 border border-surface-border shadow-2xl relative my-auto flex flex-col"
+              className="bg-background w-full max-w-lg rounded-3xl border border-surface-border shadow-2xl relative my-auto flex flex-col max-h-[90vh]"
             >
+              <div className="p-6 overflow-y-auto flex-1">
               <h2 className="text-xl font-black font-serif text-foreground mb-4">Registrar Nueva Clienta</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
