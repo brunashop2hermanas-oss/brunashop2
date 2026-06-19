@@ -48,3 +48,24 @@ export async function logoutUser() {
   cookieStore.delete("bruna_user_id");
   return { success: true };
 }
+
+export async function resetPassword(username: string, ci: string, newPin: string) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { username }
+    });
+
+    if (!user || user.ci !== ci) {
+      return { success: false, error: "Los datos ingresados no coinciden." };
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { pin: newPin }
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: "Error al cambiar la contraseña." };
+  }
+}

@@ -1,9 +1,33 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Eye, CheckCircle, XCircle, Printer, MessageCircle, Star, PackageCheck } from "lucide-react";
+import { Search, Eye, CheckCircle, XCircle, Printer, MessageCircle, Star, PackageCheck, Download, X, Upload } from "lucide-react";
 import { useState, useEffect } from "react";
-import { getVentas, updateEstadoVenta, toggleEmpaquetado } from "@/app/actions/ventas";
+import { getVentas, updateEstadoVenta, toggleEmpaquetado, subirGuiaEnvio } from "@/app/actions/ventas";
+import { uploadImage } from "@/app/actions/upload";
+import { compressImage } from "@/lib/imageCompression";
+import toast from "react-hot-toast";
+
+// Función para forzar descarga directa de imágenes en lugar de abrir pestaña
+const forceDownload = async (url: string, filename: string) => {
+  try {
+    toast.loading("Preparando descarga...", { id: "descarga" });
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
+    toast.success("Descarga iniciada", { id: "descarga" });
+  } catch (err) {
+    toast.error("No se pudo forzar descarga. Abriendo...", { id: "descarga" });
+    window.open(url, '_blank');
+  }
+};
 
 export default function AdminDashboard() {
   const [pedidos, setPedidos] = useState<any[]>([]);
@@ -12,8 +36,10 @@ export default function AdminDashboard() {
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState<any>(null); // Modal de Verificación de Pago
   const [pedidoEmpaquetando, setPedidoEmpaquetando] = useState<any>(null); // Modal de Empaquetado
   const [pedidosParaImprimir, setPedidosParaImprimir] = useState<string[]>([]);
-  const [filtroTab, setFiltroTab] = useState<'pendientes' | 'completados'>('pendientes');
-
+  const [filtroTab, setFiltroTab] = useState<'pendientes' | 'listos' | 'enviados'>('pendientes');
+  const [comprobanteAmpliado, setComprobanteAmpliado] = useState<string | null>(null);
+  const [isUploadingGuia, setIsUploadingGuia] = useState<string | null>(null);
+  const [busqueda, setBusqueda] = useState("");
   // Función para obtener pedidos de la base de datos
   const fetchPedidos = async () => {
     const res = await getVentas();
@@ -48,8 +74,9 @@ export default function AdminDashboard() {
       
       const mensaje = `¡Hola ${pedido.cliente}! Somos BrunaShop2 ✨. Tu pago por Bs. ${pedido.total.toFixed(2)} ha sido VERIFICADO exitosamente ✅. Tu pedido ya está en preparación para ser enviado a la terminal de ${pedido.destino}. Te avisaremos apenas lo despachemos. ¡Gracias por tu compra!`;
       enviarWhatsApp(pedido.celular, mensaje);
+      toast.success("¡Pago aprobado! Se ha descontado el stock y notificado a la clienta.");
     } else {
-      alert("Error al aprobar pago");
+      toast.error("¡Uy! Tuvimos un problema al aprobar este pago.");
     }
   };
 
@@ -62,8 +89,9 @@ export default function AdminDashboard() {
 
       const mensaje = `¡Hola ${pedido.cliente}! Somos BrunaShop2. Tuvimos un inconveniente al verificar tu comprobante de pago por Bs. ${pedido.total.toFixed(2)} ❌. Por favor, ¿podrías enviarnos la imagen del comprobante por este medio para revisar qué pasó? Quedamos atentas.`;
       enviarWhatsApp(pedido.celular, mensaje);
+      toast.success("Pago rechazado. El stock fue devuelto al catálogo.");
     } else {
-      alert("Error al rechazar pago");
+      toast.error("¡Uy! Tuvimos un problema al rechazar este pago.");
     }
   };
 
@@ -77,7 +105,6 @@ export default function AdminDashboard() {
     sessionStorage.setItem("pedidosAImprimir", JSON.stringify(aImprimir));
     window.open(`/imprimir`, '_blank');
   };
-
   const toggleSeleccion = (id: string) => {
     if (pedidosParaImprimir.includes(id)) {
       setPedidosParaImprimir(pedidosParaImprimir.filter(pid => pid !== id));
@@ -89,7 +116,6 @@ export default function AdminDashboard() {
   const handleToggleEmpaquetado = async (pedidoId: string, articulo: any) => {
     const res = await toggleEmpaquetado(articulo.id, articulo.empaquetado);
     if (res.success) {
-      // Actualización optimista local
       const nuevosPedidos = pedidos.map(p => {
         if (p.id === pedidoId) {
           return {
@@ -103,6 +129,35 @@ export default function AdminDashboard() {
       
       const updatedPedido = nuevosPedidos.find(p => p.id === pedidoId);
       if (updatedPedido) setPedidoEmpaquetando(updatedPedido);
+    }
+  };
+
+  const handleSubirGuia = async (e: React.ChangeEvent<HTMLInputElement>, pedido: any) => {
+    if (e.target.files && e.target.files[0]) {
+      setIsUploadingGuia(pedido.id);
+      try {
+        const file = e.target.files[0];
+        const compressedFile = await compressImage(file, 'alta'); // Guía en alta calidad
+        const fileData = new FormData();
+        fileData.append("file", compressedFile);
+        
+        const resUpload = await uploadImage(fileData);
+        if (resUpload.success && resUpload.url) {
+          const resGuia = await subirGuiaEnvio(pedido.id, resUpload.url);
+          if (resGuia.success) {
+            const nuevosPedidos = pedidos.map(p => p.id === pedido.id ? { ...p, guiaEnvioUrl: resUpload.url } : p);
+            setPedidos(nuevosPedidos);
+            toast.success("¡Excelente! La guía se subió y guardó correctamente.");
+          } else {
+            toast.error("Hubo un inconveniente al vincular la guía con el pedido.");
+          }
+        } else {
+          toast.error("Hubo un error subiendo la imagen. Por favor, intenta de nuevo.");
+        }
+      } catch (err) {
+        toast.error("¡Uy! Ocurrió un error inesperado al subir la guía.");
+      }
+      setIsUploadingGuia(null);
     }
   };
 
@@ -122,19 +177,37 @@ export default function AdminDashboard() {
           <p className="text-foreground/70">Verifica comprobantes y prepara envíos.</p>
         </div>
         
+        <div className="flex items-center bg-surface border border-surface-border px-4 py-2 rounded-xl shadow-inner max-w-sm w-full relative">
+          <Search className="w-5 h-5 text-foreground/50 mr-3" />
+          <input 
+            type="text" 
+            placeholder="Buscar por nombre, CI o ID..." 
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="bg-transparent border-none outline-none w-full text-sm font-medium"
+          />
+          {busqueda && <X className="w-4 h-4 text-foreground/50 cursor-pointer absolute right-4" onClick={() => setBusqueda("")} />}
+        </div>
+
         {/* Pestañas (Tabs) */}
         <div className="flex bg-surface border border-surface-border p-1 rounded-xl">
           <button 
             onClick={() => setFiltroTab('pendientes')}
-            className={`px-6 py-2 rounded-lg font-bold text-sm transition-all ${filtroTab === 'pendientes' ? 'bg-brand-primary text-white shadow-md' : 'text-foreground/60 hover:text-foreground'}`}
+            className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${filtroTab === 'pendientes' ? 'bg-brand-primary text-white shadow-md' : 'text-foreground/60 hover:text-foreground'}`}
           >
-            Pendientes de Empaque
+            Pendientes
           </button>
           <button 
-            onClick={() => setFiltroTab('completados')}
-            className={`px-6 py-2 rounded-lg font-bold text-sm transition-all ${filtroTab === 'completados' ? 'bg-green-500 text-white shadow-md' : 'text-foreground/60 hover:text-foreground'}`}
+            onClick={() => setFiltroTab('listos')}
+            className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${filtroTab === 'listos' ? 'bg-orange-500 text-white shadow-md' : 'text-foreground/60 hover:text-foreground'}`}
           >
-            Listos / Completados
+            Listos para Enviar
+          </button>
+          <button 
+            onClick={() => setFiltroTab('enviados')}
+            className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${filtroTab === 'enviados' ? 'bg-green-500 text-white shadow-md' : 'text-foreground/60 hover:text-foreground'}`}
+          >
+            Enviados / Historial
           </button>
         </div>
 
@@ -173,12 +246,35 @@ export default function AdminDashboard() {
                   </td>
                 </tr>
               ) : pedidos.filter(pedido => {
+                // Las ventas hechas directamente en CAJA/POS no requieren gestión de envíos/logística
+                if (pedido.origen === 'CAJA' || pedido.origen === 'POS') return false;
+
                 const arts = pedido.articulos || [];
-                const todasEmpaquetadas = arts.length > 0 && arts.every((art: any) => art.empaquetado);
-                if (filtroTab === 'pendientes') return !todasEmpaquetadas;
-                if (filtroTab === 'completados') return todasEmpaquetadas;
+                const esTiendaDirecta = pedido.destino === 'Tienda Física' || pedido.tipoEntrega === 'TIENDA' || pedido.tipoEntrega === 'RECOJO_TIENDA';
+                // Si es tienda directa, se considera completado y no necesita empaquetado
+                const todasEmpaquetadas = esTiendaDirecta ? true : (arts.length > 0 && arts.every((art: any) => art.empaquetado));
+                const esAbandonado = pedido.estado === 'Esperando Pago' || pedido.estado === 'Expirado';
+
+                // Filtro de búsqueda
+                const textoBusqueda = busqueda.toLowerCase();
+                const coincideBusqueda = 
+                  (pedido.cliente && pedido.cliente.toLowerCase().includes(textoBusqueda)) || 
+                  (pedido.ci && pedido.ci.includes(textoBusqueda)) || 
+                  (pedido.id && pedido.id.toLowerCase().includes(textoBusqueda));
+
+                if (busqueda && !coincideBusqueda) return false;
+
+                // Filtro por pestañas
+                if (filtroTab === 'pendientes') return !todasEmpaquetadas && !esAbandonado && !esTiendaDirecta;
+                if (filtroTab === 'listos') return todasEmpaquetadas && !esAbandonado && !pedido.guiaEnvioUrl && !esTiendaDirecta;
+                if (filtroTab === 'enviados') return (todasEmpaquetadas && !esAbandonado && !!pedido.guiaEnvioUrl) || (esTiendaDirecta && !esAbandonado);
+                
                 return true;
-              }).map((pedido) => (
+              }).map((pedido) => {
+                const esTiendaDirecta = pedido.destino === 'Tienda Física' || pedido.tipoEntrega === 'TIENDA' || pedido.tipoEntrega === 'RECOJO_TIENDA';
+                const arts = pedido.articulos || [];
+                const todasEmpaquetadas = esTiendaDirecta ? true : (arts.length > 0 && arts.every((art: any) => art.empaquetado));
+                return (
                 <tr key={pedido.id} className="hover:bg-white/5 transition-colors">
                   <td className="p-4">
                     {pedido.estado !== 'Rechazado' && (
@@ -207,19 +303,30 @@ export default function AdminDashboard() {
                   </td>
                   <td className="p-4">
                     {(() => {
-                      const arts = pedido.articulos || [];
-                      const todasEmpaquetadas = arts.length > 0 && arts.every((art: any) => art.empaquetado);
-                      
+                      if (pedido.estado !== 'Aprobado' && pedido.estado !== 'ENTREGADO' && pedido.estado !== 'PREPARANDO') {
+                        return (
+                          <div className="flex flex-col items-center justify-center p-2 bg-surface-border/30 rounded-lg border border-dashed border-surface-border">
+                            <span className="text-[10px] text-foreground/50 uppercase tracking-widest font-bold text-center">Verificar Primero</span>
+                          </div>
+                        );
+                      }
+
                       return (
                         <button 
-                          onClick={() => setPedidoEmpaquetando(pedido)}
+                          onClick={() => {
+                            if (!esTiendaDirecta) setPedidoEmpaquetando(pedido);
+                          }}
                           className={`px-3 py-2 rounded-lg font-bold text-xs transition-colors flex flex-col items-center justify-center w-full gap-1 border shadow-sm ${
-                            todasEmpaquetadas 
+                            esTiendaDirecta 
+                            ? 'bg-blue-500/10 text-blue-600 border-blue-500/30 cursor-default'
+                            : todasEmpaquetadas 
                             ? 'bg-green-500/10 text-green-600 border-green-500/30 hover:bg-green-500 hover:text-white'
                             : 'bg-orange-500/10 text-orange-600 border-orange-500/30 hover:bg-orange-500 hover:text-white'
                           }`}
                         >
-                          {todasEmpaquetadas ? (
+                          {esTiendaDirecta ? (
+                            <><CheckCircle className="w-5 h-5" /> Entregado en Tienda</>
+                          ) : todasEmpaquetadas ? (
                             <><CheckCircle className="w-5 h-5" /> Listo (Ver)</>
                           ) : (
                             <><PackageCheck className="w-5 h-5" /> Pendiente ({arts.filter((a:any) => a.empaquetado).length}/{arts.length})</>
@@ -230,9 +337,15 @@ export default function AdminDashboard() {
                   </td>
                   <td className="p-4">
                     <div className="font-bold text-foreground">{pedido.cliente}</div>
-                    <div className="text-xs text-foreground/60 flex items-center gap-1 mt-0.5">
-                      <MessageCircle className="w-3 h-3" /> {pedido.celular}
-                    </div>
+                    <a 
+                      href={`https://wa.me/${pedido.celular?.startsWith("591") ? pedido.celular : `591${pedido.celular}`}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs text-[#25D366] flex items-center gap-1 mt-0.5 hover:underline font-bold"
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="css-i6dzq1"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                      {pedido.celular}
+                    </a>
                     <div className="text-xs font-mono text-foreground/50 mt-0.5">
                       CI: {pedido.ci}
                     </div>
@@ -252,24 +365,59 @@ export default function AdminDashboard() {
                     {pedido.estado === 'Pendiente' && (
                       <button 
                         onClick={() => setPedidoSeleccionado(pedido)}
-                        className="p-2 bg-brand-primary text-white rounded-lg hover:bg-brand-accent transition-colors shadow-md"
+                        className="px-3 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-accent transition-colors shadow-md flex items-center gap-2 font-bold text-xs"
                         title="Ver Comprobante"
                       >
-                        <Eye className="w-5 h-5" />
+                        <Eye className="w-4 h-4" /> Verificar Pago
                       </button>
                     )}
-                    {pedido.estado !== 'Rechazado' && (
+                    
+                    {pedido.estado !== 'Rechazado' && !esTiendaDirecta && (
                       <button 
                         onClick={() => imprimirVineta(pedido)}
-                        className="p-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors shadow-md border border-slate-600 flex-shrink-0"
+                        className="px-3 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors shadow-md border border-slate-600 flex-shrink-0 flex items-center gap-2 font-bold text-xs"
                         title="Imprimir Viñeta"
                       >
-                        <Printer className="w-5 h-5" />
+                        <Printer className="w-4 h-4" /> Ticket de Envío
                       </button>
+                    )}
+
+                    {(pedido.estado === 'Aprobado' || pedido.estado === 'PREPARANDO' || pedido.estado === 'ENTREGADO' || filtroTab === 'listos' || filtroTab === 'enviados') && !esTiendaDirecta && (
+                      <div className="flex items-center gap-1">
+                        <div className="relative group" title="Subir o Ver Guía de Envío">
+                          <label className={`p-2 rounded-lg transition-colors shadow-md border flex items-center justify-center cursor-pointer ${pedido.guiaEnvioUrl ? 'bg-green-100 text-green-700 border-green-300' : 'bg-brand-primary text-white hover:bg-brand-accent'}`}>
+                            {isUploadingGuia === pedido.id ? (
+                              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            ) : pedido.guiaEnvioUrl ? (
+                              <div className="flex items-center gap-2 font-bold text-xs" onClick={(e) => { e.preventDefault(); setComprobanteAmpliado(pedido.guiaEnvioUrl); }}>
+                                <CheckCircle className="w-4 h-4" /> Ver Guía de Envío
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 font-bold text-xs">
+                                <Upload className="w-4 h-4" /> Subir Guía
+                              </div>
+                            )}
+                            <input type="file" className="hidden" accept="image/*" disabled={!todasEmpaquetadas || isUploadingGuia === pedido.id} onChange={(e) => handleSubirGuia(e, pedido)} />
+                          </label>
+                        </div>
+                        {pedido.guiaEnvioUrl && (
+                          <button 
+                            title="Enviar Guía por WhatsApp"
+                            onClick={() => {
+                              const mensaje = `¡Hola ${pedido.cliente}! 😊 Tu pedido de BrunaShop (ID: ${pedido.id.slice(-6).toUpperCase()}) ya fue enviado. Aquí tienes la foto de tu guía de envío para que puedas recogerlo: ${pedido.guiaEnvioUrl}\n\n¡Gracias por tu preferencia!`;
+                              enviarWhatsApp(pedido.celular, mensaje);
+                            }}
+                            className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-md border border-green-600"
+                          >
+                            <MessageCircle className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -300,19 +448,38 @@ export default function AdminDashboard() {
                   <p className="text-3xl font-black text-green-500">Bs. {pedidoSeleccionado.total.toFixed(2)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-foreground">{pedidoSeleccionado.cliente}</p>
-                  <p className="text-sm text-foreground/70">CI: {pedidoSeleccionado.ci}</p>
+                  <p className="text-xs text-brand-primary font-bold uppercase tracking-widest mb-1">Depositante:</p>
+                  <p className="font-bold text-foreground leading-tight">
+                    {pedidoSeleccionado.depositanteNombres || "No registrado"} {pedidoSeleccionado.depositanteApPaterno} {pedidoSeleccionado.depositanteApMaterno}
+                  </p>
+                  <p className="text-xs text-foreground/50 mt-1">
+                    Cuenta: {pedidoSeleccionado.cliente} (CI: {pedidoSeleccionado.ci})
+                  </p>
                 </div>
               </div>
 
               {/* Imagen del Comprobante */}
-              <div className="flex-1 overflow-auto bg-black rounded-xl mb-6 flex items-center justify-center relative group min-h-[300px]">
+              <div 
+                className="flex-1 overflow-auto bg-black rounded-xl mb-6 flex items-center justify-center relative group min-h-[300px] cursor-zoom-in"
+                onClick={() => setComprobanteAmpliado(pedidoSeleccionado.comprobanteUrl)}
+              >
                 <img 
                   src={pedidoSeleccionado.comprobanteUrl} 
                   alt="Comprobante" 
-                  className="max-w-full max-h-full object-contain rounded-xl"
+                  className="max-w-full max-h-full object-contain rounded-xl transition-transform group-hover:scale-105"
                 />
-                <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded backdrop-blur-md">Foto subida por clienta</div>
+                <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded backdrop-blur-md pointer-events-none">Foto subida por clienta</div>
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-xl">
+                  <span className="text-white font-bold tracking-widest uppercase flex items-center gap-2"><Search className="w-5 h-5" /> Ampliar</span>
+                </div>
+              </div>
+              <div className="flex justify-end mb-4 -mt-2">
+                <button 
+                  onClick={() => forceDownload(pedidoSeleccionado.comprobanteUrl, `comprobante_${pedidoSeleccionado.id.slice(-6)}.jpg`)}
+                  className="flex items-center gap-2 text-brand-primary text-sm font-bold hover:underline"
+                >
+                  <Download className="w-4 h-4" /> Forzar Descarga Directa
+                </button>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -412,6 +579,36 @@ export default function AdminDashboard() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Lightbox para Comprobante Ampliado */}
+      <AnimatePresence>
+        {comprobanteAmpliado && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[99999] bg-black/90 flex flex-col items-center justify-center p-4 backdrop-blur-sm"
+            onClick={() => setComprobanteAmpliado(null)}
+          >
+            <button className="absolute top-6 right-6 text-white hover:text-gray-300 transition-colors p-2" onClick={() => setComprobanteAmpliado(null)}>
+              <X className="w-8 h-8" />
+            </button>
+            <img src={comprobanteAmpliado} alt="Comprobante Ampliado" className="max-w-full max-h-[85vh] object-contain rounded-md shadow-2xl" />
+            <div className="flex flex-col items-center mt-6 gap-3">
+              <button 
+                className="bg-brand-primary text-white px-6 py-2 rounded-full font-bold shadow-xl hover:bg-brand-accent transition-colors flex items-center gap-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  forceDownload(comprobanteAmpliado, `archivo_brunashop.jpg`);
+                }}
+              >
+                <Download className="w-5 h-5" /> Descargar Imagen
+              </button>
+              <p className="text-white/50 tracking-widest uppercase text-xs font-bold">Haz clic en el fondo para cerrar</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* Elemento de cierre necesario en map */}
+      {(() => null)()}
     </div>
   );
 }

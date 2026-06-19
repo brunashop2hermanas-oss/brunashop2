@@ -144,10 +144,15 @@ export default function AdminClientas() {
                           <Fingerprint className="w-4 h-4 text-brand-primary" />
                           {clienta.ci || "Sin CI"}
                         </div>
-                        <div className="flex items-center gap-2 text-foreground/80 font-medium">
+                        <a 
+                          href={`https://wa.me/${clienta.celular?.startsWith("591") ? clienta.celular : `591${clienta.celular}`}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-foreground/80 font-medium hover:text-brand-primary hover:underline cursor-pointer"
+                        >
                           <Phone className="w-4 h-4 text-brand-primary" />
                           {clienta.celular || "Sin Celular"}
-                        </div>
+                        </a>
                       </div>
                     </td>
                     <td className="p-5 text-center">
@@ -215,7 +220,7 @@ export default function AdminClientas() {
               <p className="text-2xl font-black text-black uppercase mb-4">{clientaSeleccionada.nombre}</p>
               <div className="space-y-2">
                 <p className="text-black font-bold">Carnet de Identidad: <span className="font-normal">{clientaSeleccionada.ci}</span></p>
-                <p className="text-black font-bold">Celular / WhatsApp: <span className="font-normal">{clientaSeleccionada.celular}</span></p>
+                <p className="text-black font-bold">Celular / WhatsApp: <a href={`https://wa.me/${clientaSeleccionada.celular?.startsWith("591") ? clientaSeleccionada.celular : `591${clientaSeleccionada.celular}`}`} target="_blank" rel="noopener noreferrer" className="font-normal text-blue-600 hover:underline">{clientaSeleccionada.celular}</a></p>
               </div>
             </div>
             

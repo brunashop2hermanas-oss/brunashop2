@@ -1,336 +1,703 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Upload, CheckCircle, ShieldCheck, Bus, CreditCard, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Check, Upload, MapPin, CreditCard, X, Search, Clock, Download, AlertTriangle } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { getPrendas } from "@/app/actions/productos";
-import { createVenta } from "@/app/actions/ventas";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { confirmarPagoCheckout, buscarClientaPorCI, getVenta, cancelarVentaExpirada, vincularClientaReserva, crearReservaAnonima } from "@/app/actions/ventas";
 import { getConfiguracion } from "@/app/actions/config";
 import { uploadImage } from "@/app/actions/upload";
+import { getPrendas } from "@/app/actions/productos";
 import { compressImage } from "@/lib/imageCompression";
+import toast from "react-hot-toast";
 
-const DEPARTAMENTOS = [
-  "La Paz", "Santa Cruz", "Cochabamba", "Oruro", "Potosí", "Chuquisaca", "Tarija", "Beni", "Pando"
-];
+function CheckoutContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryVentaId = searchParams.get("id");
 
-export default function CheckoutPage() {
-  const [paso, setPaso] = useState(1); // 1: Formulario, 2: Éxito
+  const [paso, setPaso] = useState(1);
+  const [esNuevaClienta, setEsNuevaClienta] = useState(false);
+  const [ci, setCi] = useState("");
+  const [clientaEncontrada, setClientaEncontrada] = useState<any>(null);
+  const [buscandoCi, setBuscandoCi] = useState(false);
+
+  const [departamentosHabilitados, setDepartamentosHabilitados] = useState<string[]>([]);
+  const [provinciasHabilitadas, setProvinciasHabilitadas] = useState<string[]>([]);
+  const [departamento, setDepartamento] = useState("");
+
+  const [ventaEnCurso, setVentaEnCurso] = useState<any>(null);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [tiempoExpirado, setTiempoExpirado] = useState(false);
+
   const [comprobante, setComprobante] = useState<File | null>(null);
+  const [previewAmpliada, setPreviewAmpliada] = useState(false);
   
-  // Estado para simular carrito de compras con productos reales de la BD
   const [carrito, setCarrito] = useState<any[]>([]);
   const [config, setConfig] = useState<any>(null);
+  const [productos, setProductos] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imagenAmpliada, setImagenAmpliada] = useState<string | null>(null);
+  const [serverTimeOffset, setServerTimeOffset] = useState<number>(0);
+
+  // Interval reference for cleanup
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Para propósitos de prueba: Cargar 1 o 2 prendas reales del catálogo
-    const cargarDatos = async () => {
-      // 1. Cargar Configuración de la Tienda (QR y Banco)
-      const resConfig = await getConfiguracion();
-      if (resConfig.success) {
-        setConfig(resConfig.data);
-      }
+    cargarDatosIniciales();
+  }, [queryVentaId]);
 
-      // 2. Cargar carrito simulado
-      const res = await getPrendas();
-      if (res.success && res.data && res.data.length > 0) {
-        // Tomar hasta 2 prendas que tengan stock
-        const disponibles = res.data.filter((p: any) => p.stockCount > 0).slice(0, 2);
+  useEffect(() => {
+    if ((paso === 1 || paso === 2) && ventaEnCurso && ventaEnCurso.expiresAt) {
+      iniciarCronometro(new Date(ventaEnCurso.expiresAt), serverTimeOffset);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [paso, ventaEnCurso, serverTimeOffset]);
+
+  const cargarDatosIniciales = async () => {
+    setIsLoading(true);
+    const resConfig = await getConfiguracion();
+    if (resConfig.success && resConfig.data) {
+      setConfig(resConfig.data);
+      if (resConfig.data.destinosHabilitados) {
+        const deptos = Object.keys(resConfig.data.destinosHabilitados);
+        setDepartamentosHabilitados(deptos);
+      }
+    }
+    const resProd = await getPrendas();
+    if (resProd.success && resProd.data) {
+      setProductos(resProd.data);
+    }
+
+    if (queryVentaId) {
+      // Reanudar checkout
+      const resVenta = await getVenta(queryVentaId);
+      if (resVenta.success && resVenta.data) {
+        const v = resVenta.data;
+        const offset = resVenta.serverNow ? new Date(resVenta.serverNow).getTime() - Date.now() : 0;
+        setServerTimeOffset(offset);
         
-        const itemsCarrito = disponibles.map((p: any) => ({
-          prendaId: p.id,
-          nombre: p.nombre,
-          precioUnitario: p.precioVenta,
-          cantidad: 1
-        }));
-        setCarrito(itemsCarrito);
+        if (v.items && v.items.length > 0) {
+          const mappedCarrito = v.items.map((i: any) => ({
+            id: i.prendaId,
+            nombre: i.prenda?.nombre || "Prenda Reservada",
+            precioVenta: i.precio,
+            precioOriginal: i.prenda?.precioOriginal,
+            isConjunto: i.prenda?.isConjunto,
+            imagenes: i.prenda?.imagenes,
+            piezasDetalle: i.prenda?.piezasDetalle,
+            cantidad: i.cantidad,
+            tallaSeleccionada: i.talla,
+            colorSeleccionado: i.color
+          }));
+          setCarrito(mappedCarrito);
+        }
+
+        if (v.estado === "ESPERANDO_PAGO") {
+          setVentaEnCurso(v);
+          if (v.clientaId) {
+            setClientaEncontrada(v.clienta);
+            setPaso(2);
+          } else {
+            // Reserva anónima
+            setPaso(1);
+          }
+        } else if (v.estado === "PENDIENTE_VERIFICACION") {
+          setPaso(3);
+        } else {
+          setTiempoExpirado(true);
+        }
+      } else {
+        setTiempoExpirado(true);
       }
-      setIsLoading(false);
-    };
-    cargarDatos();
-  }, []);
+    } else {
+      // Nuevo checkout
+      const carritoGuardado = localStorage.getItem("bruna_carrito");
+      if (carritoGuardado) {
+        try {
+          const items = JSON.parse(carritoGuardado);
+          if (Array.isArray(items) && items.length > 0) setCarrito(items);
+        } catch (e) { console.error("Error carrito", e); }
+      }
+    }
+    setIsLoading(false);
+  };
 
-  const totalAPagar = carrito.reduce((sum, item) => sum + (item.precioUnitario * item.cantidad), 0);
+  const iniciarCronometro = (expiresAt: Date, offset: number) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      const now = new Date(Date.now() + offset);
+      const diff = expiresAt.getTime() - now.getTime();
+      if (diff <= 0) {
+        clearInterval(timerRef.current!);
+        setTimeLeft(0);
+        handleExpiracion();
+      } else {
+        setTimeLeft(Math.floor(diff / 1000));
+      }
+    }, 1000);
+  };
 
-  const handleSubirComprobante = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setComprobante(e.target.files[0]);
+  const handleExpiracion = async () => {
+    setTiempoExpirado(true);
+    if (ventaEnCurso?.id) {
+      await cancelarVentaExpirada(ventaEnCurso.id);
     }
   };
 
-  const enviarPedido = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (carrito.length === 0) {
-      alert("No tienes prendas en el carrito.");
-      return;
+  const totalAPagar = carrito.reduce((sum, item) => sum + (item.precioVenta || 0), 0);
+  const totalOriginal = carrito.reduce((sum, item) => {
+    const precioBase = item.precioOriginal && item.precioOriginal > item.precioVenta ? item.precioOriginal : item.precioVenta;
+    return sum + (precioBase || 0);
+  }, 0);
+  const ahorroTotal = totalOriginal - totalAPagar;
+
+  const handleBuscarClienta = async () => {
+    if (!ci) return;
+    setBuscandoCi(true);
+    const res = await buscarClientaPorCI(ci);
+    setBuscandoCi(false);
+    if (res.success && res.data) {
+      setClientaEncontrada(res.data);
+    } else {
+      toast.error("No encontramos tu carnet. Por favor, regístrate como Nueva Clienta (¡es súper rápido!).");
+      setEsNuevaClienta(true);
     }
-    if (!comprobante) {
-      alert("Por favor, sube la foto de tu comprobante de pago antes de continuar.");
-      return;
+  };
+
+  const handleDeptoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setDepartamento(val);
+    if (config?.destinosHabilitados && config.destinosHabilitados[val]) {
+      setProvinciasHabilitadas(config.destinosHabilitados[val]);
+    } else {
+      setProvinciasHabilitadas([]);
+    }
+  };
+
+  const procesarPaso1 = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.currentTarget);
+    const ciudadDestino = formData.get("ciudadDestino") as string;
+    const provinciaDestino = formData.get("provinciaDestino") as string;
+    
+    let ventaActualId = ventaEnCurso?.id;
+
+    if (!ventaActualId) {
+      if (carrito.length === 0) return toast.error("¡Ups! Tu carrito está vacío.");
+      setIsSubmitting(true);
+      const resTemp = await crearReservaAnonima({
+        items: carrito.map(item => ({
+          prendaId: item.id,
+          cantidad: item.cantidad || 1,
+          precioUnitario: item.precioVenta,
+          talla: item.tallaSeleccionada || undefined,
+          color: item.colorSeleccionado || undefined
+        })),
+        total: totalAPagar
+      });
+      
+      if (!resTemp.success || !resTemp.data) {
+        setIsSubmitting(false);
+        return toast.error("Error al reservar el stock. Por favor intenta de nuevo.");
+      }
+      ventaActualId = resTemp.data.id;
     }
 
     setIsSubmitting(true);
-    
+
+    const data: any = {
+      ci: ci || (formData.get("ci") as string),
+      ciudadDestino,
+      provinciaDestino,
+      tiempoReservaMinutos: config?.tiempoReservaMinutos || 4
+    };
+
+    if (esNuevaClienta && !clientaEncontrada) {
+      data.nombres = formData.get("nombres");
+      data.apellidoPaterno = formData.get("apellidoPaterno");
+      data.apellidoMaterno = formData.get("apellidoMaterno");
+      data.celular = formData.get("celular");
+    } else {
+      data.nombres = clientaEncontrada?.nombres;
+      data.apellidoPaterno = clientaEncontrada?.apellidos; 
+      data.celular = clientaEncontrada?.celular;
+    }
+
+    const res = await vincularClientaReserva(ventaActualId, data);
+    setIsSubmitting(false);
+
+    if (res.success && res.data) {
+      setVentaEnCurso(res.data);
+      router.replace(`/checkout?id=${res.data.id}`);
+      setPaso(2);
+      localStorage.removeItem("bruna_carrito");
+    } else {
+      toast.error("¡Uy! Tuvimos un problemita al preparar tu reserva. Por favor, intenta de nuevo.");
+    }
+  };
+
+  const procesarPaso2 = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!ventaEnCurso) return;
+    if (!comprobante) return toast.error("¡No olvides subir la foto de tu comprobante de pago!");
+
+    const formData = new FormData(e.currentTarget);
+    setIsSubmitting(true);
+
     let comprobanteRealUrl = "";
     try {
-      const compressedFile = await compressImage(comprobante);
+      const compressedFile = await compressImage(comprobante, 'baja'); 
       const fileData = new FormData();
       fileData.append("file", compressedFile);
       const resUpload = await uploadImage(fileData);
       if (resUpload.success && resUpload.url) {
         comprobanteRealUrl = resUpload.url;
       } else {
-        alert("Error subiendo el comprobante: " + resUpload.error);
+        toast.error("Hubo un inconveniente subiendo tu comprobante. Intenta con otra foto por favor.");
         setIsSubmitting(false);
         return;
       }
     } catch (err) {
-      alert("Error inesperado subiendo el comprobante.");
+      toast.error("¡Uy! Tuvimos un problemita inesperado con tu foto. Por favor, intenta de nuevo.");
       setIsSubmitting(false);
       return;
     }
-    
-    const formData = new FormData(e.currentTarget);
-    const data = {
-      nombres: formData.get("nombres") as string,
-      apellidoPaterno: formData.get("apellidoPaterno") as string,
-      apellidoMaterno: formData.get("apellidoMaterno") as string,
-      ci: formData.get("ci") as string,
-      celular: formData.get("celular") as string,
-      ciudadDestino: formData.get("ciudadDestino") as string,
-      comprobanteUrl: comprobanteRealUrl, 
-      items: carrito,
-      total: totalAPagar
+
+    const reqData = {
+      comprobanteUrl: comprobanteRealUrl,
+      depositanteNombres: formData.get("depositanteNombres") as string,
+      depositanteApPaterno: formData.get("depositanteApPaterno") as string,
+      depositanteApMaterno: formData.get("depositanteApMaterno") as string,
+      depositanteCi: formData.get("depositanteCi") as string,
     };
 
-    const res = await createVenta(data);
+    const res = await confirmarPagoCheckout(ventaEnCurso.id, reqData);
     setIsSubmitting(false);
 
     if (res.success) {
-      setPaso(2);
+      setPaso(3);
     } else {
-      alert("Hubo un error al procesar tu venta: " + res.error);
+      toast.error("Tuvimos un inconveniente confirmando tu pago. Por favor, avísanos por WhatsApp.");
     }
+  };
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex justify-center items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
+      <div className="min-h-screen flex flex-col justify-center items-center">
+        <span className="text-xs tracking-[0.2em] uppercase text-foreground/50 animate-pulse">Cargando...</span>
+      </div>
+    );
+  }
+
+  if (tiempoExpirado) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-red-600/95 backdrop-blur-md px-4">
+        <div className="bg-white p-12 text-center rounded-3xl shadow-2xl max-w-xl w-full flex flex-col items-center">
+          <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-6">
+            <AlertTriangle className="w-12 h-12 text-red-600" />
+          </div>
+          <h2 className="text-4xl md:text-5xl font-black uppercase mb-4 text-red-600 tracking-tighter leading-none">
+            ¡Tiempo<br />Expirado!
+          </h2>
+          <p className="text-gray-600 text-lg md:text-xl mb-10 max-w-md">
+            El tiempo límite para completar tu reserva ha finalizado. Tus prendas han sido liberadas para otras clientas.
+          </p>
+          <Link href="/">
+            <button className="bg-black hover:bg-gray-800 text-white px-10 py-5 uppercase tracking-[0.2em] text-sm font-bold rounded-xl transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 w-full md:w-auto">
+              Volver al Catálogo
+            </button>
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground py-10 px-4 md:px-8">
-      <div className="max-w-4xl mx-auto">
-        
-        {/* Cabecera */}
-        <div className="mb-8 flex items-center gap-4">
-          <Link href="/">
-            <button className="p-2 bg-surface hover:bg-surface-border rounded-full transition-colors text-foreground">
-              <ArrowLeft className="w-6 h-6" />
-            </button>
+    <div className="min-h-screen bg-background text-foreground selection:bg-black selection:text-white pb-20">
+      <header className="w-full border-b border-black/10">
+        <div className="max-w-[1600px] mx-auto px-4 md:px-12 h-24 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-50 transition-opacity">
+            <ArrowLeft className="w-5 h-5" />
+            <span className="text-xs font-bold uppercase tracking-widest">Volver</span>
           </Link>
-          <h1 className="text-3xl font-extrabold text-foreground">Finalizar Compra</h1>
+          <h1 className="text-2xl font-extrabold tracking-tighter uppercase">BrunaShop2</h1>
+          <div className="w-16">
+            {paso === 2 && (
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] uppercase font-bold text-red-500">Expira en</span>
+                <span className="font-mono text-xl text-red-600 font-bold">{formatTime(timeLeft)}</span>
+              </div>
+            )}
+          </div>
         </div>
+      </header>
 
-        <AnimatePresence mode="wait">
-          {paso === 1 ? (
-            <motion.div 
-              key="formulario"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              className="grid grid-cols-1 lg:grid-cols-3 gap-8"
-            >
-              
-              {/* Formulario Principal */}
-              <div className="lg:col-span-2 space-y-8">
-                
-                {/* SECCIÓN 1: Datos de Envío */}
-                <div className="glass p-6 md:p-8 rounded-3xl border border-surface-border shadow-3d">
-                  <h2 className="text-xl font-bold flex items-center gap-2 mb-6 text-foreground">
-                    <Bus className="w-6 h-6 text-brand-primary" />
-                    Datos para el Envío
-                  </h2>
-                  <div className="bg-brand-primary/10 border border-brand-primary/20 p-4 rounded-xl mb-6 flex items-start gap-3">
-                    <ShieldCheck className="w-5 h-5 text-brand-primary shrink-0 mt-0.5" />
-                    <p className="text-sm font-medium text-foreground/80">
-                      Todos nuestros envíos llegan de manera segura a la <strong className="text-brand-primary">Terminal de Buses</strong> de tu ciudad. Nos pondremos en contacto contigo si el envío requiere un pago en destino.
-                    </p>
-                  </div>
-                  
-                  <form id="checkout-form" onSubmit={enviarPedido} className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-5">
-                      <div>
-                        <label className="block text-sm font-bold text-foreground mb-2">Nombres</label>
-                        <input name="nombres" required type="text" placeholder="Ej: María Fernanda" className="w-full bg-surface border border-surface-border px-4 py-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground placeholder-foreground/40 font-medium transition-all" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-bold text-foreground mb-2">Apellido Paterno</label>
-                        <input name="apellidoPaterno" required type="text" placeholder="Ej: Pérez" className="w-full bg-surface border border-surface-border px-4 py-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground placeholder-foreground/40 font-medium transition-all" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-bold text-foreground mb-2">Apellido Materno</label>
-                        <input name="apellidoMaterno" type="text" placeholder="Ej: Gómez (Opcional)" className="w-full bg-surface border border-surface-border px-4 py-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground placeholder-foreground/40 font-medium transition-all" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-foreground mb-2">Carnet de Identidad (CI)</label>
-                      <input name="ci" required type="text" placeholder="Ej: 1234567 LP" className="w-full bg-surface border border-surface-border px-4 py-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground placeholder-foreground/40 font-medium transition-all" />
-                      <p className="text-xs text-foreground/50 mt-1">Requerido para recoger en terminal</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-foreground mb-2">Celular de Contacto</label>
-                      <input name="celular" required type="tel" placeholder="Ej: 71234567" className="w-full bg-surface border border-surface-border px-4 py-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground placeholder-foreground/40 font-medium transition-all" />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-bold text-foreground mb-2">Ciudad de Destino (Terminal)</label>
-                      <select name="ciudadDestino" required className="w-full bg-surface border border-surface-border px-4 py-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-bold transition-all cursor-pointer">
-                        <option value="">Selecciona tu ciudad...</option>
-                        {DEPARTAMENTOS.map(dep => <option key={dep} value={dep}>{dep}</option>)}
-                      </select>
-                    </div>
-                  </form>
+      <main className="max-w-[1600px] mx-auto px-4 md:px-12 py-12 md:py-16">
+        <div className="flex flex-col lg:flex-row gap-16 items-start">
+          <div className="w-full lg:flex-1">
+            <AnimatePresence mode="wait">
+              {paso === 1 && (
+                <motion.div key="paso1" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                <div className="flex items-center gap-3 mb-10">
+                  <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center font-bold">1</div>
+                  <h2 className="text-2xl md:text-3xl font-light uppercase tracking-widest">Identificación y Envío</h2>
                 </div>
 
-                {/* SECCIÓN 2: Pago y Comprobante */}
-                <div className="glass p-6 md:p-8 rounded-3xl border border-surface-border shadow-3d">
-                  <h2 className="text-xl font-bold flex items-center gap-2 mb-6 text-foreground">
-                    <CreditCard className="w-6 h-6 text-green-500" />
-                    Pago por Transferencia o QR
-                  </h2>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center mb-8">
-                    {/* QR REAL DESDE LA CONFIGURACION */}
-                    <div className="bg-white p-4 rounded-2xl flex justify-center border-2 border-dashed border-gray-300">
-                      {config?.qrImagen ? (
-                        <img src={config.qrImagen} alt="QR Bancario" className="w-40 h-40 opacity-100 object-contain" />
+                {!clientaEncontrada && !esNuevaClienta && (
+                  <div className="bg-surface border border-black/10 p-8 rounded-xl space-y-6 mb-8 shadow-sm">
+                    <h3 className="text-xl font-bold">¿Ya tienes cuenta?</h3>
+                    <p className="text-sm text-foreground/70">Ingresa tu Carnet de Identidad para buscar tus datos y acelerar tu compra.</p>
+                    <div className="flex gap-4">
+                      <input 
+                        type="text" value={ci} onChange={e=>setCi(e.target.value)} 
+                        placeholder="Ej: 1234567" 
+                        className="flex-1 bg-background border border-black/20 p-3 outline-none focus:border-black"
+                      />
+                      <button onClick={handleBuscarClienta} disabled={buscandoCi} className="bg-black text-white px-6 font-bold uppercase tracking-wider hover:bg-brand-primary disabled:opacity-50 flex items-center gap-2">
+                        {buscandoCi ? "Buscando..." : <><Search className="w-4 h-4"/> Buscar</>}
+                      </button>
+                    </div>
+                    <div className="text-center pt-4 border-t border-black/10">
+                      <span className="text-sm text-foreground/50">¿Es tu primera vez comprando?</span>
+                      <button onClick={() => setEsNuevaClienta(true)} className="block w-full mt-3 border border-black py-3 uppercase tracking-widest font-bold hover:bg-black hover:text-white transition-colors">
+                        Soy Nueva Clienta (Registrarme)
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {(clientaEncontrada || esNuevaClienta) && (
+                  <form id="paso1-form" onSubmit={procesarPaso1} className="space-y-10">
+                    <div className="bg-brand-primary/5 border border-brand-primary/20 p-6 rounded-xl">
+                      {clientaEncontrada ? (
+                        <div>
+                          <h3 className="text-xl font-bold text-brand-primary mb-2">¡Bienvenida de nuevo, {clientaEncontrada.nombres}!</h3>
+                          <p className="text-sm">Tus datos están guardados. Solo dinos a dónde enviamos tu pedido.</p>
+                        </div>
                       ) : (
-                        <div className="w-40 h-40 flex items-center justify-center text-gray-400 font-bold">QR No Configurado</div>
+                        <div className="space-y-6">
+                          <h3 className="text-lg font-bold uppercase tracking-widest border-b border-black/10 pb-3">Registro de Clienta</h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Nombres</label>
+                              <input name="nombres" required type="text" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
+                            </div>
+                            <div>
+                              <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Ap. Paterno</label>
+                              <input name="apellidoPaterno" required type="text" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
+                            </div>
+                            <div>
+                              <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Ap. Materno (Opc.)</label>
+                              <input name="apellidoMaterno" type="text" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
+                            </div>
+                            <div>
+                              <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Carnet (C.I.)</label>
+                              <input name="ci" required type="text" value={ci} onChange={e=>setCi(e.target.value)} className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
+                            </div>
+                            <div>
+                              <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Celular / WhatsApp</label>
+                              <input name="celular" required type="text" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
+                            </div>
+                          </div>
+                        </div>
                       )}
                     </div>
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-xs text-foreground/60 uppercase font-bold tracking-wider">Banco</p>
-                        <p className="font-bold text-foreground text-lg">{config?.bancoNombre || "No configurado"}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-foreground/60 uppercase font-bold tracking-wider">Cuenta</p>
-                        <p className="font-mono font-bold text-brand-primary text-xl tracking-widest">{config?.bancoCuenta || "No configurado"}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-foreground/60 uppercase font-bold tracking-wider">Titular</p>
-                        <p className="font-bold text-foreground">{config?.bancoTitular || "No configurado"}</p>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="border-2 border-dashed border-surface-border rounded-2xl p-6 text-center hover:bg-surface transition-colors relative overflow-hidden group">
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handleSubirComprobante}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-                    />
-                    <div className="flex flex-col items-center gap-3">
-                      <div className={`p-4 rounded-full ${comprobante ? 'bg-green-500/20 text-green-500' : 'bg-brand-primary/10 text-brand-primary'} group-hover:scale-110 transition-transform`}>
-                        {comprobante ? <CheckCircle className="w-8 h-8" /> : <Upload className="w-8 h-8" />}
-                      </div>
-                      <div>
-                        <p className="font-bold text-foreground">
-                          {comprobante ? '¡Comprobante Subido!' : 'Toca aquí para subir tu foto del depósito'}
-                        </p>
-                        <p className="text-sm text-foreground/60 mt-1">
-                          {comprobante ? comprobante.name : 'Formatos: JPG, PNG'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Barra Lateral: Resumen */}
-              <div className="lg:col-span-1">
-                <div className="glass p-6 rounded-3xl border border-surface-border shadow-3d sticky top-10">
-                  <h3 className="font-bold text-lg text-foreground border-b border-surface-border pb-4 mb-4 flex items-center gap-2">
-                    <ShoppingBag className="w-5 h-5" /> Tu Pedido
-                  </h3>
-                  
-                  {carrito.length === 0 ? (
-                    <div className="text-center py-6 text-foreground/50 text-sm font-medium">
-                      No tienes prendas en stock en tu catálogo para simular la compra. Ve al admin y agrega una prenda con stock primero.
-                    </div>
-                  ) : (
-                    <>
-                      <div className="space-y-4 mb-6">
-                        {carrito.map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-center">
-                            <div className="text-foreground/80 font-medium">{item.cantidad}x {item.nombre}</div>
-                            <div className="font-bold text-foreground">Bs. {item.precioUnitario}</div>
+                    <div className="space-y-6">
+                      <h3 className="text-lg font-bold uppercase tracking-widest flex items-center gap-2 border-b border-black/10 pb-3">
+                        <MapPin className="w-5 h-5"/> Destino del Paquete
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Departamento</label>
+                          <select name="ciudadDestino" required value={departamento} onChange={handleDeptoChange} className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black cursor-pointer rounded-none appearance-none">
+                            <option value="" disabled>Seleccionar...</option>
+                            {departamentosHabilitados.map(d => <option key={d} value={d}>{d}</option>)}
+                          </select>
+                        </div>
+                        {provinciasHabilitadas.length > 0 && (
+                          <div>
+                            <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Provincia</label>
+                            <select name="provinciaDestino" required className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black cursor-pointer rounded-none appearance-none">
+                              <option value="" disabled>Seleccionar Provincia...</option>
+                              {provinciasHabilitadas.map(p => <option key={p} value={p}>{p}</option>)}
+                            </select>
                           </div>
-                        ))}
+                        )}
                       </div>
+                    </div>
 
-                      <div className="border-t border-surface-border pt-4 mb-8">
-                        <div className="flex justify-between items-center mb-1">
-                          <div className="text-foreground/60 font-bold">Subtotal</div>
-                          <div className="font-bold text-foreground">Bs. {totalAPagar.toFixed(2)}</div>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <div className="text-foreground/60 font-bold">Envío Terminal</div>
-                          <div className="font-bold text-brand-primary text-sm">Por coordinar</div>
-                        </div>
-                      </div>
+                    <div className="bg-yellow-50 text-yellow-800 border border-yellow-200 p-4 text-xs flex items-start gap-3 rounded-xl">
+                      <Clock className="w-5 h-5 shrink-0" />
+                      <p><strong>Aviso:</strong> Al hacer clic en "Siguiente", tus prendas serán reservadas y descontadas del inventario durante <strong>{config?.tiempoReservaMinutos} minutos</strong> para que puedas realizar tu pago tranquilamente.</p>
+                    </div>
 
-                      <div className="flex justify-between items-end mb-8 bg-surface p-4 rounded-xl border border-surface-border">
-                        <div className="text-lg font-bold text-foreground">Total a pagar:</div>
-                        <div className="text-3xl font-black text-brand-primary">Bs. {totalAPagar.toFixed(2)}</div>
-                      </div>
+                    <button disabled={isSubmitting} className="w-full bg-black text-white py-5 text-sm uppercase tracking-[0.2em] font-bold hover:bg-brand-primary transition-colors">
+                      {isSubmitting ? "Reservando Stock..." : "Siguiente: Realizar Pago"}
+                    </button>
+                  </form>
+                )}
+            </motion.div>
+          )}
 
-                      <button 
-                        type="submit" 
-                        form="checkout-form"
-                        disabled={isSubmitting || carrito.length === 0}
-                        className="w-full bg-green-500 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-green-600 hover:shadow-green-500/30 transition-all flex justify-center items-center gap-2 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isSubmitting ? 'Procesando Venta...' : 'Confirmar y Enviar Pedido'} <CheckCircle className="w-5 h-5" />
-                      </button>
-                      <p className="text-center text-xs text-foreground/50 mt-4 font-medium">Pagos 100% seguros y verificados.</p>
-                    </>
-                  )}
+          {paso === 2 && (
+            <motion.div key="paso2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b border-black/10 pb-6 gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center font-bold">2</div>
+                  <h2 className="text-2xl md:text-3xl font-light uppercase tracking-widest">Pago y Comprobante</h2>
+                </div>
+                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 animate-pulse shadow-sm">
+                  <Clock className="w-5 h-5"/>
+                  Tienes {formatTime(timeLeft)} para completar el pago
                 </div>
               </div>
 
-            </motion.div>
-          ) : (
-            <motion.div 
-              key="exito"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="max-w-md mx-auto glass p-10 rounded-3xl border border-surface-border shadow-3d text-center"
-            >
-              <div className="w-24 h-24 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-12 h-12" />
+              <div className="bg-yellow-50/50 border border-yellow-200 p-4 rounded-xl mb-10 text-sm flex gap-3 text-yellow-800 shadow-sm">
+                <AlertTriangle className="w-6 h-6 shrink-0 text-yellow-600"/>
+                <p><strong>Por favor:</strong> Si vas a usar la app de tu banco, te recomendamos descargar la imagen del QR. <strong>Trata de no cerrar ni refrescar esta ventana.</strong> Si tu celular la cierra, puedes volver al mismo link y retomar.</p>
               </div>
-              <h2 className="text-3xl font-black text-foreground mb-4">¡Pedido Recibido!</h2>
-              <p className="text-foreground/80 text-lg mb-8">
-                ¡Gracias por tu compra! Estamos verificando tu comprobante. En breve te contactaremos por WhatsApp para coordinar el envío.
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div className="bg-surface p-8 rounded-2xl border border-surface-border shadow-md flex flex-col items-center justify-center text-center">
+                  <h3 className="text-lg uppercase tracking-widest font-bold mb-6 border-b pb-2">Escanea para Pagar</h3>
+                  <div className="w-56 h-56 bg-white p-2 border shadow-lg mb-6 relative group">
+                    {config?.qrImagen ? (
+                      <>
+                        <img src={config.qrImagen} alt="QR" className="w-full h-full object-contain" />
+                        <a href={config.qrImagen} download="QR_BrunaShop.jpg" className="absolute inset-0 bg-black/60 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex flex-col items-center gap-2"><Download className="w-8 h-8"/> <span className="text-xs uppercase font-bold tracking-widest">Descargar QR</span></div>
+                        </a>
+                      </>
+                    ) : (
+                      <span className="text-xs text-foreground/40">Sin QR</span>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase text-foreground/50 tracking-widest">Monto a pagar</p>
+                    <p className="text-3xl font-bold text-brand-primary">Bs. {ventaEnCurso?.total?.toFixed(2)}</p>
+                    <div className="pt-4 mt-4 border-t border-black/10">
+                      <p className="text-sm font-medium">{config?.bancoNombre}</p>
+                      <p className="text-lg font-mono">{config?.bancoCuenta}</p>
+                      <p className="text-xs text-foreground/50 uppercase">{config?.bancoTitular}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <form id="paso2-form" onSubmit={procesarPaso2} className="space-y-8">
+                  <div className="bg-white p-6 rounded-2xl border border-surface-border shadow-sm">
+                    <h3 className="text-sm uppercase tracking-widest font-bold mb-4 flex items-center gap-2">
+                      <CreditCard className="w-5 h-5 text-brand-primary"/> Datos del Depositante
+                    </h3>
+                    <div className="bg-red-50/80 border border-red-200 p-4 rounded-xl mb-6 text-sm flex gap-3 text-red-800 shadow-sm">
+                      <AlertTriangle className="w-8 h-8 shrink-0 text-red-600"/>
+                      <p>
+                        <strong>MUY IMPORTANTE:</strong> Los datos que ingreses aquí <strong>deben coincidir exactamente</strong> con el titular de la cuenta bancaria desde donde estás transfiriendo. <br/><br/>
+                        <span className="underline font-bold">Si los datos no coinciden, no podremos verificar ni despachar tu compra.</span>
+                      </p>
+                    </div>
+
+                    <div className="space-y-4 animate-in slide-in-from-top-2">
+                      <div>
+                        <label className="block text-xs uppercase font-bold mb-1">Nombre(s) del Titular de la Cuenta *</label>
+                        <input required name="depositanteNombres" type="text" className="w-full border-b border-black/20 bg-transparent py-2 outline-none focus:border-brand-primary" placeholder="Ej: Maria Renee" />
+                      </div>
+                      <div className="flex gap-4">
+                        <div className="flex-1">
+                          <label className="block text-xs uppercase font-bold mb-1">Ap. Paterno *</label>
+                          <input required name="depositanteApPaterno" type="text" className="w-full border-b border-black/20 bg-transparent py-2 outline-none focus:border-brand-primary" placeholder="Ej: Perez" />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-xs uppercase font-bold mb-1">Ap. Materno</label>
+                          <input name="depositanteApMaterno" type="text" className="w-full border-b border-black/20 bg-transparent py-2 outline-none focus:border-brand-primary" placeholder="Ej: Lopez" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs uppercase font-bold mb-1">C.I. del Depositante (Opcional)</label>
+                        <input name="depositanteCi" type="text" className="w-full border-b border-black/20 bg-transparent py-2 outline-none focus:border-brand-primary" placeholder="Ej: 1234567" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="relative group cursor-pointer overflow-hidden border border-black rounded-2xl">
+                    <input type="file" accept="image/*" onChange={(e)=>{if(e.target.files)setComprobante(e.target.files[0])}} className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer" />
+                    <div className={`p-8 text-center transition-all ${comprobante ? 'bg-black text-white p-0' : 'bg-transparent text-black hover:bg-black/5'}`}>
+                      {comprobante ? (
+                        <div className="relative w-full h-48 bg-black flex flex-col items-center justify-center">
+                          <img 
+                            src={URL.createObjectURL(comprobante)} 
+                            alt="Vista previa" 
+                            className="absolute inset-0 w-full h-full object-contain opacity-60"
+                          />
+                          <div className="relative z-10 flex flex-col items-center gap-2">
+                            <Check className="w-10 h-10 text-green-400 drop-shadow-md" />
+                            <span className="block font-bold text-sm uppercase drop-shadow-md">¡Comprobante Listo!</span>
+                            <span className="text-xs bg-black/50 px-3 py-1 rounded-full backdrop-blur-md">Toca para cambiar imagen</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-3">
+                          <Upload className="w-8 h-8 text-brand-primary" />
+                          <span className="text-sm font-bold uppercase">Subir Captura de Pago</span>
+                          <span className="text-xs text-foreground/50">Toca aquí para seleccionar</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <button disabled={isSubmitting || !comprobante} type="submit" className="w-full bg-black text-white py-5 text-sm uppercase tracking-[0.2em] font-bold hover:bg-brand-primary transition-colors disabled:opacity-50">
+                    {isSubmitting ? "Confirmando Pago..." : "Completar Compra"}
+                  </button>
+                </form>
+              </div>
+            </motion.div>
+          )}
+
+          {paso === 3 && (
+            <motion.div key="paso3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-24 text-center">
+              <div className="w-24 h-24 border border-black rounded-full flex items-center justify-center mx-auto mb-10">
+                <Check className="w-10 h-10 text-black" />
+              </div>
+              <h2 className="text-4xl md:text-5xl font-light mb-6 uppercase tracking-widest">¡Pago Recibido!</h2>
+              <p className="text-lg text-foreground/70 mb-12 font-light">
+                Tu comprobante está en revisión. El pedido ya está confirmado y nos contactaremos contigo por WhatsApp para avisarte del envío.
               </p>
               <Link href="/">
-                <button className="w-full bg-brand-primary text-background py-4 rounded-xl font-bold shadow-lg hover:bg-brand-accent transition-colors text-lg">
+                <button className="bg-black text-white px-12 py-5 text-sm uppercase tracking-[0.2em] font-bold hover:bg-brand-primary transition-colors">
                   Volver al Catálogo
                 </button>
               </Link>
             </motion.div>
           )}
         </AnimatePresence>
+        </div>
 
+        {paso < 3 && !tiempoExpirado && (
+          <div className="w-full lg:w-[400px] shrink-0 sticky top-12 bg-surface border border-surface-border p-8 mt-12 lg:mt-0">
+            <h3 className="text-sm uppercase tracking-widest font-bold mb-6 pb-4 border-b">Resumen</h3>
+            <div className="space-y-4">
+              {carrito.map((item, idx) => (
+                <div key={idx} className="flex gap-4 border-b border-surface-border pb-4">
+                  <div className="shrink-0 relative group cursor-pointer" onClick={() => setImagenAmpliada(item.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80")}>
+                    <img 
+                      src={item.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"} 
+                      alt={item.nombre} 
+                      className="w-16 h-20 object-cover rounded-sm border border-black/10 transition-opacity group-hover:opacity-75" 
+                    />
+                    <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
+                      <Search className="w-5 h-5 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1 flex flex-col justify-between">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-medium text-foreground text-sm uppercase leading-tight">{item.cantidad}x {item.nombre} {item.isConjunto && <span className="text-[10px] ml-1 bg-black text-white px-1.5 py-0.5 rounded-sm">(Conjunto)</span>}</h3>
+                        {(item.tallaSeleccionada || item.colorSeleccionado) && (
+                          <p className="text-xs text-foreground/50 mt-1 uppercase">
+                            {item.tallaSeleccionada} {item.colorSeleccionado ? `- ${item.colorSeleccionado}` : ''}
+                          </p>
+                        )}
+                        {item.isConjunto && item.piezasDetalle && (
+                          <div className="mt-3 space-y-2">
+                            {Object.values(typeof item.piezasDetalle === 'string' ? JSON.parse(item.piezasDetalle) : item.piezasDetalle).map((pieza: any) => {
+                              const prodRef = productos.find(p => p.id === pieza.id);
+                              return (
+                                <div key={pieza.id} className="flex items-center gap-2">
+                                  <div className="relative group cursor-pointer" onClick={() => setImagenAmpliada(prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80")}>
+                                    <img 
+                                      src={prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"} 
+                                      alt={prodRef?.nombre || "Prenda"} 
+                                      className="w-8 h-10 object-cover rounded-sm border border-black/10 transition-opacity group-hover:opacity-75" 
+                                    />
+                                    <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
+                                      <Search className="w-3 h-3 text-white" />
+                                    </div>
+                                  </div>
+                                  <div className="text-[10px] text-foreground/70 uppercase">
+                                    <span className="font-bold">{pieza.cantidad}x</span> {prodRef?.nombre || "Prenda"} 
+                                    {(pieza.tallaEspecifica || pieza.colorEspecifico) && (
+                                      <span className="block text-[9px] text-foreground/50 mt-0.5">
+                                        {pieza.tallaEspecifica && `T:${pieza.tallaEspecifica} `}
+                                        {pieza.colorEspecifico && `C:${pieza.colorEspecifico}`}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                      <span className="font-bold text-sm">Bs. {item.precioVenta.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-surface-border pt-4 mt-6">
+              {ahorroTotal > 0 && (
+                <div className="flex justify-between text-sm mb-2 text-foreground/60">
+                  <span>Total Regular</span>
+                  <span className="line-through">Bs. {totalOriginal.toFixed(2)}</span>
+                </div>
+              )}
+              {ahorroTotal > 0 && (
+                <div className="flex justify-between text-sm mb-4 text-green-600 font-bold">
+                  <span>Ahorro</span>
+                  <span>- Bs. {ahorroTotal.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-bold text-lg">
+                <span className="uppercase tracking-widest">TOTAL</span>
+                <span>Bs. {totalAPagar.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Lightbox para vista ampliada */}
+      <AnimatePresence>
+        {imagenAmpliada && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/90 p-4"
+            onClick={() => setImagenAmpliada(null)}
+          >
+            <button 
+              className="absolute top-6 right-6 text-white hover:text-gray-300 p-2"
+              onClick={() => setImagenAmpliada(null)}
+            >
+              <X className="w-8 h-8" />
+            </button>
+            <img 
+              src={imagenAmpliada} 
+              alt="Ampliada" 
+              className="max-w-full max-h-full object-contain cursor-zoom-out" 
+              onClick={(e) => { e.stopPropagation(); setImagenAmpliada(null); }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </main>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div className='min-h-screen flex items-center justify-center'>Cargando...</div>}>
+      <CheckoutContent />
+    </Suspense>
   );
 }

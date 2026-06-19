@@ -1,90 +1,163 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ShoppingBag, Star, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ShoppingBag, Menu, X, ArrowRight, Video } from "lucide-react";
 import CatalogoProductos from "@/components/CatalogoProductos";
+import Footer from "@/components/Footer";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 
 export default function Home() {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [liveActivoBanner, setLiveActivoBanner] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToSection = (id: string) => {
+    setMobileMenuOpen(false);
+    setTimeout(() => {
+      const element = document.getElementById(id);
+      if (element) {
+        const headerOffset = 80;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth"
+        });
+      }
+    }, 100);
+  };
+
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center overflow-hidden relative">
-      {/* Círculos decorativos de fondo (Efecto Glassmorphism / 3D sutil) */}
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-brand-primary/30 rounded-full blur-3xl" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-brand-secondary/20 rounded-full blur-3xl" />
+    <div className="bg-[#fcfcfc] min-h-screen">
+      {/* Alarma de TikTok Live */}
+      {liveActivoBanner && (
+        <div className="w-full bg-red-600 text-white py-2 flex items-center justify-center gap-2 text-[10px] md:text-xs font-semibold tracking-widest uppercase cursor-pointer hover:bg-red-700 transition-colors z-50 relative" onClick={() => scrollToSection('catalogo')}>
+          <Video className="w-4 h-4 animate-pulse" />
+          <span>¡Estamos en vivo en TikTok! Toca aquí para ver las prendas exclusivas</span>
+        </div>
+      )}
 
-      <main className="z-10 flex flex-col items-center text-center px-4 max-w-4xl">
-        
-        {/* Logo y Título animados con efecto 3D */}
-        <motion.div
-          initial={{ opacity: 0, y: 50, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="mb-8 flex flex-col items-center"
-        >
-          <div className="relative mb-6 hover:scale-105 transition-transform duration-500">
-            <div className="absolute inset-0 bg-brand-primary/20 blur-xl rounded-full"></div>
-            <img 
-              src="/logo.png" 
-              alt="BrunaShop2 Logo" 
-              className="w-48 md:w-56 h-auto object-cover rounded-full shadow-2xl ring-4 ring-brand-primary/30 relative z-10" 
-              style={{ clipPath: "circle(48%)" }}
-            />
-          </div>
-          <h1 className="text-5xl md:text-7xl font-extrabold text-foreground tracking-tighter drop-shadow-lg">
-            Bruna<span className="text-brand-primary">Shop2</span>
-          </h1>
-          <p className="mt-4 text-xl md:text-2xl text-foreground/80 font-light">
-            Elegancia y estilo en cada prenda.
-          </p>
-        </motion.div>
-
-        {/* Tarjeta 3D Flotante (Glassmorphism) */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-          whileHover={{ scale: 1.05, rotateY: 5, rotateX: -5 }}
-          className="glass shadow-3d p-8 md:p-12 rounded-3xl flex flex-col items-center border border-surface-border bg-surface/50 w-full md:w-auto"
-          style={{ perspective: 1000 }}
-        >
-          <div className="bg-brand-primary/10 p-4 rounded-full mb-6">
-            <ShoppingBag className="w-12 h-12 text-brand-primary" />
-          </div>
-          <h2 className="text-3xl font-bold mb-4 text-foreground">Catálogo Exclusivo</h2>
-          <p className="text-foreground/70 mb-8 max-w-md">
-            Descubre nuestras últimas colecciones seleccionadas especialmente para ti. Calidad, diseño y tendencia.
-          </p>
+      {/* Header Responsivo */}
+      <header className={`w-full fixed top-8 md:top-10 z-40 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-sm py-4" : "bg-transparent py-6"}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              window.scrollTo({
-                top: window.innerHeight * 0.8,
-                behavior: 'smooth'
-              });
-            }}
-            className="flex items-center gap-2 bg-brand-primary text-background px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-brand-primary/50 transition-all cursor-pointer"
+          {/* Menu Mobile Icon */}
+          <button onClick={() => setMobileMenuOpen(true)} className="md:hidden text-black p-1">
+            <Menu className={`w-6 h-6 ${isScrolled ? "text-black" : "text-white drop-shadow-md"}`} />
+          </button>
+
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <div className={`relative flex items-center justify-center rounded-full p-1 transition-all duration-300 ${isScrolled ? "bg-black/5" : "bg-white/10 backdrop-blur-sm"}`}>
+              <img 
+                src="/logo.png" 
+                alt="BrunaShop Logo" 
+                className="w-10 h-10 md:w-12 md:h-12 object-cover rounded-full shadow-sm"
+              />
+            </div>
+            <h1 className={`hidden sm:block text-2xl font-extrabold tracking-tighter ${isScrolled ? "text-black" : "text-white drop-shadow-md"}`}>
+              Bruna<span className={isScrolled ? "text-gray-400" : "text-gray-300"}>Shop</span>
+            </h1>
+          </div>
+
+          {/* Nav Desktop */}
+          <nav className="hidden md:flex items-center gap-8 text-xs font-medium">
+            <button onClick={() => scrollToSection('catalogo')} className={`hover:opacity-70 transition-opacity uppercase tracking-widest ${isScrolled ? "text-black" : "text-white drop-shadow-md"}`}>Colección</button>
+            <button onClick={() => scrollToSection('catalogo')} className={`hover:opacity-70 transition-opacity uppercase tracking-widest font-bold ${isScrolled ? "text-red-600" : "text-red-400 drop-shadow-md"}`}>Ofertas</button>
+          </nav>
+
+          {/* Acciones */}
+          <div className="flex items-center gap-4">
+            {/* El icono de carrito está en CatalogoProductos, pero visualmente dejamos este espacio vacío para que el flex-between centre el logo si se requiere, o simplemente balancee */}
+            <div className="w-8"></div>
+          </div>
+        </div>
+      </header>
+
+      {/* Menú Móvil */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div 
+            initial={{ opacity: 0, x: "-100%" }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: "-100%" }}
+            transition={{ type: "tween", duration: 0.3 }}
+            className="fixed inset-0 bg-white z-50 flex flex-col pt-8 px-6"
           >
-            Ver Colección
-            <ArrowRight className="w-5 h-5" />
+            <div className="flex justify-between items-center mb-12">
+              <h2 className="text-2xl font-extrabold tracking-tighter text-black">Bruna<span className="text-gray-400">Shop</span></h2>
+              <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-black bg-gray-50 rounded-full">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <nav className="flex flex-col gap-6 text-lg font-medium tracking-widest uppercase">
+              <button onClick={() => scrollToSection('catalogo')} className="text-left py-4 border-b border-gray-100 flex justify-between items-center">Colección Nueva <ArrowRight className="w-5 h-5 text-gray-300"/></button>
+              <button onClick={() => scrollToSection('catalogo')} className="text-left py-4 border-b border-gray-100 text-red-600 flex justify-between items-center">Ofertas / Sale <ArrowRight className="w-5 h-5 text-red-300"/></button>
+            </nav>
+            <div className="mt-auto mb-8 text-xs text-center text-gray-400 tracking-widest uppercase">
+              Descubre lo último en tendencia
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Hero Section a Pantalla Completa */}
+      <main className="relative w-full h-[85vh] md:h-screen flex items-center justify-center overflow-hidden bg-gray-900">
+        <div className="absolute inset-0 w-full h-full">
+          <img 
+            src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=2070&auto=format&fit=crop" 
+            alt="Moda Femenina Lifestyle" 
+            className="w-full h-full object-cover object-center opacity-80"
+          />
+          {/* Gradient Overlay sutil */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30"></div>
+        </div>
+
+        <div className="relative z-10 text-center px-4 max-w-4xl flex flex-col items-center mt-20 md:mt-0">
+          <motion.h2 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-5xl md:text-8xl font-serif text-white mb-6 drop-shadow-lg"
+          >
+            Nueva Colección
+          </motion.h2>
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="text-base md:text-xl text-white/90 mb-10 max-w-lg font-light drop-shadow-md"
+          >
+            Diseños exclusivos que definen tu estilo. Descubre lo último en moda femenina, adaptado a ti.
+          </motion.p>
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+            onClick={() => scrollToSection('catalogo')}
+            className="bg-white text-black px-10 py-4 font-medium text-xs tracking-widest uppercase hover:bg-gray-100 transition-colors flex items-center gap-3 shadow-xl"
+          >
+            Descubrir <ArrowRight className="w-4 h-4" />
           </motion.button>
-        </motion.div>
-
-        {/* Pequeño distintivo animado */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8, duration: 1 }}
-          className="mt-16 flex items-center gap-2 text-brand-accent font-medium bg-brand-accent/10 px-4 py-2 rounded-full"
-        >
-          <Star className="w-4 h-4 fill-brand-accent" />
-          Clientas Frecuentes: ¡Gana puntos con cada compra!
-        </motion.div>
-
+        </div>
       </main>
 
-      {/* Renderizado del Catálogo de Ropa */}
-      <CatalogoProductos />
+      {/* Catálogo de Productos */}
+      <div id="catalogo">
+        <CatalogoProductos liveActivoBanner={liveActivoBanner} setLiveActivoBanner={setLiveActivoBanner} />
+      </div>
+      
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

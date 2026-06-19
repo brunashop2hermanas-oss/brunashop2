@@ -2,18 +2,18 @@
 @import "tailwindcss";
 
 :root {
-  /* Fondo principal y texto (Ultra Femenino y Boutique) */
-  --background: #FFF5F7; /* Blush pink muy suave y elegante */
-  --foreground: #4A2B2D; /* Ciruela/Borgoña profundo en lugar de negro */
+  /* Fondo principal y texto (Ultra Limpio, estilo Totto/Boutique) */
+  --background: #FFFFFF; /* Blanco puro */
+  --foreground: #111111; /* Casi negro para contraste elegante */
   
   /* Colores de Marca: BrunaShop2 (Femenino, Moda y Elegancia) */
-  --brand-primary: #D49A9A; /* Rosa viejo / Rose Gold */
-  --brand-secondary: #FDE8E9; /* Rosado pastel muy claro */
-  --brand-accent: #B86A6D; /* Fucsia apagado/frambuesa para resaltar */
+  --brand-primary: #D49A9A; /* Rosa viejo / Rose Gold - para botones y acentos */
+  --brand-secondary: #F8F8F8; /* Gris muy clarito para fondos secundarios / sidebar */
+  --brand-accent: #B86A6D; /* Fucsia apagado/frambuesa para resaltar (ofertas/live) */
   
   /* Superficies (Tarjetas, Paneles) */
-  --surface: rgba(255, 255, 255, 0.85); /* Blanco semi-transparente para dar toque de cristal */
-  --surface-border: #F5E1E3; /* Bordes rosa pálido */
+  --surface: #FFFFFF; /* Blanco */
+  --surface-border: #EEEEEE; /* Bordes gris súper sutil */
 }
 
 @theme inline {
@@ -30,7 +30,7 @@
 }
 
 body {
-  background: radial-gradient(circle at top right, #FFF1F3 0%, #FFF5F7 100%);
+  background-color: var(--background);
   color: var(--foreground);
   font-family: 'Montserrat', sans-serif;
   transition: background-color 0.5s ease, color 0.5s ease;

@@ -38,15 +38,23 @@ model Prenda {
   nombre          String
   costoProveedor  Float
   precioVenta     Float
+  precioOriginal  Float?   // Para gestionar descuentos y promociones
   categoria       String
   coleccion       String?
+  descripcionLarga String? // Descripción detallada de la prenda
+  marca           String?  // Opcional: marca de la prenda
   tallas          String[] // Arreglo de strings nativo de PostgreSQL
+  stockPorTalla   Json?    // Objeto JSON para guardar el stock específico (ej: {"S": 5, "M": 2})
   colores         String[]
   material        String?
   imagenes        String[] // URLs de las fotos subidas
   stockCount      Int      @default(0)
   enLive          Boolean  @default(false)
   enPreventa      Boolean  @default(false)
+  
+  isConjunto      Boolean  @default(false)
+  piezasId        String[] // Array de IDs de prendas que lo componen
+  piezasDetalle   Json?    // Objeto JSON para guardar el detalle de las prendas asignadas al combo (talla, color, cantidad)
   
   estado          String   @default("DISPONIBLE")
   createdAt       DateTime @default(now())
@@ -60,11 +68,18 @@ model Venta {
   total         Float
   metodoPago    String      // "QR", "EFECTIVO", "TRANSFERENCIA"
   comprobante   String?     // URL de la imagen del pago
-  estado        String      @default("PENDIENTE_VERIFICACION") // PENDIENTE_VERIFICACION, PREPARANDO, ENVIADO, ENTREGADO, CANCELADO
+  guiaEnvioUrl  String?     // URL de la imagen de la guía de envío a terminal
+  estado        String      @default("PENDIENTE_VERIFICACION") // ESPERANDO_PAGO, PENDIENTE_VERIFICACION, PREPARANDO, ENVIADO, ENTREGADO, CANCELADO, CANCELADO_POR_TIEMPO
+  expiresAt     DateTime?   // Para reservas de stock temporales
   
   origen        String      @default("WEB") // "WEB", "POS", "TIKTOK"
   tipoEntrega   String      @default("RECOJO_TIENDA") // "RECOJO_TIENDA", "ENVIO"
-  destino       String?     // Dirección de envío
+  destino       String?     // Dirección de envío (Departamento)
+  provinciaDestino String?  // Provincia específica
+  
+  depositanteNombres   String?
+  depositanteApPaterno String?
+  depositanteApMaterno String?
   
   vendedorId    String?
   vendedor      User?       @relation(fields: [vendedorId], references: [id])
@@ -83,14 +98,25 @@ model VentaItem {
   prenda    Prenda  @relation(fields: [prendaId], references: [id])
   precio    Float
   cantidad  Int     @default(1)
+  talla     String?
+  color     String?
   empaquetado Boolean @default(false)
 }
 
 model Configuracion {
-  id              Int      @id @default(1)
-  bancoNombre     String   @default("Banco Unión")
-  bancoCuenta     String   @default("10000012345678")
-  bancoTitular    String   @default("BrunaShop2")
-  qrImagen        String?
-  updatedAt       DateTime @updatedAt
+  id                    Int      @id @default(1)
+  bancoNombre           String   @default("Banco Unión")
+  bancoCuenta           String   @default("10000012345678")
+  bancoTitular          String   @default("BrunaShop2")
+  qrImagen              String?
+  instagramUrl          String?
+  tiktokUrl             String?
+  whatsappUrl           String?
+  usarControlFinanciero Boolean  @default(true)
+  liveActivo            Boolean  @default(false)
+  tiempoReservaMinutos  Int      @default(4)
+  tiempoLlenadoDatosMinutos Int  @default(10)
+  destinosHabilitados   Json?    // Array de { departamento: "...", provincias: ["..."] }
+  planSupabase          String   @default("Gratuito") // "Gratuito" o "Pro"
+  updatedAt             DateTime @updatedAt
 }

@@ -9,17 +9,36 @@ export async function getDashboardStats() {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
+    // Configuracion Financiera
+    const config = await prisma.configuracion.findFirst();
+    const usarControlFinanciero = config?.usarControlFinanciero ?? true;
+
     // 1. Ventas de Hoy
     const ventasHoy = await prisma.venta.findMany({
       where: {
-        fecha: {
-          gte: hoy,
-        },
+        fecha: { gte: hoy },
+        estado: { in: ['PREPARANDO', 'ENTREGADO'] }
       },
     });
 
     const ingresosHoy = ventasHoy.reduce((sum, v) => sum + v.total, 0);
     const pedidosHoy = ventasHoy.length;
+
+    const ventasMes = await prisma.venta.findMany({
+      where: { 
+        fecha: { gte: new Date(hoy.getFullYear(), hoy.getMonth(), 1) },
+        estado: { in: ['PREPARANDO', 'ENTREGADO'] }
+      }
+    });
+    const ingresosMes = ventasMes.reduce((sum, v) => sum + v.total, 0);
+
+    const ventasAno = await prisma.venta.findMany({
+      where: { 
+        fecha: { gte: new Date(hoy.getFullYear(), 0, 1) },
+        estado: { in: ['PREPARANDO', 'ENTREGADO'] }
+      }
+    });
+    const ingresosAno = ventasAno.reduce((sum, v) => sum + v.total, 0);
 
     // 2. Más Vendido (Mes actual)
     const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
@@ -28,9 +47,8 @@ export async function getDashboardStats() {
     const itemsVendidos = await prisma.ventaItem.findMany({
       where: {
         venta: {
-          fecha: {
-            gte: primerDiaMes
-          }
+          fecha: { gte: primerDiaMes },
+          estado: { in: ['PREPARANDO', 'ENTREGADO'] }
         }
       },
       include: {
@@ -56,16 +74,49 @@ export async function getDashboardStats() {
       }
     }
 
-    // 3. Clientas Totales (Usado en lugar de Visitas Web)
+    // 3. Clientas Totales
     const clientasTotales = await prisma.clienta.count();
+
+    // 4. Alertas de Inventario Bajo
+    const prendasAgotandose = await prisma.prenda.findMany({
+      where: {
+        estado: { not: "AGOTADO" }
+      }
+    });
+
+    const alertasInventario = prendasAgotandose
+      .map(p => {
+        let stockGlobal = p.stockCount;
+        let tallasBajas = [];
+        if (p.stockPorTalla && typeof p.stockPorTalla === 'object') {
+           const obj = p.stockPorTalla as Record<string, string>;
+           for (const [talla, qty] of Object.entries(obj)) {
+             if (parseInt(qty) <= 2) {
+               tallasBajas.push(`${talla} (${qty})`);
+             }
+           }
+        }
+        return {
+          id: p.id,
+          nombre: p.nombre,
+          stock: p.stockCount,
+          tallasBajas: tallasBajas
+        };
+      })
+      .filter(p => p.stock <= 3 || p.tallasBajas.length > 0)
+      .slice(0, 5);
 
     return {
       success: true,
       data: {
         ingresosHoy,
+        ingresosMes,
+        ingresosAno,
         pedidosHoy,
         masVendido,
-        clientasTotales
+        clientasTotales,
+        usarControlFinanciero,
+        alertasInventario
       }
     };
 
@@ -95,12 +146,14 @@ export async function getReportesFinancieros(rango: string) {
       fechaInicio.setHours(0, 0, 0, 0);
     }
 
+    const config = await prisma.configuracion.findFirst();
+    const usarControlFinanciero = config?.usarControlFinanciero ?? true;
+
     // Traer las ventas del rango
     const ventas = await prisma.venta.findMany({
       where: {
-        fecha: {
-          gte: fechaInicio,
-        },
+        fecha: { gte: fechaInicio },
+        estado: { in: ['PREPARANDO', 'ENTREGADO'] }
       },
       include: {
         clienta: true,
@@ -193,7 +246,8 @@ export async function getReportesFinancieros(rango: string) {
         mejorDia,
         categorias: categoriasPorcentaje,
         ciudades: ciudadesOrdenadas,
-        transacciones: transaccionesDetalladas
+        transacciones: transaccionesDetalladas,
+        usarControlFinanciero
       }
     };
 

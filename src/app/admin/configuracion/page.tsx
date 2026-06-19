@@ -1,30 +1,55 @@
 "use client";
 
+import toast from "react-hot-toast";
+
 import { motion } from "framer-motion";
-import { Settings, QrCode, Building, ShieldCheck, Upload, Save, Eye, EyeOff } from "lucide-react";
+import { Settings, QrCode, Building, ShieldCheck, Upload, Save, Eye, EyeOff, BarChart3 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getConfiguracion, updateConfiguracion } from "@/app/actions/config";
 import { getUsuarios, createUsuario, updateUsuario, deleteUsuario } from "@/app/actions/usuarios";
 import { uploadImage } from "@/app/actions/upload";
 import { compressImage } from "@/lib/imageCompression";
+import { Clock, MapPin, CheckSquare, Square } from "lucide-react";
+import LimpiezaDB from "./LimpiezaDB";
+import LicenciaPlanes from "./LicenciaPlanes";
+
+const BOLIVIA_DATA: Record<string, string[]> = {
+  "Beni": ["Cercado (Trinidad)", "Vaca Díez", "Iténez", "José Ballivián", "Mamoré", "Marbán", "Moxos", "Yacuma"],
+  "Chuquisaca": ["Oropeza (Sucre)", "Azurduy", "Zudáñez", "Tomina", "Hernando Siles", "Yamparáez", "Nor Cinti", "Sud Cinti", "Belisario Boeto", "Luis Calvo"],
+  "Cochabamba": ["Cercado (Cochabamba)", "Campero", "Ayopaya", "Esteban Arce", "Arani", "Arque", "Capinota", "Germán Jordán", "Quillacollo", "Chapare", "Tapacarí", "Carrasco", "Mizque", "Punata", "Bolívar", "Tiraque"],
+  "La Paz": ["Murillo (La Paz / El Alto)", "Omasuyos", "Pacajes", "Camacho", "Muñecas", "Larecaja", "Franz Tamayo", "Ingavi", "Loayza", "Inquisivi", "Sur Yungas", "Los Andes", "Aroma", "Nor Yungas", "Iturralde", "Bautista Saavedra", "Manco Kapac", "Gualberto Villarroel", "José Manuel Pando", "Caranavi"],
+  "Oruro": ["Cercado (Oruro)", "Abaroa", "Carangas", "Sajama", "Litoral", "Poopó", "Pantaleón Dalence", "Ladislao Cabrera", "Atahuallpa", "Saucari", "Tomás Barrón", "Sur Carangas", "San Pedro de Totora", "Sebastián Pagador", "Mejillones", "Nor Carangas"],
+  "Pando": ["Nicolás Suárez (Cobija)", "Manuripi", "Madre de Dios", "Abuná", "Federico Román"],
+  "Potosí": ["Tomás Frías (Potosí)", "Rafael Bustillo", "Cornelio Saavedra", "Chayanta", "Charcas", "Nor Chichas", "Alonso de Ibáñez", "Sur Chichas", "Nor Lípez", "Sur Lípez", "José María Linares", "Antonio Quijarro", "General Bernardino Bilbao", "Daniel Campos", "Modesto Omiste", "Enrique Baldivieso"],
+  "Santa Cruz": ["Andrés Ibáñez (Santa Cruz de la Sierra)", "Warnes", "Velasco", "Ichilo", "Chiquitos", "Sara", "Cordillera", "Vallegrande", "Florida", "Obispo Santistevan", "Ñuflo de Chávez", "Ángel Sandoval", "Manuel María Caballero", "Germán Busch", "Guarayos"],
+  "Tarija": ["Cercado (Tarija)", "Aniceto Arce", "Gran Chaco", "Avilés", "Méndez", "Burnet O'Connor"]
+};
 
 export default function AdminConfiguracion() {
   const [config, setConfig] = useState({
     bancoNombre: "",
     bancoCuenta: "",
     bancoTitular: "",
-    qrImagen: null as string | null
+    qrImagen: null as string | null,
+    instagramUrl: "",
+    tiktokUrl: "",
+    whatsappUrl: "",
+    usarControlFinanciero: true,
+    liveActivo: false,
+    tiempoReservaMinutos: 4,
+    tiempoLlenadoDatosMinutos: 10,
+    destinosHabilitados: {} as Record<string, string[]>
   });
   const [qrFile, setQrFile] = useState<File | null>(null);
   
-  const [usuarios, setUsuarios] = useState<any[]>([]);
+  const [usuarios, setUsuarios] = useState<{ id: string; nombres: string; apellidos: string; ci: string; telefono: string; username: string; pin: string; role: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingConfig, setSavingConfig] = useState(false);
   const [mensajeConfig, setMensajeConfig] = useState("");
 
   const [mostrarModalUsuario, setMostrarModalUsuario] = useState(false);
   const [mostrarModalVerUsuario, setMostrarModalVerUsuario] = useState(false);
-  const [usuarioActivo, setUsuarioActivo] = useState<any>(null);
+  const [usuarioActivo, setUsuarioActivo] = useState<{ id: string; nombres: string; apellidos: string; ci: string; telefono: string; username: string; pin: string; role: string } | null>(null);
 
   // Form states
   const [formUsr, setFormUsr] = useState({
@@ -35,27 +60,36 @@ export default function AdminConfiguracion() {
   const [errorUsr, setErrorUsr] = useState("");
 
   useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const resConfig = await getConfiguracion();
+      if (resConfig.success && resConfig.data) {
+        setConfig({
+          bancoNombre: resConfig.data.bancoNombre || "",
+          bancoCuenta: resConfig.data.bancoCuenta || "",
+          bancoTitular: resConfig.data.bancoTitular || "",
+          qrImagen: resConfig.data.qrImagen,
+          instagramUrl: resConfig.data.instagramUrl || "",
+          tiktokUrl: resConfig.data.tiktokUrl || "",
+          whatsappUrl: resConfig.data.whatsappUrl || "",
+          usarControlFinanciero: resConfig.data.usarControlFinanciero ?? true,
+          liveActivo: resConfig.data.liveActivo ?? false,
+          tiempoReservaMinutos: resConfig.data.tiempoReservaMinutos ?? 4,
+          tiempoLlenadoDatosMinutos: resConfig.data.tiempoLlenadoDatosMinutos ?? 10,
+          destinosHabilitados: (resConfig.data.destinosHabilitados as Record<string, string[]>) || {}
+        });
+      }
+
+      const resUsr = await getUsuarios();
+      if (resUsr.success && resUsr.data) {
+        setUsuarios(resUsr.data);
+      }
+      setLoading(false);
+    };
+
     fetchData();
   }, []);
 
-  const fetchData = async () => {
-    setLoading(true);
-    const resConfig = await getConfiguracion();
-    if (resConfig.success && resConfig.data) {
-      setConfig({
-        bancoNombre: resConfig.data.bancoNombre,
-        bancoCuenta: resConfig.data.bancoCuenta,
-        bancoTitular: resConfig.data.bancoTitular,
-        qrImagen: resConfig.data.qrImagen
-      });
-    }
-
-    const resUsr = await getUsuarios();
-    if (resUsr.success && resUsr.data) {
-      setUsuarios(resUsr.data);
-    }
-    setLoading(false);
-  };
 
   const handleSubirQR = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -93,12 +127,22 @@ export default function AdminConfiguracion() {
         return;
       }
 
-      const res = await updateConfiguracion({
+      const dataToSend = {
         bancoNombre: config.bancoNombre,
         bancoCuenta: config.bancoCuenta,
         bancoTitular: config.bancoTitular,
-        qrImagen: finalUrl
-      });
+        qrImagen: finalUrl,
+        instagramUrl: config.instagramUrl,
+        tiktokUrl: config.tiktokUrl,
+        whatsappUrl: config.whatsappUrl,
+        usarControlFinanciero: config.usarControlFinanciero,
+        liveActivo: config.liveActivo,
+        tiempoReservaMinutos: config.tiempoReservaMinutos,
+        tiempoLlenadoDatosMinutos: config.tiempoLlenadoDatosMinutos,
+        destinosHabilitados: config.destinosHabilitados
+      };
+
+      const res = await updateConfiguracion(dataToSend);
 
       if (res.success) {
         setMensajeConfig("¡Configuración guardada con éxito!");
@@ -106,8 +150,9 @@ export default function AdminConfiguracion() {
       } else {
         setMensajeConfig("Error al guardar: " + res.error);
       }
-    } catch (e) {
+    } catch (error) {
       setMensajeConfig("Error de conexión");
+      console.error(error);
     }
     setSavingConfig(false);
   };
@@ -132,7 +177,10 @@ export default function AdminConfiguracion() {
       });
       if (res.success) {
         setMostrarModalVerUsuario(false);
-        fetchData();
+        const resUsr = await getUsuarios();
+        if (resUsr.success && resUsr.data) {
+          setUsuarios(resUsr.data);
+        }
       } else {
         setErrorUsr(res.error || "Error al actualizar");
       }
@@ -141,7 +189,10 @@ export default function AdminConfiguracion() {
       const res = await createUsuario(formUsr);
       if (res.success) {
         setMostrarModalUsuario(false);
-        fetchData();
+        const resUsr = await getUsuarios();
+        if (resUsr.success && resUsr.data) {
+          setUsuarios(resUsr.data);
+        }
       } else {
         setErrorUsr(res.error || "Error al crear");
       }
@@ -153,9 +204,12 @@ export default function AdminConfiguracion() {
     if (confirm(`¿Estás segura de que quieres borrar al usuario ${nombre}?`)) {
       const res = await deleteUsuario(id);
       if (res.success) {
-        fetchData();
+        const resUsr = await getUsuarios();
+        if (resUsr.success && resUsr.data) {
+          setUsuarios(resUsr.data);
+        }
       } else {
-        alert("Error al borrar: " + res.error);
+        toast.error("¡Uy! Tuvimos un problemita intentando borrar este dato. Por favor, intenta de nuevo.");
       }
     }
   };
@@ -167,7 +221,7 @@ export default function AdminConfiguracion() {
     setMostrarModalUsuario(true);
   };
 
-  const abrirModalVer = (u: any) => {
+  const abrirModalVer = (u: { id: string; nombres: string; apellidos: string; ci: string; telefono: string; username: string; pin: string; role: string }) => {
     setUsuarioActivo(u);
     setFormUsr({
       nombres: u.nombres, apellidos: u.apellidos, ci: u.ci, telefono: u.telefono,
@@ -175,6 +229,33 @@ export default function AdminConfiguracion() {
     });
     setErrorUsr("");
     setMostrarModalVerUsuario(true);
+  };
+
+  const toggleDepartamento = (depto: string) => {
+    setConfig(prev => {
+      const newDestinos = { ...prev.destinosHabilitados };
+      if (newDestinos[depto]) {
+        delete newDestinos[depto]; // Deshabilitar si ya existe
+      } else {
+        newDestinos[depto] = []; // Habilitar sin provincias por defecto
+      }
+      return { ...prev, destinosHabilitados: newDestinos };
+    });
+  };
+
+  const toggleProvincia = (depto: string, prov: string) => {
+    setConfig(prev => {
+      const newDestinos = { ...prev.destinosHabilitados };
+      if (!newDestinos[depto]) return prev; // El departamento debe estar activo
+      
+      const idx = newDestinos[depto].indexOf(prov);
+      if (idx > -1) {
+        newDestinos[depto] = newDestinos[depto].filter(p => p !== prov);
+      } else {
+        newDestinos[depto] = [...newDestinos[depto], prov];
+      }
+      return { ...prev, destinosHabilitados: newDestinos };
+    });
   };
 
   if (loading) return <div className="flex justify-center p-10"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-primary"></div></div>;
@@ -245,6 +326,161 @@ export default function AdminConfiguracion() {
             <p className="text-sm font-medium text-foreground/80">
               Estos datos se mostrarán a la clienta en la pantalla de pago (Checkout).
             </p>
+          </div>
+        </div>
+
+        {/* Control Financiero Simplificado y Live */}
+        <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d space-y-6">
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6 border-b border-surface-border pb-4">
+            <BarChart3 className="w-6 h-6 text-brand-primary" /> Configuraciones Globales
+          </h2>
+          
+          <div className="flex items-center justify-between bg-surface border border-surface-border p-4 rounded-xl">
+            <div>
+              <p className="font-bold text-foreground">Control Financiero (Costo Proveedor)</p>
+              <p className="text-sm text-foreground/70">Actívalo si quieres registrar cuánto te cuestan las prendas para ver tus ganancias netas reales.</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer ml-4">
+              <input 
+                type="checkbox" 
+                checked={config.usarControlFinanciero} 
+                onChange={e => setConfig({...config, usarControlFinanciero: e.target.checked})} 
+                className="sr-only peer" 
+              />
+              <div className="w-11 h-6 bg-surface-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between bg-red-500/10 border border-red-500/20 p-4 rounded-xl">
+            <div>
+              <p className="font-bold text-red-600">Botón Maestro: TikTok LIVE</p>
+              <p className="text-sm text-red-500/80">Al activarlo, todas las prendas que marcaste como &quot;En Live&quot; aparecerán en la tienda virtual en una pestaña especial para tus clientes.</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer ml-4">
+              <input 
+                type="checkbox" 
+                checked={config.liveActivo || false} 
+                onChange={e => setConfig({...config, liveActivo: e.target.checked})} 
+                className="sr-only peer" 
+              />
+              <div className="w-11 h-6 bg-surface-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+            </label>
+          </div>
+        </div>
+
+        {/* Envíos y Reservas */}
+        <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d space-y-6 lg:col-span-2">
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6 border-b border-surface-border pb-4">
+            <MapPin className="w-6 h-6 text-brand-primary" /> Envíos y Reservas
+          </h2>
+
+          <div className="bg-surface border border-surface-border p-6 rounded-2xl mb-6">
+            <h3 className="font-bold text-foreground flex items-center gap-2 mb-2">
+              <Clock className="w-5 h-5 text-brand-primary" /> Tiempo de Reserva (Checkout)
+            </h3>
+            <div className="flex flex-col gap-4">
+              <div>
+                <p className="text-sm font-bold text-foreground mb-1">Tiempo Límite para Pago con QR</p>
+                <p className="text-xs text-foreground/70 mb-3">
+                  Minutos que tiene la clienta para escanear y subir el comprobante antes de que la reserva expire y las prendas vuelvan al catálogo.
+                </p>
+                <div className="flex items-center gap-3">
+                  <input 
+                    type="number" 
+                    min="1" max="60"
+                    value={config.tiempoReservaMinutos} 
+                    onChange={e => setConfig({...config, tiempoReservaMinutos: parseInt(e.target.value) || 4})}
+                    className="w-24 bg-background border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-bold text-center" 
+                  />
+                  <span className="font-medium text-foreground/80">minutos</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-bold text-foreground mb-4">Destinos Habilitados para Envío</h3>
+            <p className="text-sm text-foreground/70 mb-6">
+              Selecciona qué departamentos y provincias quieres mostrar a tus clientas a la hora de comprar.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {Object.keys(BOLIVIA_DATA).map(depto => {
+                const isActive = config.destinosHabilitados[depto] !== undefined;
+                return (
+                  <div key={depto} className={`border rounded-2xl overflow-hidden transition-colors ${isActive ? 'border-brand-primary/50 bg-brand-primary/5' : 'border-surface-border bg-surface/50'}`}>
+                    <div 
+                      className={`p-4 flex items-center gap-3 cursor-pointer hover:bg-surface transition-colors ${isActive ? 'border-b border-brand-primary/20' : ''}`}
+                      onClick={() => toggleDepartamento(depto)}
+                    >
+                      {isActive ? <CheckSquare className="text-brand-primary w-5 h-5" /> : <Square className="text-foreground/40 w-5 h-5" />}
+                      <span className={`font-bold ${isActive ? 'text-brand-primary' : 'text-foreground/70'}`}>{depto}</span>
+                    </div>
+                    
+                    {isActive && (
+                      <div className="p-4 max-h-48 overflow-y-auto space-y-2 custom-scrollbar">
+                        <p className="text-xs font-bold text-foreground/50 mb-3 uppercase tracking-wider">Provincias Disponibles:</p>
+                        {BOLIVIA_DATA[depto].map(prov => {
+                          const isProvActive = config.destinosHabilitados[depto]?.includes(prov);
+                          return (
+                            <div 
+                              key={prov} 
+                              className="flex items-center gap-2 cursor-pointer hover:bg-background/50 p-1.5 rounded-lg"
+                              onClick={() => toggleProvincia(depto, prov)}
+                            >
+                              {isProvActive ? <CheckSquare className="text-brand-primary w-4 h-4 shrink-0" /> : <Square className="text-foreground/30 w-4 h-4 shrink-0" />}
+                              <span className={`text-sm ${isProvActive ? 'text-foreground font-medium' : 'text-foreground/60'}`}>{prov}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Redes Sociales */}
+        <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d space-y-6 lg:col-span-2">
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6 border-b border-surface-border pb-4">
+            Redes Sociales (Pie de Página)
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-bold text-foreground mb-2">Instagram URL</label>
+              <input 
+                type="text" 
+                placeholder="https://instagram.com/..."
+                value={config.instagramUrl} 
+                onChange={e => setConfig({...config, instagramUrl: e.target.value})}
+                className="w-full bg-background border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium" 
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-bold text-foreground mb-2">TikTok URL</label>
+              <input 
+                type="text" 
+                placeholder="https://tiktok.com/@..."
+                value={config.tiktokUrl} 
+                onChange={e => setConfig({...config, tiktokUrl: e.target.value})}
+                className="w-full bg-background border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium" 
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-foreground mb-2">WhatsApp Link</label>
+              <input 
+                type="text" 
+                placeholder="https://wa.me/591..."
+                value={config.whatsappUrl} 
+                onChange={e => setConfig({...config, whatsappUrl: e.target.value})}
+                className="w-full bg-background border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium" 
+              />
+            </div>
           </div>
         </div>
 
@@ -321,8 +557,18 @@ export default function AdminConfiguracion() {
             </table>
           </div>
           <p className="text-xs text-foreground/50 text-center">
-            Los nombres reales configurados aquí son los que aparecerán en la columna "Responsable (Cajero)" de tus reportes financieros.
+            Los nombres reales configurados aquí son los que aparecerán en la columna &quot;Responsable (Cajero)&quot; de tus reportes financieros.
           </p>
+        </div>
+
+        {/* Sección de Licencia y Planes */}
+        <div className="lg:col-span-2 mt-4">
+          <LicenciaPlanes />
+        </div>
+
+        {/* Sección de Limpieza de BD */}
+        <div className="lg:col-span-2 mt-4">
+          <LimpiezaDB />
         </div>
 
       </div>

@@ -15,7 +15,8 @@ export default function AdminReportes() {
     mejorDia: "Cargando...",
     categorias: [] as { nombre: string, porcentaje: number }[],
     ciudades: [] as { nombre: string, cantidad: number }[],
-    transacciones: [] as any[]
+    transacciones: [] as any[],
+    usarControlFinanciero: true
   });
   const [loading, setLoading] = useState(true);
 
@@ -100,7 +101,7 @@ export default function AdminReportes() {
         </div>
 
       {/* Tarjetas Resumen */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print-grid">
+      <div className={`grid grid-cols-1 md:grid-cols-2 ${reportes.usarControlFinanciero ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-6 print-grid`}>
         <div className="glass p-6 rounded-3xl border border-surface-border shadow-3d flex flex-col justify-center print-card">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-3 bg-green-500/20 text-green-500 rounded-xl no-print"><DollarSign className="w-5 h-5" /></div>
@@ -110,15 +111,17 @@ export default function AdminReportes() {
           <p className="text-xs text-green-500 font-bold mt-2 ml-2 no-print">+15% vs mes anterior</p>
         </div>
 
-        <div className="glass p-6 rounded-3xl border border-brand-primary/50 bg-brand-primary/5 shadow-3d shadow-brand-primary/10 flex flex-col justify-center relative overflow-hidden print-card print-highlight">
-          <div className="absolute top-0 right-0 p-4 opacity-10 no-print"><TrendingUp className="w-24 h-24" /></div>
-          <div className="flex items-center gap-3 mb-2 relative z-10">
-            <div className="p-3 bg-brand-primary text-background rounded-xl no-print"><BarChart3 className="w-5 h-5" /></div>
-            <p className="text-xs font-bold text-brand-primary uppercase tracking-widest print-text-black">Ganancia Neta (Bolsillo)</p>
+        {reportes.usarControlFinanciero && (
+          <div className="glass p-6 rounded-3xl border border-brand-primary/50 bg-brand-primary/5 shadow-3d shadow-brand-primary/10 flex flex-col justify-center relative overflow-hidden print-card print-highlight">
+            <div className="absolute top-0 right-0 p-4 opacity-10 no-print"><TrendingUp className="w-24 h-24" /></div>
+            <div className="flex items-center gap-3 mb-2 relative z-10">
+              <div className="p-3 bg-brand-primary text-background rounded-xl no-print"><BarChart3 className="w-5 h-5" /></div>
+              <p className="text-xs font-bold text-brand-primary uppercase tracking-widest print-text-black">Ganancia Neta (Bolsillo)</p>
+            </div>
+            <p className="text-3xl font-black text-brand-primary ml-2 relative z-10 print-text-black">Bs. {reportes.gananciaNeta}</p>
+            <p className="text-xs text-foreground/60 font-bold mt-2 ml-2 relative z-10 no-print">Descontando costo de ropa</p>
           </div>
-          <p className="text-3xl font-black text-brand-primary ml-2 relative z-10 print-text-black">Bs. {reportes.gananciaNeta}</p>
-          <p className="text-xs text-foreground/60 font-bold mt-2 ml-2 relative z-10 no-print">Descontando costo de ropa</p>
-        </div>
+        )}
 
         <div className="glass p-6 rounded-3xl border border-surface-border shadow-3d flex flex-col justify-center print-card">
           <div className="flex items-center gap-3 mb-2">
