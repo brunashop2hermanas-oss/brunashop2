@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, Lock, X } from "lucide-react";
+import { ArrowRight, Lock, X, Eye, EyeOff } from "lucide-react";
 import { loginUser, resetPassword } from "@/app/actions/auth";
 
 export default function LoginPage() {
@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPin, setShowPin] = useState(false);
   const router = useRouter();
 
   // Reset Password State
@@ -114,14 +115,23 @@ export default function LoginPage() {
                   ¿Olvidó su contraseña?
                 </button>
               </div>
-              <input
-                type="password"
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
-                className="w-full bg-white border border-gray-200 py-4 px-4 text-sm text-black placeholder-gray-300 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all rounded-sm"
-                placeholder="****"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPin ? "text" : "password"}
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value)}
+                  className="w-full bg-white border border-gray-200 py-4 pl-4 pr-12 text-sm text-black placeholder-gray-300 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all rounded-sm"
+                  placeholder="****"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPin(!showPin)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
+                >
+                  {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
 
             <button
