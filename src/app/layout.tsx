@@ -14,8 +14,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BrunaShop2",
+  title: "BrunaShop",
   description: "Sistema de gestión y catálogo online",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    title: "BrunaShop",
+    statusBarStyle: "black-translucent",
+    capable: true,
+  },
 };
 
 export default function RootLayout({
