@@ -502,6 +502,7 @@ export default function AdminDashboard() {
               <p className="text-xs text-center text-foreground/50 mt-4">
                 * Al presionar cualquier botón, se abrirá WhatsApp Web para notificar a la clienta.
               </p>
+              </div>
             </motion.div>
           </div>
         )}
@@ -523,8 +524,6 @@ export default function AdminDashboard() {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative bg-surface border border-surface-border p-6 rounded-3xl shadow-2xl max-w-2xl w-full z-10 flex flex-col max-h-[90vh] overflow-hidden"
-            >
               className="relative bg-surface border border-surface-border rounded-3xl shadow-2xl max-w-2xl w-full z-10 flex flex-col max-h-[90vh]"
             >
               <div className="p-6 border-b border-surface-border shrink-0 flex justify-between items-center">

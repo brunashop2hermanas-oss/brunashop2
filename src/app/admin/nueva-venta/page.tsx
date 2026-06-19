@@ -653,6 +653,7 @@ export default function NuevaVenta() {
                   Nueva Venta
                 </button>
               </div>
+              </div>
 
             </motion.div>
           </div>
@@ -697,7 +698,8 @@ export default function NuevaVenta() {
                 </div>
               )}
               
-              <div className="mt-4 pt-4 border-t border-surface-border flex justify-between">
+              </div>
+              <div className="p-6 border-t border-surface-border flex justify-between shrink-0">
                 <button 
                   onClick={() => {
                     setCi(''); setNombres(''); setApellidoPaterno(''); setApellidoMaterno(''); setCelular('');
@@ -785,8 +787,9 @@ export default function NuevaVenta() {
                   />
                 </div>
               </div>
+              </div>
 
-              <div className="flex flex-col gap-2">
+              <div className="p-6 border-t border-surface-border flex flex-col gap-2 shrink-0">
                 <button 
                   onClick={confirmarNuevaClienta}
                   className="w-full bg-brand-primary text-background font-bold py-3 rounded-xl hover:brightness-110 transition-colors shadow-lg"
