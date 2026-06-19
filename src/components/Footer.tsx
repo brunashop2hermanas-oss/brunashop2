@@ -33,8 +33,8 @@ export default function Footer() {
           <ul className="space-y-2 text-sm text-gray-300 font-light">
             <li><a href="#" className="hover:text-white transition-colors">Mujer</a></li>
             <li><a href="#" className="hover:text-white transition-colors">Ofertas / Sale</a></li>
-            <li><a href="#" className="hover:text-white transition-colors">Términos y Condiciones</a></li>
-            <li><a href="#" className="hover:text-white transition-colors">Políticas de Envío</a></li>
+            <li><a href="/terminos" className="hover:text-white transition-colors">Términos y Condiciones</a></li>
+            <li><a href="/politicas" className="hover:text-white transition-colors">Políticas de Envío</a></li>
           </ul>
         </div>
 

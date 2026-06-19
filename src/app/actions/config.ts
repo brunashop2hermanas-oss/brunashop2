@@ -27,6 +27,8 @@ export async function updateConfiguracion(data: {
   tiktokUrl?: string;
   whatsappUrl?: string;
   footerDescripcion?: string;
+  terminosCondiciones?: string;
+  politicasEnvio?: string;
   usarControlFinanciero?: boolean;
   liveActivo?: boolean;
   tiempoReservaMinutos?: number;

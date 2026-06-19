@@ -35,6 +35,8 @@ export default function AdminConfiguracion() {
     tiktokUrl: "",
     whatsappUrl: "",
     footerDescripcion: "",
+    terminosCondiciones: "",
+    politicasEnvio: "",
     usarControlFinanciero: true,
     liveActivo: false,
     tiempoReservaMinutos: 4,
@@ -74,6 +76,8 @@ export default function AdminConfiguracion() {
           tiktokUrl: resConfig.data.tiktokUrl || "",
           whatsappUrl: resConfig.data.whatsappUrl || "",
           footerDescripcion: resConfig.data.footerDescripcion || "",
+          terminosCondiciones: resConfig.data.terminosCondiciones || "",
+          politicasEnvio: resConfig.data.politicasEnvio || "",
           usarControlFinanciero: resConfig.data.usarControlFinanciero ?? true,
           liveActivo: resConfig.data.liveActivo ?? false,
           tiempoReservaMinutos: resConfig.data.tiempoReservaMinutos ?? 4,
@@ -368,6 +372,35 @@ export default function AdminConfiguracion() {
               />
               <div className="w-11 h-6 bg-surface-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
             </label>
+          </div>
+        </div>
+
+        {/* Páginas Legales */}
+        <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d space-y-6 lg:col-span-2">
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6 border-b border-surface-border pb-4">
+            <ShieldCheck className="w-6 h-6 text-brand-primary" /> Páginas Legales
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <label className="block text-sm font-bold text-foreground mb-2">Términos y Condiciones</label>
+              <textarea 
+                rows={10}
+                value={config.terminosCondiciones} 
+                onChange={e => setConfig({...config, terminosCondiciones: e.target.value})}
+                placeholder="Ingresa aquí los términos y condiciones de tu tienda..."
+                className="w-full bg-background border border-surface-border p-4 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium custom-scrollbar" 
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-foreground mb-2">Políticas de Envío</label>
+              <textarea 
+                rows={10}
+                value={config.politicasEnvio} 
+                onChange={e => setConfig({...config, politicasEnvio: e.target.value})}
+                placeholder="Explica aquí cómo funcionan los envíos, tiempos de entrega, etc..."
+                className="w-full bg-background border border-surface-border p-4 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium custom-scrollbar" 
+              />
+            </div>
           </div>
         </div>
 
