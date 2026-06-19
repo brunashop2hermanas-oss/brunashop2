@@ -34,6 +34,7 @@ export default function AdminConfiguracion() {
     instagramUrl: "",
     tiktokUrl: "",
     whatsappUrl: "",
+    footerDescripcion: "",
     usarControlFinanciero: true,
     liveActivo: false,
     tiempoReservaMinutos: 4,
@@ -72,6 +73,7 @@ export default function AdminConfiguracion() {
           instagramUrl: resConfig.data.instagramUrl || "",
           tiktokUrl: resConfig.data.tiktokUrl || "",
           whatsappUrl: resConfig.data.whatsappUrl || "",
+          footerDescripcion: resConfig.data.footerDescripcion || "",
           usarControlFinanciero: resConfig.data.usarControlFinanciero ?? true,
           liveActivo: resConfig.data.liveActivo ?? false,
           tiempoReservaMinutos: resConfig.data.tiempoReservaMinutos ?? 4,
@@ -135,6 +137,7 @@ export default function AdminConfiguracion() {
         instagramUrl: config.instagramUrl,
         tiktokUrl: config.tiktokUrl,
         whatsappUrl: config.whatsappUrl,
+        footerDescripcion: config.footerDescripcion,
         usarControlFinanciero: config.usarControlFinanciero,
         liveActivo: config.liveActivo,
         tiempoReservaMinutos: config.tiempoReservaMinutos,
@@ -481,6 +484,17 @@ export default function AdminConfiguracion() {
                 className="w-full bg-background border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium" 
               />
             </div>
+          </div>
+          
+          <div className="mt-6">
+            <label className="block text-sm font-bold text-foreground mb-2">Descripción de la Marca</label>
+            <textarea 
+              rows={3}
+              placeholder="Ej: Moda femenina seleccionada para resaltar tu estilo único..."
+              value={config.footerDescripcion} 
+              onChange={e => setConfig({...config, footerDescripcion: e.target.value})}
+              className="w-full bg-background border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium resize-none" 
+            />
           </div>
         </div>
 

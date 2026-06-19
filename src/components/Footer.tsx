@@ -23,7 +23,7 @@ export default function Footer() {
         <div className="space-y-4">
           <h2 className="text-2xl font-extrabold tracking-tighter uppercase">BrunaShop2</h2>
           <p className="text-sm text-gray-400 font-light max-w-xs mx-auto md:mx-0">
-            Moda femenina seleccionada para resaltar tu estilo único. Alta costura al alcance de tus manos.
+            {config?.footerDescripcion || "Moda femenina seleccionada para resaltar tu estilo único. Alta costura al alcance de tus manos."}
           </p>
         </div>
 

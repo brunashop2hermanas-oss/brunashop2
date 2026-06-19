@@ -112,6 +112,7 @@ model Configuracion {
   instagramUrl          String?
   tiktokUrl             String?
   whatsappUrl           String?
+  footerDescripcion     String?  // Texto de la marca en el footer
   usarControlFinanciero Boolean  @default(true)
   liveActivo            Boolean  @default(false)
   tiempoReservaMinutos  Int      @default(4)
