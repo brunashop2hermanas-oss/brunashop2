@@ -115,7 +115,7 @@ export default function AdminProductos() {
           for (const color in formData.stockPorTalla[talla]) {
             stockTotal += Number(formData.stockPorTalla[talla][color]) || 0;
             // Registrar dinámicamente colores usados si no estaban en el campo
-            if (!coloresLimpios.includes(color)) coloresLimpios.push(color);
+            if (color !== 'Unico' && !coloresLimpios.includes(color)) coloresLimpios.push(color);
           }
         }
       }
@@ -545,27 +545,59 @@ export default function AdminProductos() {
                         </div>
                       </div>
 
-                      {tallasSeleccionadas.length > 0 && formData.colores.split(",").filter(c => c.trim()).length > 0 ? (
+                      {tallasSeleccionadas.length > 0 ? (
                         <div className="bg-background rounded-xl border border-surface-border p-4 overflow-x-auto shadow-sm">
-                          <label className="block text-sm font-bold text-foreground mb-4">Inventario Exacto por Talla y Color</label>
+                          <label className="block text-sm font-bold text-foreground mb-4">
+                            {formData.colores.split(",").filter(c => c.trim()).length > 0 
+                              ? "Inventario Exacto por Talla y Color" 
+                              : "Inventario Exacto por Talla (Color Opcional)"}
+                          </label>
                           <table className="w-full text-left text-sm">
                             <thead>
                               <tr>
                                 <th className="pb-2 border-b border-surface-border font-black text-brand-primary">Talla</th>
-                                {formData.colores.split(",").map(c => c.trim()).filter(c => c).map(color => (
-                                  <th key={color} className="pb-2 border-b border-surface-border font-bold uppercase text-xs tracking-wider">{color}</th>
-                                ))}
+                                {formData.colores.split(",").filter(c => c.trim()).length > 0 ? (
+                                  formData.colores.split(",").map(c => c.trim()).filter(c => c).map(color => (
+                                    <th key={color} className="pb-2 border-b border-surface-border font-bold uppercase text-xs tracking-wider">{color}</th>
+                                  ))
+                                ) : (
+                                  <th className="pb-2 border-b border-surface-border font-bold uppercase text-xs tracking-wider">Cantidad</th>
+                                )}
                               </tr>
                             </thead>
                             <tbody>
                               {tallasSeleccionadas.map(talla => (
                                 <tr key={talla}>
                                   <td className="py-3 font-bold border-b border-surface-border/50">{talla}</td>
-                                  {formData.colores.split(",").map(c => c.trim()).filter(c => c).map(color => (
-                                    <td key={color} className="py-2 pr-2 border-b border-surface-border/50">
+                                  {formData.colores.split(",").filter(c => c.trim()).length > 0 ? (
+                                    formData.colores.split(",").map(c => c.trim()).filter(c => c).map(color => (
+                                      <td key={color} className="py-2 pr-2 border-b border-surface-border/50">
+                                        <input 
+                                          type="number" min="0" 
+                                          value={formData.stockPorTalla?.[talla]?.[color] || ""}
+                                          onChange={(e) => {
+                                            const val = Math.max(0, Number(e.target.value));
+                                            setFormData({
+                                              ...formData,
+                                              stockPorTalla: {
+                                                ...formData.stockPorTalla,
+                                                [talla]: {
+                                                  ...(formData.stockPorTalla[talla] || {}),
+                                                  [color]: val.toString()
+                                                }
+                                              }
+                                            });
+                                          }}
+                                          className="w-full bg-surface border border-surface-border p-2 rounded-lg outline-none focus:ring-2 focus:ring-brand-primary font-mono text-center" 
+                                          placeholder="0"
+                                        />
+                                      </td>
+                                    ))
+                                  ) : (
+                                    <td className="py-2 pr-2 border-b border-surface-border/50">
                                       <input 
                                         type="number" min="0" 
-                                        value={formData.stockPorTalla?.[talla]?.[color] || ""}
+                                        value={formData.stockPorTalla?.[talla]?.['Unico'] || ""}
                                         onChange={(e) => {
                                           const val = Math.max(0, Number(e.target.value));
                                           setFormData({
@@ -574,7 +606,7 @@ export default function AdminProductos() {
                                               ...formData.stockPorTalla,
                                               [talla]: {
                                                 ...(formData.stockPorTalla[talla] || {}),
-                                                [color]: val.toString()
+                                                ['Unico']: val.toString()
                                               }
                                             }
                                           });
@@ -583,7 +615,7 @@ export default function AdminProductos() {
                                         placeholder="0"
                                       />
                                     </td>
-                                  ))}
+                                  )}
                                 </tr>
                               ))}
                             </tbody>
@@ -592,7 +624,7 @@ export default function AdminProductos() {
                       ) : (
                         <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-xl">
                           <label className="block text-sm font-bold text-yellow-700 dark:text-yellow-500 mb-2">Cantidad de Stock General</label>
-                          <p className="text-xs text-foreground/60 mb-3">Selecciona tallas y escribe colores arriba para llevar un inventario exacto. De lo contrario, usa este stock general.</p>
+                          <p className="text-xs text-foreground/60 mb-3">Selecciona tallas para llevar un inventario exacto. De lo contrario, usa este stock general.</p>
                           <input type="number" min="0" value={formData.stockCount} onChange={e => setFormData({...formData, stockCount: e.target.value})} placeholder="Ej. 12" className="w-full max-w-xs bg-surface border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-yellow-500 outline-none" />
                         </div>
                       )}
