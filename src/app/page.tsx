@@ -86,13 +86,19 @@ export default function Home() {
       {/* Menú Móvil */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <motion.div 
-            initial={{ opacity: 0, x: "-100%" }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: "-100%" }}
-            transition={{ type: "tween", duration: 0.3 }}
-            className="fixed inset-0 bg-white z-50 flex flex-col pt-8 px-6"
-          >
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, x: "-100%" }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: "-100%" }}
+              transition={{ type: "tween", duration: 0.3 }}
+              className="fixed top-0 left-0 h-full w-[85vw] max-w-[320px] bg-white z-50 flex flex-col pt-8 px-6 shadow-2xl rounded-r-3xl"
+            >
             <div className="flex justify-between items-center mb-12">
               <h2 className="text-2xl font-extrabold tracking-tighter text-black">Bruna<span className="text-gray-400">Shop</span></h2>
               <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-black bg-gray-50 rounded-full">
@@ -106,7 +112,8 @@ export default function Home() {
             <div className="mt-auto mb-8 text-xs text-center text-gray-400 tracking-widest uppercase">
               Descubre lo último en tendencia
             </div>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
 

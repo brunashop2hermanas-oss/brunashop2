@@ -265,7 +265,7 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
             {/* Drawer */}
             <motion.div 
               initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "tween", duration: 0.3 }}
-              className="fixed top-0 right-0 h-full w-full md:w-[400px] bg-white z-50 shadow-2xl flex flex-col"
+              className="fixed top-0 right-0 h-full w-[85vw] max-w-[400px] bg-white z-50 shadow-2xl flex flex-col rounded-l-3xl"
             >
               <div className="flex items-center justify-between p-6 border-b border-gray-100">
                 <h2 className="text-lg font-serif text-black flex items-center gap-2">
