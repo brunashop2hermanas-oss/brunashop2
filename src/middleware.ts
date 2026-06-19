@@ -2,10 +2,18 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
+  const authCookie = request.cookies.get('bruna_auth');
+  const path = request.nextUrl.pathname;
+
+  // Si intenta acceder al login pero ya tiene sesión, lo enviamos de vuelta al panel
+  if (path === '/login' || path === '/login/') {
+    if (authCookie) {
+      return NextResponse.redirect(new URL('/admin', request.url));
+    }
+  }
+
   // Solo proteger rutas que empiecen con /admin
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    const authCookie = request.cookies.get('bruna_auth');
-    
+  if (path.startsWith('/admin')) {
     // Si no hay cookie de sesión, redirigir al login
     if (!authCookie) {
       return NextResponse.redirect(new URL('/login', request.url));
@@ -16,5 +24,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/login'],
 };
