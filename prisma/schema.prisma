@@ -16,7 +16,8 @@ model User {
   telefono  String
   username  String   @unique
   pin       String
-  role      String   @default("CAJERA") // "ADMIN", "CAJERA"
+  role      String   @default("EMPLEADO") // "ADMINISTRADOR", "EMPLEADO"
+  permisos  String[] @default([]) // Array de permisos asignados
   ventas    Venta[]
   createdAt DateTime @default(now())
 }

@@ -30,6 +30,7 @@ export async function loginUser(usuario: string, pin: string) {
     cookieStore.set("bruna_user_role", user.role, { path: "/" });
     cookieStore.set("bruna_user_name", `${user.nombres} ${user.apellidos}`, { path: "/" });
     cookieStore.set("bruna_user_id", user.id, { path: "/" });
+    cookieStore.set("bruna_user_permissions", JSON.stringify(user.permisos || []), { path: "/" });
 
     return { success: true, user: { name: user.nombres, role: user.role } };
   } catch (error: any) {
@@ -46,6 +47,7 @@ export async function logoutUser() {
   cookieStore.delete("bruna_user_role");
   cookieStore.delete("bruna_user_name");
   cookieStore.delete("bruna_user_id");
+  cookieStore.delete("bruna_user_permissions");
   return { success: true };
 }
 

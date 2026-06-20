@@ -14,25 +14,42 @@ export default function AdminSidebar() {
   const [isOpenMobile, setIsOpenMobile] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false); // Para escritorio
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [userName, setUserName] = useState("Admin");
+  const [userName, setUserName] = useState("Cargando...");
+  const [userRole, setUserRole] = useState("");
+  const [userPerms, setUserPerms] = useState<string[]>([]);
 
-  // Leer nombre de la cookie y cerrar el menú al cambiar de ruta en móvil
   useEffect(() => {
     if (typeof document !== "undefined") {
-      const match = document.cookie.match(/(?:^|; )bruna_user_name=([^;]*)/);
-      if (match) setUserName(decodeURIComponent(match[1]));
+      const nameMatch = document.cookie.match(/(?:^|; )bruna_user_name=([^;]*)/);
+      if (nameMatch) setUserName(decodeURIComponent(nameMatch[1]));
+      
+      const roleMatch = document.cookie.match(/(?:^|; )bruna_user_role=([^;]*)/);
+      if (roleMatch) setUserRole(decodeURIComponent(roleMatch[1]));
+
+      const permsMatch = document.cookie.match(/(?:^|; )bruna_user_permissions=([^;]*)/);
+      if (permsMatch) {
+        try {
+          setUserPerms(JSON.parse(decodeURIComponent(permsMatch[1])));
+        } catch(e){}
+      }
     }
     setIsOpenMobile(false);
   }, [pathname]);
 
   const navItems = [
-    { name: "Inicio", path: "/admin", icon: LayoutDashboard },
-    { name: "Caja", path: "/admin/nueva-venta", icon: Store },
-    { name: "Pedidos", path: "/admin/pedidos", icon: ShoppingBag },
-    { name: "Catálogo", path: "/admin/productos", icon: Video },
-    { name: "Clientas", path: "/admin/clientas", icon: Users },
-    { name: "Reportes", path: "/admin/reportes", icon: BarChart3 },
+    { name: "Inicio", path: "/admin", icon: LayoutDashboard, perm: null },
+    { name: "Caja", path: "/admin/nueva-venta", icon: Store, perm: "ACCESO_CAJA" },
+    { name: "Pedidos", path: "/admin/pedidos", icon: ShoppingBag, perm: "ACCESO_PEDIDOS" },
+    { name: "Catálogo", path: "/admin/productos", icon: Video, perm: "ACCESO_CATALOGO" },
+    { name: "Clientas", path: "/admin/clientas", icon: Users, perm: "ACCESO_CLIENTAS" },
+    { name: "Reportes", path: "/admin/reportes", icon: BarChart3, perm: "ACCESO_REPORTES" },
   ];
+
+  // Filtrar items según permisos (ADMINISTRADOR ve todo)
+  const visibleNavItems = navItems.filter(item => {
+    if (userRole === "ADMINISTRADOR" || !item.perm) return true;
+    return userPerms.includes(item.perm);
+  });
 
   const handleLogout = async () => {
     await logoutUser();
@@ -101,7 +118,7 @@ export default function AdminSidebar() {
 
         {/* Navegación */}
         <nav className="flex-1 overflow-y-auto scrollbar-hide py-4 px-3 flex flex-col gap-1">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = item.path === "/admin" ? pathname === "/admin" : pathname.startsWith(item.path);
             
@@ -129,18 +146,20 @@ export default function AdminSidebar() {
 
         {/* Bottom Actions */}
         <div className="p-4 border-t border-gray-100 flex flex-col gap-2">
-          <Link 
-            href="/admin/configuracion" 
-            title={isCollapsed ? "Configuración" : undefined}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-all ${
-              pathname.startsWith('/admin/configuracion') ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-100 hover:text-black'
-            }`}
-          >
-            <Settings className="w-5 h-5 min-w-[1.25rem]" /> 
-            <span className={`text-sm font-medium tracking-wide transition-opacity duration-200 ${isCollapsed ? 'md:opacity-0 md:hidden' : 'opacity-100'}`}>
-              Configuración
-            </span>
-          </Link>
+          {(userRole === "ADMINISTRADOR" || userPerms.includes("ACCESO_CONFIGURACION")) && (
+            <Link 
+              href="/admin/configuracion" 
+              title={isCollapsed ? "Configuración" : undefined}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-all ${
+                pathname.startsWith('/admin/configuracion') ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-100 hover:text-black'
+              }`}
+            >
+              <Settings className="w-5 h-5 min-w-[1.25rem]" /> 
+              <span className={`text-sm font-medium tracking-wide transition-opacity duration-200 ${isCollapsed ? 'md:opacity-0 md:hidden' : 'opacity-100'}`}>
+                Configuración
+              </span>
+            </Link>
+          )}
 
           <Link 
             href="/admin/tienda" 

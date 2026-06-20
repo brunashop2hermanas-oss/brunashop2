@@ -24,6 +24,7 @@ export async function createUsuario(data: {
   username: string;
   pin: string;
   role: string;
+  permisos?: string[];
 }) {
   try {
     const nuevo = await prisma.user.create({
@@ -45,6 +46,7 @@ export async function updateUsuario(id: string, data: {
   telefono?: string;
   role?: string;
   pin?: string;
+  permisos?: string[];
 }) {
   try {
     const updated = await prisma.user.update({

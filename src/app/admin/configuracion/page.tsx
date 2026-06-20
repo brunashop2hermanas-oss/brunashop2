@@ -55,8 +55,8 @@ export default function AdminConfiguracion() {
   const [usuarioActivo, setUsuarioActivo] = useState<{ id: string; nombres: string; apellidos: string; ci: string; telefono: string; username: string; pin: string; role: string } | null>(null);
 
   // Form states
-  const [formUsr, setFormUsr] = useState({
-    nombres: "", apellidos: "", ci: "", telefono: "", username: "", pin: "", role: "CAJERA"
+  const [formUsr, setFormUsr] = useState<{nombres:string, apellidos:string, ci:string, telefono:string, username:string, pin:string, role:string, permisos:string[]}>({
+    nombres: "", apellidos: "", ci: "", telefono: "", username: "", pin: "", role: "EMPLEADO", permisos: []
   });
   const [verPin, setVerPin] = useState(false);
   const [savingUsr, setSavingUsr] = useState(false);
@@ -173,14 +173,14 @@ export default function AdminConfiguracion() {
     setErrorUsr("");
 
     if (usuarioActivo) {
-      // Editar
       const res = await updateUsuario(usuarioActivo.id, {
         nombres: formUsr.nombres,
         apellidos: formUsr.apellidos,
         ci: formUsr.ci,
         telefono: formUsr.telefono,
         role: formUsr.role,
-        pin: formUsr.pin
+        pin: formUsr.pin,
+        permisos: formUsr.permisos
       });
       if (res.success) {
         setMostrarModalVerUsuario(false);
@@ -222,17 +222,23 @@ export default function AdminConfiguracion() {
   };
 
   const abrirModalNuevo = () => {
-    setFormUsr({ nombres: "", apellidos: "", ci: "", telefono: "", username: "", pin: "", role: "CAJERA" });
+    setFormUsr({ nombres: "", apellidos: "", ci: "", telefono: "", username: "", pin: "", role: "EMPLEADO", permisos: [] });
     setUsuarioActivo(null);
     setErrorUsr("");
     setMostrarModalUsuario(true);
   };
 
-  const abrirModalVer = (u: { id: string; nombres: string; apellidos: string; ci: string; telefono: string; username: string; pin: string; role: string }) => {
+  const abrirModalVer = (u: any) => {
     setUsuarioActivo(u);
     setFormUsr({
-      nombres: u.nombres, apellidos: u.apellidos, ci: u.ci, telefono: u.telefono,
-      username: u.username, pin: u.pin, role: u.role
+      nombres: u.nombres,
+      apellidos: u.apellidos,
+      ci: u.ci,
+      telefono: u.telefono,
+      username: u.username,
+      pin: u.pin,
+      role: u.role,
+      permisos: u.permisos || []
     });
     setErrorUsr("");
     setMostrarModalVerUsuario(true);
@@ -588,10 +594,10 @@ export default function AdminConfiguracion() {
                     <td className="p-4 font-bold">{u.username}</td>
                     <td className="p-4 text-foreground/80 font-medium">{u.nombres} {u.apellidos}</td>
                     <td className="p-4 text-center">
-                      <span className={u.role === "ADMIN" 
-                        ? "bg-brand-primary/10 text-brand-primary px-3 py-1 rounded-full text-xs font-bold border border-brand-primary/20"
-                        : "bg-surface-border text-foreground/70 px-3 py-1 rounded-full text-xs font-bold border border-surface-border"}>
-                        {u.role === "ADMIN" ? "Administrador" : "Cajera"}
+                      <span className={u.role === "ADMINISTRADOR" 
+                        ? "px-2.5 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-bold tracking-wider" 
+                        : "px-2.5 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold tracking-wider"}>
+                        {u.role === "ADMINISTRADOR" ? "Administrador" : "Empleado"}
                       </span>
                     </td>
                     <td className="p-4 text-right flex justify-end gap-3 items-center">
@@ -668,11 +674,43 @@ export default function AdminConfiguracion() {
               <div>
                 <label className="block text-sm font-bold text-foreground mb-1">Rol</label>
                 <select value={formUsr.role} onChange={e=>setFormUsr({...formUsr, role: e.target.value})} className="w-full bg-surface border border-surface-border p-3 rounded-xl outline-none focus:ring-2 focus:ring-brand-primary font-bold">
-                  <option value="CAJERA">Cajera / Vendedora</option>
-                  <option value="ADMIN">Administradora</option>
+                  <option value="EMPLEADO">Empleado (Caja / Ventas)</option>
+                  <option value="ADMINISTRADOR">Administrador</option>
                 </select>
               </div>
             </div>
+
+            {formUsr.role === "EMPLEADO" && (
+              <div className="mt-6 border-t border-surface-border pt-4">
+                <label className="block text-sm font-bold text-foreground mb-3">Permisos de Acceso</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[
+                    { id: "ACCESO_CAJA", label: "Caja (Vender)" },
+                    { id: "ACCESO_PEDIDOS", label: "Pedidos (Gestión)" },
+                    { id: "ACCESO_CATALOGO", label: "Catálogo (Ver)" },
+                    { id: "EDITAR_CATALOGO", label: "Catálogo (Crear/Editar)" },
+                    { id: "ACCESO_CLIENTAS", label: "Clientas (Base de datos)" },
+                    { id: "ACCESO_REPORTES", label: "Reportes Financieros" },
+                    { id: "ACCESO_CONFIGURACION", label: "Configuración General" },
+                  ].map(perm => (
+                    <label key={perm.id} className="flex items-center gap-3 p-3 bg-surface border border-surface-border rounded-xl cursor-pointer hover:bg-surface-border/50 transition-colors">
+                      <input 
+                        type="checkbox" 
+                        className="w-5 h-5 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
+                        checked={formUsr.permisos.includes(perm.id)}
+                        onChange={(e) => {
+                          const newPerms = e.target.checked 
+                            ? [...formUsr.permisos, perm.id]
+                            : formUsr.permisos.filter(p => p !== perm.id);
+                          setFormUsr({ ...formUsr, permisos: newPerms });
+                        }}
+                      />
+                      <span className="text-sm font-medium">{perm.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {errorUsr && <p className="text-red-500 font-bold text-sm mt-4 text-center">{errorUsr}</p>}
 

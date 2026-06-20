@@ -18,6 +18,33 @@ export function middleware(request: NextRequest) {
     if (!authCookie) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
+
+    // Proteger rutas según permisos
+    const userRoleCookie = request.cookies.get('bruna_user_role')?.value;
+    if (userRoleCookie === "EMPLEADO") {
+      const permsCookie = request.cookies.get('bruna_user_permissions')?.value;
+      let perms: string[] = [];
+      if (permsCookie) {
+        try {
+          perms = JSON.parse(decodeURIComponent(permsCookie));
+        } catch(e){}
+      }
+
+      const checks = [
+        { route: '/admin/nueva-venta', perm: 'ACCESO_CAJA' },
+        { route: '/admin/pedidos', perm: 'ACCESO_PEDIDOS' },
+        { route: '/admin/productos', perm: 'ACCESO_CATALOGO' },
+        { route: '/admin/clientas', perm: 'ACCESO_CLIENTAS' },
+        { route: '/admin/reportes', perm: 'ACCESO_REPORTES' },
+        { route: '/admin/configuracion', perm: 'ACCESO_CONFIGURACION' }
+      ];
+
+      for (const check of checks) {
+        if (path.startsWith(check.route) && !perms.includes(check.perm)) {
+          return NextResponse.redirect(new URL('/admin', request.url));
+        }
+      }
+    }
   }
 
   return NextResponse.next();
