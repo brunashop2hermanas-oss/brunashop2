@@ -443,7 +443,7 @@ export async function subirGuiaEnvio(ventaId: string, guiaUrl: string) {
   try {
     await prisma.venta.update({
       where: { id: ventaId },
-      data: { guiaEnvioUrl: guiaUrl }
+      data: { guiaEnvioUrl: guiaUrl, estado: "ENTREGADO" }
     });
     revalidatePath("/admin/pedidos");
     return { success: true };
