@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LayoutDashboard, ShoppingBag, Users, Settings, LogOut, Video, BarChart3, Store, Menu, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, Users, Settings, LogOut, Video, BarChart3, Store, Menu, X, ChevronLeft, ChevronRight, Globe, UserCircle } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -14,9 +14,14 @@ export default function AdminSidebar() {
   const [isOpenMobile, setIsOpenMobile] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false); // Para escritorio
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [userName, setUserName] = useState("Admin");
 
-  // Cerrar el menú al cambiar de ruta en móvil
+  // Leer nombre de la cookie y cerrar el menú al cambiar de ruta en móvil
   useEffect(() => {
+    if (typeof document !== "undefined") {
+      const match = document.cookie.match(/(?:^|; )bruna_user_name=([^;]*)/);
+      if (match) setUserName(decodeURIComponent(match[1]));
+    }
     setIsOpenMobile(false);
   }, [pathname]);
 
@@ -81,6 +86,19 @@ export default function AdminSidebar() {
           </button>
         </div>
 
+        {/* Perfil de Usuario */}
+        <div className={`px-4 py-4 border-b border-gray-100 flex items-center gap-3 ${isCollapsed ? 'justify-center px-0' : ''}`}>
+          <div className="w-8 h-8 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center shrink-0">
+            <UserCircle className="w-5 h-5" />
+          </div>
+          {!isCollapsed && (
+            <div className="flex flex-col">
+              <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Sesión Iniciada</span>
+              <span className="text-sm font-bold text-black truncate max-w-[150px]">{userName}</span>
+            </div>
+          )}
+        </div>
+
         {/* Navegación */}
         <nav className="flex-1 overflow-y-auto scrollbar-hide py-4 px-3 flex flex-col gap-1">
           {navItems.map((item) => {
@@ -123,6 +141,18 @@ export default function AdminSidebar() {
               Configuración
             </span>
           </Link>
+
+          <a 
+            href="/" 
+            target="_blank"
+            title={isCollapsed ? "Ver Tienda Pública" : undefined}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-blue-600 hover:bg-blue-50 transition-all font-bold border border-blue-100/50 w-full`}
+          >
+            <Globe className="w-5 h-5 min-w-[1.25rem]" /> 
+            <span className={`text-sm tracking-wide transition-opacity duration-200 ${isCollapsed ? 'md:opacity-0 md:hidden' : 'opacity-100'}`}>
+              Ver Tienda Pública
+            </span>
+          </a>
 
           <button 
             onClick={() => setShowLogoutModal(true)}
