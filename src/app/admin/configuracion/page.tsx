@@ -2,7 +2,6 @@
 
 import toast from "react-hot-toast";
 
-import { motion } from "framer-motion";
 import { Settings, QrCode, Building, ShieldCheck, Upload, Save, Eye, EyeOff, BarChart3 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getConfiguracion, updateConfiguracion } from "@/app/actions/config";
@@ -236,7 +235,7 @@ export default function AdminConfiguracion() {
     setMostrarModalUsuario(true);
   };
 
-  const abrirModalVer = (u: any) => {
+  const abrirModalVer = (u: { id: string; nombres: string; apellidos: string; ci: string; telefono: string; username: string; pin: string; role: string; permisos?: string[] }) => {
     setUsuarioActivo(u);
     setFormUsr({
       nombres: u.nombres,
@@ -554,7 +553,8 @@ export default function AdminConfiguracion() {
           <div className="flex flex-col items-center gap-6">
             <div className="bg-white p-4 rounded-3xl border border-gray-200 shadow-md">
               {config.qrImagen ? (
-                <img src={config.qrImagen} alt="QR Actual" className="w-48 h-48 object-contain" />
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={config.qrImagen} alt="QR" className="w-full h-auto rounded-lg shadow-sm border border-surface-border object-contain" />
               ) : (
                 <div className="w-48 h-48 flex items-center justify-center text-gray-400">Sin QR</div>
               )}
