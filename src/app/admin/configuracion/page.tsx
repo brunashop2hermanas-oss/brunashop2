@@ -9,7 +9,7 @@ import { getConfiguracion, updateConfiguracion } from "@/app/actions/config";
 import { getUsuarios, createUsuario, updateUsuario, deleteUsuario } from "@/app/actions/usuarios";
 import { uploadImage } from "@/app/actions/upload";
 import { compressImage } from "@/lib/imageCompression";
-import { Clock, MapPin, CheckSquare, Square } from "lucide-react";
+import { Clock, MapPin, CheckSquare, Square, Trash2 } from "lucide-react";
 import LimpiezaDB from "./LimpiezaDB";
 import LicenciaPlanes from "./LicenciaPlanes";
 
