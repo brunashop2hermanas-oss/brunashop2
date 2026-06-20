@@ -3,7 +3,7 @@ import AdminSidebar from "./AdminSidebar";
 
 export const metadata: Metadata = {
   title: "BrunaShop - Panel Administrador",
-  manifest: "/manifest.json",
+  manifest: "/manifest.json?v=2",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
