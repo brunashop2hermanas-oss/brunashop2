@@ -142,17 +142,20 @@ export default function AdminSidebar() {
             </span>
           </Link>
 
-          <a 
-            href="/" 
-            target="_blank"
+          <Link 
+            href="/admin/tienda" 
             title={isCollapsed ? "Ver Tienda Pública" : undefined}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-blue-600 hover:bg-blue-50 transition-all font-bold border border-blue-100/50 w-full`}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-all font-bold border w-full ${
+              pathname === '/admin/tienda' 
+                ? 'bg-blue-600 text-white border-blue-600 shadow-md' 
+                : 'text-blue-600 hover:bg-blue-50 border-blue-100/50'
+            }`}
           >
-            <Globe className="w-5 h-5 min-w-[1.25rem]" /> 
+            <Globe className={`w-5 h-5 min-w-[1.25rem] ${pathname === '/admin/tienda' ? 'text-white' : ''}`} /> 
             <span className={`text-sm tracking-wide transition-opacity duration-200 ${isCollapsed ? 'md:opacity-0 md:hidden' : 'opacity-100'}`}>
               Ver Tienda Pública
             </span>
-          </a>
+          </Link>
 
           <button 
             onClick={() => setShowLogoutModal(true)}
