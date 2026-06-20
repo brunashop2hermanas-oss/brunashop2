@@ -61,6 +61,7 @@ export default function AdminConfiguracion() {
   const [verPin, setVerPin] = useState(false);
   const [savingUsr, setSavingUsr] = useState(false);
   const [errorUsr, setErrorUsr] = useState("");
+  const [usuarioAEliminar, setUsuarioAEliminar] = useState<{id: string, nombre: string} | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -207,18 +208,25 @@ export default function AdminConfiguracion() {
     setSavingUsr(false);
   };
 
-  const handleBorrarUsuario = async (id: string, nombre: string) => {
-    if (confirm(`¿Estás segura de que quieres borrar al usuario ${nombre}?`)) {
-      const res = await deleteUsuario(id);
-      if (res.success) {
-        const resUsr = await getUsuarios();
-        if (resUsr.success && resUsr.data) {
-          setUsuarios(resUsr.data);
-        }
-      } else {
-        toast.error("¡Uy! Tuvimos un problemita intentando borrar este dato. Por favor, intenta de nuevo.");
+  const handleBorrarUsuario = async () => {
+    if (!usuarioAEliminar) return;
+    setSavingUsr(true);
+    const res = await deleteUsuario(usuarioAEliminar.id);
+    if (res.success) {
+      setUsuarioAEliminar(null);
+      const resUsr = await getUsuarios();
+      if (resUsr.success && resUsr.data) {
+        setUsuarios(resUsr.data);
       }
+      toast.success(`Usuario ${usuarioAEliminar.nombre} eliminado correctamente`);
+    } else {
+      toast.error("¡Uy! Tuvimos un problemita intentando borrar este dato. Por favor, intenta de nuevo.");
     }
+    setSavingUsr(false);
+  };
+
+  const confirmarBorrarUsuario = (id: string, nombre: string) => {
+    setUsuarioAEliminar({ id, nombre });
   };
 
   const abrirModalNuevo = () => {
@@ -602,7 +610,9 @@ export default function AdminConfiguracion() {
                     </td>
                     <td className="p-4 text-right flex justify-end gap-3 items-center">
                       <button onClick={() => abrirModalVer(u)} className="text-sm font-bold text-foreground/50 hover:text-brand-primary">Ver / Editar</button>
-                      <button onClick={() => handleBorrarUsuario(u.id, u.nombres)} className="text-sm font-bold text-red-500/70 hover:text-red-500">Borrar</button>
+                      <button onClick={() => confirmarBorrarUsuario(u.id, `${u.nombres} ${u.apellidos}`)} className="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-colors" title="Borrar Empleado">
+                        <Trash2 className="w-5 h-5" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -727,6 +737,41 @@ export default function AdminConfiguracion() {
                 className="flex-1 bg-brand-primary text-white py-3 rounded-xl font-bold hover:brightness-110 transition-colors disabled:opacity-50"
               >
                 {savingUsr ? "Guardando..." : "Guardar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL ELIMINAR USUARIO */}
+      {usuarioAEliminar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-surface rounded-2xl max-w-sm w-full p-6 shadow-2xl relative animate-in zoom-in-95 duration-200">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-red-500">
+                <Trash2 className="w-8 h-8" />
+              </div>
+            </div>
+            
+            <h3 className="text-xl font-bold text-center text-foreground mb-2">Eliminar Empleado</h3>
+            <p className="text-center text-foreground/70 mb-6">
+              ¿Estás segura de que quieres borrar al usuario <strong className="text-foreground">{usuarioAEliminar.nombre}</strong>? Esta acción no se puede deshacer.
+            </p>
+
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setUsuarioAEliminar(null)}
+                className="flex-1 py-3 px-4 bg-surface-border text-foreground rounded-xl font-bold hover:bg-gray-200 transition-colors"
+                disabled={savingUsr}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleBorrarUsuario}
+                disabled={savingUsr}
+                className="flex-1 py-3 px-4 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30 flex justify-center items-center gap-2"
+              >
+                {savingUsr ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : "Sí, Eliminar"}
               </button>
             </div>
           </div>
