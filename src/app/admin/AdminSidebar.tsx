@@ -47,7 +47,7 @@ export default function AdminSidebar() {
 
   // Filtrar items según permisos (ADMINISTRADOR ve todo)
   const visibleNavItems = navItems.filter(item => {
-    if (userRole === "ADMINISTRADOR" || !item.perm) return true;
+    if (userRole === "ADMINISTRADOR" || userRole === "ADMIN" || !item.perm) return true;
     return userPerms.includes(item.perm);
   });
 
@@ -146,7 +146,7 @@ export default function AdminSidebar() {
 
         {/* Bottom Actions */}
         <div className="p-4 border-t border-gray-100 flex flex-col gap-2">
-          {(userRole === "ADMINISTRADOR" || userPerms.includes("ACCESO_CONFIGURACION")) && (
+          {(userRole === "ADMINISTRADOR" || userRole === "ADMIN" || userPerms.includes("ACCESO_CONFIGURACION")) && (
             <Link 
               href="/admin/configuracion" 
               title={isCollapsed ? "Configuración" : undefined}

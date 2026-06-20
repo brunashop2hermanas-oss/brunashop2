@@ -21,7 +21,7 @@ export function middleware(request: NextRequest) {
 
     // Proteger rutas según permisos
     const userRoleCookie = request.cookies.get('bruna_user_role')?.value;
-    if (userRoleCookie === "EMPLEADO") {
+    if (userRoleCookie !== "ADMINISTRADOR" && userRoleCookie !== "ADMIN") {
       const permsCookie = request.cookies.get('bruna_user_permissions')?.value;
       let perms: string[] = [];
       if (permsCookie) {
