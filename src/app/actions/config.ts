@@ -29,6 +29,7 @@ export async function updateConfiguracion(data: {
   footerDescripcion?: string;
   terminosCondiciones?: string;
   politicasEnvio?: string;
+  politicaPrivacidad?: string;
   usarControlFinanciero?: boolean;
   liveActivo?: boolean;
   tiempoReservaMinutos?: number;

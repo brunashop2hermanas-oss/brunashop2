@@ -36,6 +36,7 @@ export default function AdminConfiguracion() {
     footerDescripcion: "",
     terminosCondiciones: "",
     politicasEnvio: "",
+    politicaPrivacidad: "",
     usarControlFinanciero: true,
     liveActivo: false,
     tiempoReservaMinutos: 4,
@@ -78,6 +79,7 @@ export default function AdminConfiguracion() {
           footerDescripcion: resConfig.data.footerDescripcion || "",
           terminosCondiciones: resConfig.data.terminosCondiciones || "",
           politicasEnvio: resConfig.data.politicasEnvio || "",
+          politicaPrivacidad: resConfig.data.politicaPrivacidad || "",
           usarControlFinanciero: resConfig.data.usarControlFinanciero ?? true,
           liveActivo: resConfig.data.liveActivo ?? false,
           tiempoReservaMinutos: resConfig.data.tiempoReservaMinutos ?? 4,
@@ -142,6 +144,9 @@ export default function AdminConfiguracion() {
         tiktokUrl: config.tiktokUrl,
         whatsappUrl: config.whatsappUrl,
         footerDescripcion: config.footerDescripcion,
+        terminosCondiciones: config.terminosCondiciones,
+        politicasEnvio: config.politicasEnvio,
+        politicaPrivacidad: config.politicaPrivacidad,
         usarControlFinanciero: config.usarControlFinanciero,
         liveActivo: config.liveActivo,
         tiempoReservaMinutos: config.tiempoReservaMinutos,
@@ -393,7 +398,7 @@ export default function AdminConfiguracion() {
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6 border-b border-surface-border pb-4">
             <ShieldCheck className="w-6 h-6 text-brand-primary" /> Páginas Legales
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
               <label className="block text-sm font-bold text-foreground mb-2">Términos y Condiciones</label>
               <textarea 
@@ -411,6 +416,16 @@ export default function AdminConfiguracion() {
                 value={config.politicasEnvio} 
                 onChange={e => setConfig({...config, politicasEnvio: e.target.value})}
                 placeholder="Explica aquí cómo funcionan los envíos, tiempos de entrega, etc..."
+                className="w-full bg-background border border-surface-border p-4 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium custom-scrollbar" 
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-foreground mb-2">Política de Privacidad</label>
+              <textarea 
+                rows={10}
+                value={config.politicaPrivacidad} 
+                onChange={e => setConfig({...config, politicaPrivacidad: e.target.value})}
+                placeholder="Ingresa aquí tu política de privacidad..."
                 className="w-full bg-background border border-surface-border p-4 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium custom-scrollbar" 
               />
             </div>

@@ -82,6 +82,10 @@ model Venta {
   depositanteApPaterno String?
   depositanteApMaterno String?
   
+  terminosAceptados Boolean @default(false)
+  fechaAceptacion   DateTime?
+  ipAceptacion      String?
+  
   vendedorId    String?
   vendedor      User?       @relation(fields: [vendedorId], references: [id])
   
@@ -116,6 +120,7 @@ model Configuracion {
   footerDescripcion     String?  // Texto de la marca en el footer
   terminosCondiciones   String?  @db.Text
   politicasEnvio        String?  @db.Text
+  politicaPrivacidad    String?  @db.Text
   usarControlFinanciero Boolean  @default(true)
   liveActivo            Boolean  @default(false)
   tiempoReservaMinutos  Int      @default(4)

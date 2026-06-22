@@ -9,6 +9,7 @@ import { confirmarPagoCheckout, buscarClientaPorCI, getVenta, cancelarVentaExpir
 import { getConfiguracion } from "@/app/actions/config";
 import { uploadImage } from "@/app/actions/upload";
 import { getPrendas } from "@/app/actions/productos";
+import { extraerDatosComprobante } from "@/app/actions/ocr";
 import { compressImage } from "@/lib/imageCompression";
 import toast from "react-hot-toast";
 
@@ -41,6 +42,13 @@ function CheckoutContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagenAmpliada, setImagenAmpliada] = useState<string | null>(null);
   const [serverTimeOffset, setServerTimeOffset] = useState<number>(0);
+
+  // Estados para autocompletado OCR
+  const [analizandoOCR, setAnalizandoOCR] = useState(false);
+  const [depositanteNombres, setDepositanteNombres] = useState("");
+  const [depositanteApPaterno, setDepositanteApPaterno] = useState("");
+  const [depositanteApMaterno, setDepositanteApMaterno] = useState("");
+  const [depositanteCi, setDepositanteCi] = useState("");
 
   // Interval reference for cleanup
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -209,11 +217,21 @@ function CheckoutContent() {
 
     setIsSubmitting(true);
 
+    let clientIp = "";
+    try {
+      const ipRes = await fetch("https://api.ipify.org?format=json");
+      const ipData = await ipRes.json();
+      clientIp = ipData.ip;
+    } catch(e) {
+      clientIp = "IP local/Desconocida";
+    }
+
     const data: any = {
       ci: ci || (formData.get("ci") as string),
       ciudadDestino,
       provinciaDestino,
-      tiempoReservaMinutos: config?.tiempoReservaMinutos || 4
+      tiempoReservaMinutos: config?.tiempoReservaMinutos || 4,
+      clientIp
     };
 
     if (esNuevaClienta && !clientaEncontrada) {
@@ -269,10 +287,10 @@ function CheckoutContent() {
 
     const reqData = {
       comprobanteUrl: comprobanteRealUrl,
-      depositanteNombres: formData.get("depositanteNombres") as string,
-      depositanteApPaterno: formData.get("depositanteApPaterno") as string,
-      depositanteApMaterno: formData.get("depositanteApMaterno") as string,
-      depositanteCi: formData.get("depositanteCi") as string,
+      depositanteNombres: depositanteNombres || (formData.get("depositanteNombres") as string),
+      depositanteApPaterno: depositanteApPaterno || (formData.get("depositanteApPaterno") as string),
+      depositanteApMaterno: depositanteApMaterno || (formData.get("depositanteApMaterno") as string),
+      depositanteCi: depositanteCi || (formData.get("depositanteCi") as string),
     };
 
     const res = await confirmarPagoCheckout(ventaEnCurso.id, reqData);
@@ -442,6 +460,18 @@ function CheckoutContent() {
                       <p><strong>Aviso:</strong> Al hacer clic en "Siguiente", tus prendas serán reservadas y descontadas del inventario durante <strong>{config?.tiempoReservaMinutos} minutos</strong> para que puedas realizar tu pago tranquilamente.</p>
                     </div>
 
+                    <div className="flex items-start gap-3 py-2">
+                      <input 
+                        type="checkbox" 
+                        required 
+                        id="terms-checkbox"
+                        className="mt-1 w-5 h-5 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
+                      />
+                      <label htmlFor="terms-checkbox" className="text-sm text-foreground/80 cursor-pointer select-none">
+                        He leído y acepto los <Link href="/terminos" target="_blank" className="font-bold underline hover:text-brand-primary">Términos y Condiciones</Link> y la <Link href="/privacidad" target="_blank" className="font-bold underline hover:text-brand-primary">Política de Privacidad</Link>.
+                      </label>
+                    </div>
+
                     <button disabled={isSubmitting} className="w-full bg-black text-white py-5 text-sm uppercase tracking-[0.2em] font-bold hover:bg-brand-primary transition-colors">
                       {isSubmitting ? "Reservando Stock..." : "Siguiente: Realizar Pago"}
                     </button>
@@ -510,29 +540,74 @@ function CheckoutContent() {
                     <div className="space-y-4 animate-in slide-in-from-top-2">
                       <div>
                         <label className="block text-xs uppercase font-bold mb-1">Nombre(s) del Titular de la Cuenta *</label>
-                        <input required name="depositanteNombres" type="text" className="w-full border-b border-black/20 bg-transparent py-2 outline-none focus:border-brand-primary" placeholder="Ej: Maria Renee" />
+                        <input required name="depositanteNombres" value={depositanteNombres} onChange={(e) => setDepositanteNombres(e.target.value)} type="text" className="w-full border-b border-black/20 bg-transparent py-2 outline-none focus:border-brand-primary" placeholder="Ej: Maria Renee" />
                       </div>
                       <div className="flex gap-4">
                         <div className="flex-1">
                           <label className="block text-xs uppercase font-bold mb-1">Ap. Paterno *</label>
-                          <input required name="depositanteApPaterno" type="text" className="w-full border-b border-black/20 bg-transparent py-2 outline-none focus:border-brand-primary" placeholder="Ej: Perez" />
+                          <input required name="depositanteApPaterno" value={depositanteApPaterno} onChange={(e) => setDepositanteApPaterno(e.target.value)} type="text" className="w-full border-b border-black/20 bg-transparent py-2 outline-none focus:border-brand-primary" placeholder="Ej: Perez" />
                         </div>
                         <div className="flex-1">
                           <label className="block text-xs uppercase font-bold mb-1">Ap. Materno</label>
-                          <input name="depositanteApMaterno" type="text" className="w-full border-b border-black/20 bg-transparent py-2 outline-none focus:border-brand-primary" placeholder="Ej: Lopez" />
+                          <input name="depositanteApMaterno" value={depositanteApMaterno} onChange={(e) => setDepositanteApMaterno(e.target.value)} type="text" className="w-full border-b border-black/20 bg-transparent py-2 outline-none focus:border-brand-primary" placeholder="Ej: Lopez" />
                         </div>
                       </div>
                       <div>
                         <label className="block text-xs uppercase font-bold mb-1">C.I. del Depositante (Opcional)</label>
-                        <input name="depositanteCi" type="text" className="w-full border-b border-black/20 bg-transparent py-2 outline-none focus:border-brand-primary" placeholder="Ej: 1234567" />
+                        <input name="depositanteCi" value={depositanteCi} onChange={(e) => setDepositanteCi(e.target.value)} type="text" className="w-full border-b border-black/20 bg-transparent py-2 outline-none focus:border-brand-primary" placeholder="Ej: 1234567" />
                       </div>
                     </div>
                   </div>
 
                   <div className="relative group cursor-pointer overflow-hidden border border-black rounded-2xl">
-                    <input type="file" accept="image/*" onChange={(e)=>{if(e.target.files)setComprobante(e.target.files[0])}} className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer" />
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={async (e) => {
+                        if(e.target.files && e.target.files[0]) {
+                          const file = e.target.files[0];
+                          setComprobante(file);
+                          
+                          // Convertir a base64 y enviar a OCR
+                          setAnalizandoOCR(true);
+                          try {
+                            const compressed = await compressImage(file, "media");
+                            const reader = new FileReader();
+                            reader.onloadend = async () => {
+                              const base64data = reader.result as string;
+                              const res = await extraerDatosComprobante(base64data, compressed.type);
+                              if (res.success && res.data) {
+                                if (res.data.nombres || res.data.apellidoPaterno) {
+                                  setDepositanteNombres(res.data.nombres || "");
+                                  setDepositanteApPaterno(res.data.apellidoPaterno || "");
+                                  setDepositanteApMaterno(res.data.apellidoMaterno || "");
+                                  setDepositanteCi(res.data.ci || "");
+                                  toast.success("¡Datos extraídos del comprobante automáticamente!");
+                                } else {
+                                  toast.error("No se pudieron extraer los datos del comprobante. Por favor, complete los campos de forma manual.");
+                                }
+                              } else {
+                                console.error("OCR:", res.error);
+                                toast.error("Nuestros servidores están muy ocupados en este momento. Por favor ingresa tus datos manualmente.");
+                              }
+                              setAnalizandoOCR(false);
+                            };
+                            reader.readAsDataURL(compressed);
+                          } catch (error) {
+                            console.error(error);
+                            setAnalizandoOCR(false);
+                          }
+                        }
+                      }} 
+                      className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer" 
+                    />
                     <div className={`p-8 text-center transition-all ${comprobante ? 'bg-black text-white p-0' : 'bg-transparent text-black hover:bg-black/5'}`}>
-                      {comprobante ? (
+                      {analizandoOCR ? (
+                        <div className="flex flex-col items-center justify-center p-12 gap-4">
+                          <div className="w-10 h-10 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+                          <span className="font-bold uppercase tracking-widest text-sm text-brand-primary">Procesando comprobante...</span>
+                        </div>
+                      ) : comprobante ? (
                         <div className="relative w-full h-48 bg-black flex flex-col items-center justify-center">
                           <img 
                             src={URL.createObjectURL(comprobante)} 
@@ -555,9 +630,14 @@ function CheckoutContent() {
                     </div>
                   </div>
 
-                  <button disabled={isSubmitting || !comprobante} type="submit" className="w-full bg-black text-white py-5 text-sm uppercase tracking-[0.2em] font-bold hover:bg-brand-primary transition-colors disabled:opacity-50">
-                    {isSubmitting ? "Confirmando Pago..." : "Completar Compra"}
-                  </button>
+                  <div className="text-center">
+                    <p className="text-[10px] text-foreground/60 mb-4 px-2">
+                      Al completar tu compra, aceptas que tus datos y la imagen del comprobante serán procesados de forma segura conforme a nuestra <Link href="/privacidad" target="_blank" className="underline font-bold hover:text-black">Política de Privacidad</Link>, exclusivamente para la verificación de tu pago.
+                    </p>
+                    <button disabled={isSubmitting || !comprobante} type="submit" className="w-full bg-black text-white py-5 text-sm uppercase tracking-[0.2em] font-bold hover:bg-brand-primary transition-colors disabled:opacity-50">
+                      {isSubmitting ? "Confirmando Pago..." : "Completar Compra"}
+                    </button>
+                  </div>
                 </form>
               </div>
             </motion.div>
@@ -583,7 +663,7 @@ function CheckoutContent() {
         </div>
 
         {paso < 3 && !tiempoExpirado && (
-          <div className="w-full lg:w-[400px] shrink-0 sticky top-12 bg-surface border border-surface-border p-8 mt-12 lg:mt-0">
+          <div className="w-full lg:w-[400px] shrink-0 sticky top-12 bg-surface border border-surface-border p-8 mt-12 lg:mt-0 order-first lg:order-last mb-10 lg:mb-0">
             <h3 className="text-sm uppercase tracking-widest font-bold mb-6 pb-4 border-b">Resumen</h3>
             <div className="space-y-4">
               {carrito.map((item, idx) => (
@@ -601,7 +681,7 @@ function CheckoutContent() {
                   <div className="flex-1 flex flex-col justify-between">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="font-medium text-foreground text-sm uppercase leading-tight">{item.cantidad}x {item.nombre} {item.isConjunto && <span className="text-[10px] ml-1 bg-black text-white px-1.5 py-0.5 rounded-sm">(Conjunto)</span>}</h3>
+                        <h3 className="font-medium text-foreground text-sm uppercase leading-tight">{item.cantidad || 1}x {item.nombre} {item.isConjunto && <span className="text-[10px] ml-1 bg-black text-white px-1.5 py-0.5 rounded-sm">(Conjunto)</span>}</h3>
                         {(item.tallaSeleccionada || item.colorSeleccionado) && (
                           <p className="text-xs text-foreground/50 mt-1 uppercase">
                             {item.tallaSeleccionada} {item.colorSeleccionado ? `- ${item.colorSeleccionado}` : ''}

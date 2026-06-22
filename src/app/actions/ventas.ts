@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath, unstable_noStore as noStore } from "next/cache";
+import { headers } from "next/headers";
 
 async function ajustarStock(tx: any, prendaId: string, cantidad: number, operacion: 'increment' | 'decrement', talla?: string | null, color?: string | null) {
   const prendaInfo = await tx.prenda.findUnique({ where: { id: prendaId } });
@@ -121,6 +122,13 @@ export async function vincularClientaReserva(ventaId: string, data: {
 }) {
   try {
     const ciLimpio = data.ci.trim();
+    
+    let ipAceptacion = data.clientIp || "IP no detectada";
+    try {
+      const headersList = headers();
+      const headerIp = headersList.get("x-forwarded-for")?.split(',')[0] || headersList.get("x-real-ip");
+      if (headerIp) ipAceptacion = headerIp;
+    } catch(e) {}
 
     const result = await prisma.$transaction(async (tx) => {
       // Buscar o Crear Clienta
@@ -153,7 +161,10 @@ export async function vincularClientaReserva(ventaId: string, data: {
           clientaId: clienta.id,
           destino: data.ciudadDestino,
           provinciaDestino: data.provinciaDestino,
-          expiresAt: expiresAt
+          expiresAt: expiresAt,
+          terminosAceptados: true,
+          fechaAceptacion: new Date(),
+          ipAceptacion: ipAceptacion
         }
       });
 
@@ -387,6 +398,9 @@ export async function getVentas() {
               v.estado === 'PREPARANDO' ? 'PREPARANDO' :
               v.estado === 'ENTREGADO' ? 'ENTREGADO' : 'Aprobado',
       fecha: v.fecha.toLocaleString(),
+      terminosAceptados: v.terminosAceptados,
+      fechaAceptacion: v.fechaAceptacion ? v.fechaAceptacion.toLocaleString() : null,
+      ipAceptacion: v.ipAceptacion,
       comprobanteUrl: v.comprobante || "https://images.unsplash.com/photo-1620714223084-8fcacc6dfd8d?auto=format&fit=crop&w=400&q=80",
       puntosClienta: v.clienta?.puntos || 0,
       origen: v.origen,
