@@ -19,18 +19,20 @@ export async function loginUser(usuario: string, pin: string) {
     // 3. Set Cookie with User Info (Simple version: we just store the role and id)
     // In a real production app, we should use JWT
     const cookieStore = await cookies();
+    const ONE_YEAR = 60 * 60 * 24 * 365; // 1 año
+
     cookieStore.set("bruna_auth", "true", { 
       httpOnly: true, 
       secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24 * 7, // 1 week
+      maxAge: ONE_YEAR,
       path: "/"
     });
 
-    // Optionally we can store who is logged in to use it later
-    cookieStore.set("bruna_user_role", user.role, { path: "/" });
-    cookieStore.set("bruna_user_name", `${user.nombres} ${user.apellidos}`, { path: "/" });
-    cookieStore.set("bruna_user_id", user.id, { path: "/" });
-    cookieStore.set("bruna_user_permissions", JSON.stringify(user.permisos || []), { path: "/" });
+    // Añadir maxAge a todas las cookies para que no sean "Cookies de Sesión"
+    cookieStore.set("bruna_user_role", user.role, { path: "/", maxAge: ONE_YEAR });
+    cookieStore.set("bruna_user_name", `${user.nombres} ${user.apellidos}`, { path: "/", maxAge: ONE_YEAR });
+    cookieStore.set("bruna_user_id", user.id, { path: "/", maxAge: ONE_YEAR });
+    cookieStore.set("bruna_user_permissions", JSON.stringify(user.permisos || []), { path: "/", maxAge: ONE_YEAR });
 
     return { success: true, user: { name: user.nombres, role: user.role } };
   } catch (error: any) {
