@@ -1,5 +1,6 @@
 import { getVenta } from "@/app/actions/ventas";
-import { ShieldCheck, CalendarClock, Fingerprint, MapPin, MonitorSmartphone } from "lucide-react";
+import { getConfiguracion } from "@/app/actions/config";
+import { ShieldCheck, CalendarClock, Fingerprint, MapPin, MonitorSmartphone, ScrollText } from "lucide-react";
 import PrintButton from "./PrintButton";
 
 export default async function CertificadoLegalPage({ params }: { params: Promise<{ id: string }> }) {
@@ -10,6 +11,42 @@ export default async function CertificadoLegalPage({ params }: { params: Promise
   if (!venta) {
     return <div className="p-10 text-center font-bold text-red-500">Certificado no encontrado.</div>;
   }
+
+  const configRes = await getConfiguracion();
+  
+  const politicaPorDefecto = `POLÍTICA DE PRIVACIDAD Y TRATAMIENTO DE DATOS PERSONALES
+
+En BrunaShop2 valoramos tu privacidad y nos comprometemos a proteger tus datos personales, conforme a los principios establecidos en la Constitución Política del Estado Plurinacional de Bolivia (Art. 21.2) y la Ley N° 164 (Ley General de Telecomunicaciones, Tecnologías de Información y Comunicación) referente al comercio electrónico.
+
+1. DATOS QUE RECOPILAMOS
+Para procesar tus pedidos, recopilamos la siguiente información:
+- Nombres y Apellidos.
+- Cédula de Identidad (C.I.).
+- Número de teléfono / celular (WhatsApp).
+- Información de envío (Departamento y Provincia).
+- Imágenes de comprobantes de transferencia bancaria o depósitos (cuando aplique).
+- Dirección IP y marca de tiempo (fecha y hora exacta) al momento de aceptar los términos, con fines de seguridad y validación legal (Firma Electrónica/Clickwrap).
+
+2. FINALIDAD DEL TRATAMIENTO DE DATOS
+Los datos proporcionados serán utilizados única y exclusivamente para:
+- Procesar, confirmar y enviar tu pedido.
+- Contactarte mediante WhatsApp para actualizar el estado de tu compra.
+- Verificar la autenticidad de los pagos realizados mediante lectura manual o automatizada (OCR / Inteligencia Artificial) de los comprobantes subidos.
+- Fines de contabilidad interna, registro de clientas y resguardo legal ante posibles desconocimientos de compra.
+
+3. USO DE IMÁGENES Y COMPROBANTES
+Al subir una imagen de un comprobante de pago, aceptas que la misma pueda ser procesada por sistemas automatizados de terceros de manera segura y temporal, con el único fin de extraer la información necesaria (monto, nombre, número de referencia) para validar tu pago con agilidad. No utilizamos estas imágenes para entrenar modelos de Inteligencia Artificial ni las compartimos con terceros para fines publicitarios. Las imágenes se eliminarán periódicamente de nuestros servidores una vez que el pedido haya concluido exitosamente y expirado el plazo de reclamo.
+
+4. SEGURIDAD Y CONFIDENCIALIDAD
+BrunaShop no venderá, alquilará ni compartirá tus datos personales con terceros externos a nuestra logística, salvo obligación legal o requerimiento de autoridad competente en Bolivia. 
+
+5. TUS DERECHOS
+Como usuario, tienes derecho a solicitar la modificación o eliminación de tus datos personales de nuestra base de datos. Para ejercer este derecho, puedes contactarnos directamente mediante nuestro canal de atención al cliente.
+
+Al continuar usando nuestros servicios y finalizar una compra, otorgas tu consentimiento explícito para el tratamiento de tus datos conforme a esta política.`;
+
+  const politicaPrivacidad = configRes.data?.politicaPrivacidad || politicaPorDefecto;
+  const terminosCondiciones = configRes.data?.terminosCondiciones || "El usuario acepta los términos de venta, envíos y reembolsos vigentes al momento de la compra.";
 
   const clienta = venta.clienta;
 
@@ -98,6 +135,27 @@ export default async function CertificadoLegalPage({ params }: { params: Promise
             </div>
           </div>
         )}
+
+        {/* Anexo de Textos Legales Aceptados */}
+        <div className="mb-10 page-break-before">
+          <h3 className="text-lg font-black uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-gray-200 pb-2">
+            <ScrollText className="w-5 h-5 text-gray-700" /> Anexo: Textos Legales Aceptados
+          </h3>
+          <p className="text-xs text-gray-500 mb-4">
+            El siguiente texto representa la versión exacta de las políticas vigentes al momento en que el usuario otorgó su consentimiento.
+          </p>
+          <div className="bg-gray-50 border border-gray-200 p-6 rounded-lg text-[10px] sm:text-xs text-gray-600 whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto print:max-h-none print:overflow-visible">
+            {configRes.data?.terminosCondiciones && (
+              <>
+                <strong className="text-gray-900 uppercase block mb-2 text-sm">Términos y Condiciones:</strong>
+                {terminosCondiciones}
+                <div className="my-6 border-b border-gray-300" />
+              </>
+            )}
+            <strong className="text-gray-900 uppercase block mb-2 text-sm">Política de Privacidad y Tratamiento de Datos:</strong>
+            {politicaPrivacidad}
+          </div>
+        </div>
 
         {/* Footer Legal */}
         <div className="border-t border-gray-200 pt-6 mt-12 text-xs text-gray-400 text-center uppercase tracking-widest font-bold">

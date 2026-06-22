@@ -571,7 +571,7 @@ function CheckoutContent() {
                           // Convertir a base64 y enviar a OCR
                           setAnalizandoOCR(true);
                           try {
-                            const compressed = await compressImage(file, "media");
+                            const compressed = await compressImage(file, "baja");
                             const reader = new FileReader();
                             reader.onloadend = async () => {
                               const base64data = reader.result as string;

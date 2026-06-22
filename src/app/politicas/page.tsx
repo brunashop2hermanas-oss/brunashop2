@@ -6,7 +6,14 @@ export const metadata = {
 
 export default async function PoliticasPage() {
   const configRes = await getConfiguracion();
-  const politicas = configRes.data?.politicasEnvio || "Las políticas de envío se están actualizando. Vuelve pronto.";
+  
+  const ENVIO_POR_DEFECTO = `POLÍTICAS DE ENVÍO
+
+1. Los envíos se realizan únicamente a los departamentos y provincias habilitados en el sistema.
+2. El costo del envío será asumido por el cliente al momento de recoger el paquete, a menos que se indique lo contrario en alguna promoción.
+3. BrunaShop2 enviará el paquete una vez que se haya validado el pago en nuestro sistema.`;
+
+  const politicas = configRes.data?.politicasEnvio || ENVIO_POR_DEFECTO;
 
   return (
     <div className="min-h-screen pt-32 pb-20 px-6 max-w-4xl mx-auto">

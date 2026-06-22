@@ -119,13 +119,14 @@ export async function vincularClientaReserva(ventaId: string, data: {
   ciudadDestino: string;
   provinciaDestino?: string;
   tiempoReservaMinutos: number;
+  clientIp?: string;
 }) {
   try {
     const ciLimpio = data.ci.trim();
     
     let ipAceptacion = data.clientIp || "IP no detectada";
     try {
-      const headersList = headers();
+      const headersList = await headers();
       const headerIp = headersList.get("x-forwarded-for")?.split(',')[0] || headersList.get("x-real-ip");
       if (headerIp) ipAceptacion = headerIp;
     } catch(e) {}
