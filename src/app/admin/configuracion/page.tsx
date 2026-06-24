@@ -135,7 +135,7 @@ export default function AdminConfiguracion() {
           politicaPrivacidad: resConfig.data.politicaPrivacidad || POLITICA_POR_DEFECTO,
           usarControlFinanciero: resConfig.data.usarControlFinanciero ?? true,
           liveActivo: resConfig.data.liveActivo ?? false,
-          liveHorariosRecurrentes: (resConfig.data.liveHorariosRecurrentes as { horarios: { diaSemana: number, hora: string, unSoloUso?: boolean }[], ultimaActivacion?: string }) || { horarios: [] },
+          liveHorariosRecurrentes: (resConfig.data.liveHorariosRecurrentes as { horarios: { diaSemana: number, hora: string, unSoloUso?: boolean }[], ultimaActivacion: string | undefined }) || { horarios: [] },
           tiempoReservaMinutos: resConfig.data.tiempoReservaMinutos ?? 4,
           tiempoLlenadoDatosMinutos: resConfig.data.tiempoLlenadoDatosMinutos ?? 10,
           destinosHabilitados: {}, // Lo llenamos abajo
