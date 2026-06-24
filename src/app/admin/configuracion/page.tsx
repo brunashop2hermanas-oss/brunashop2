@@ -605,8 +605,8 @@ export default function AdminConfiguracion() {
                       const dias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
                       return (
                         <div key={i} className="flex flex-col items-start">
-                          <div className={`flex items-center gap-3 border px-4 py-2 rounded-full text-sm font-bold transition-all ${editIndex === i ? 'bg-blue-50 border-blue-300 text-blue-900 shadow-sm' : h.unSoloUso ? 'bg-orange-50 border-orange-200 text-orange-900' : 'bg-red-50 border-red-200 text-red-900'}`}>
-                            <span className="flex items-center gap-2">
+                          <div className={`flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-3 border px-4 py-2.5 rounded-2xl text-sm font-bold transition-all w-full sm:w-auto ${editIndex === i ? 'bg-blue-50 border-blue-300 text-blue-900 shadow-sm' : h.unSoloUso ? 'bg-orange-50 border-orange-200 text-orange-900' : 'bg-red-50 border-red-200 text-red-900'}`}>
+                            <span className="flex flex-wrap items-center gap-2 leading-tight">
                               {h.unSoloUso ? (
                                 <span className="bg-orange-200 text-orange-900 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-black">1 Solo Uso</span>
                               ) : (
@@ -614,7 +614,7 @@ export default function AdminConfiguracion() {
                               )}
                               <span>{dias[h.diaSemana]} a las {h.hora}</span>
                             </span>
-                            <div className="flex items-center gap-2 ml-2 border-l pl-3 border-current/20">
+                            <div className="flex items-center gap-2 sm:ml-2 sm:border-l sm:pl-3 border-current/20 shrink-0">
                               <button 
                                 title="Editar este horario"
                                 onClick={() => {
