@@ -28,11 +28,11 @@ Para procesar tus pedidos, recopilamos la siguiente información:
 Los datos proporcionados serán utilizados única y exclusivamente para:
 - Procesar, confirmar y enviar tu pedido.
 - Contactarte mediante WhatsApp para actualizar el estado de tu compra.
-- Verificar la autenticidad de los pagos realizados mediante lectura manual o automatizada (OCR / Inteligencia Artificial) de los comprobantes subidos.
+- Verificar la autenticidad de los pagos realizados mediante revisión manual de los comprobantes subidos.
 - Fines de contabilidad interna, registro de clientas y resguardo legal ante posibles desconocimientos de compra.
 
 3. USO DE IMÁGENES Y COMPROBANTES
-Al subir una imagen de un comprobante de pago, aceptas que la misma pueda ser procesada por sistemas automatizados de terceros de manera segura y temporal, con el único fin de extraer la información necesaria (monto, nombre, número de referencia) para validar tu pago con agilidad. No utilizamos estas imágenes para entrenar modelos de Inteligencia Artificial ni las compartimos con terceros para fines publicitarios. Las imágenes se eliminarán periódicamente de nuestros servidores una vez que el pedido haya concluido exitosamente y expirado el plazo de reclamo.
+Al subir una imagen de un comprobante de pago, aceptas que la misma será procesada y almacenada de manera segura, con el único fin de extraer la información necesaria (monto, nombre, número de referencia) para validar tu pago con agilidad. Las imágenes se eliminarán periódicamente de nuestros servidores una vez que el pedido haya concluido exitosamente y expirado el plazo de reclamo.
 
 4. USO DE COOKIES
 Nuestro sistema utiliza "Cookies Esenciales" y almacenamiento local (Local Storage) exclusivamente para funciones operativas básicas, como mantener los productos guardados en tu carrito de compras mientras navegas por la tienda y recordar tu sesión si ya eres clienta recurrente. No utilizamos cookies de rastreo invasivas de terceros ni vendemos tu historial de navegación. Al utilizar nuestra tienda, aceptas el uso de estas cookies estrictamente necesarias para el funcionamiento del sistema.

@@ -12,23 +12,30 @@ export default function DashboardInicio() {
     ingresosAno: 0,
     pedidosHoy: 0,
     masVendido: "Cargando...",
+    masVendidosList: [] as any[],
+    menosVendidosList: [] as any[],
     clientasTotales: 0,
     alertasInventario: [] as any[]
   });
   const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [rangoMas, setRangoMas] = useState("Mes"); 
+  const [rangoMenos, setRangoMenos] = useState("Mes"); 
 
   useEffect(() => {
     const fetchStats = async () => {
-      const res = await getDashboardStats();
+      setLoading(true);
+      const res = await getDashboardStats(rangoMas, rangoMenos);
       if (res.success && res.data) {
         setStats(res.data);
       }
       setLoading(false);
+      setIsInitialLoad(false);
     };
     fetchStats();
-  }, []);
+  }, [rangoMas, rangoMenos]);
 
-  if (loading) {
+  if (isInitialLoad) {
     return (
       <div className="flex-1 flex justify-center items-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
@@ -37,7 +44,7 @@ export default function DashboardInicio() {
   }
 
   return (
-    <div className="flex-1">
+    <div className={`flex-1 transition-opacity duration-300 ${loading ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
       <h1 className="text-3xl font-extrabold text-foreground mb-2">Bienvenida, Dueña</h1>
       <p className="text-foreground/70 mb-8">Aquí tienes el resumen de cómo va BrunaShop2 hoy.</p>
 
@@ -76,11 +83,79 @@ export default function DashboardInicio() {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="glass p-10 rounded-3xl border border-surface-border shadow-3d text-center flex flex-col justify-center items-center">
-          <h2 className="text-xl font-bold mb-4">¡Todo en orden!</h2>
-          <p className="text-foreground/70">Navega por el menú de la izquierda para gestionar pedidos o actualizar el catálogo.</p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+        <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d flex flex-col">
+          <div className="flex justify-between items-center mb-6 border-b border-surface-border pb-4">
+            <h2 className="text-xl font-bold flex items-center gap-2 text-brand-primary">
+              <TrendingUp className="w-5 h-5" /> Top 5 Más Vendidos
+            </h2>
+            <select 
+              value={rangoMas} 
+              onChange={e => setRangoMas(e.target.value)} 
+              className="bg-background border border-surface-border p-2 rounded-lg text-xs outline-none font-bold text-foreground"
+            >
+              <option value="Hoy">Hoy</option>
+              <option value="Semana">Esta Semana</option>
+              <option value="Mes">Este Mes</option>
+              <option value="Año">Este Año</option>
+              <option value="Todo">Siempre</option>
+            </select>
+          </div>
+          
+          {stats.masVendidosList.length > 0 && stats.masVendidosList[0].vendidos > 0 ? (
+            <ul className="space-y-4 flex-1">
+              {stats.masVendidosList.map((prenda: any, idx: number) => prenda.vendidos > 0 && (
+                <li key={idx} className="flex justify-between items-center bg-background/50 p-4 rounded-xl border border-surface-border">
+                  <span className="font-bold text-foreground truncate mr-2">{prenda.nombre}</span>
+                  <span className="bg-brand-primary/10 text-brand-primary px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
+                    {prenda.vendidos} vendidas
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-foreground/50 py-10">
+              <ShoppingBag className="w-10 h-10 mb-2 opacity-50" />
+              <p className="text-sm">No hay ventas registradas en este periodo.</p>
+            </div>
+          )}
         </div>
+
+        <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d flex flex-col">
+          <div className="flex justify-between items-center mb-6 border-b border-surface-border pb-4">
+            <h2 className="text-xl font-bold flex items-center gap-2 text-red-500">
+              <TrendingUp className="w-5 h-5 rotate-180" /> Top 5 Menos Vendidos
+            </h2>
+            <select 
+              value={rangoMenos} 
+              onChange={e => setRangoMenos(e.target.value)} 
+              className="bg-red-500/10 border border-red-500/20 p-2 rounded-lg text-xs outline-none font-bold text-red-500"
+            >
+              <option value="Hoy">Hoy</option>
+              <option value="Semana">Esta Semana</option>
+              <option value="Mes">Este Mes</option>
+              <option value="Año">Este Año</option>
+              <option value="Todo">Siempre</option>
+            </select>
+          </div>
+
+          <p className="text-xs text-foreground/60 mb-4">Muestra las prendas con menos movimiento o estancadas en el rango seleccionado.</p>
+          
+          <ul className="space-y-4 flex-1">
+            {stats.menosVendidosList.map((prenda: any, idx: number) => (
+              <li key={idx} className="flex justify-between items-center bg-red-500/5 p-4 rounded-xl border border-red-500/20">
+                <div className="flex flex-col">
+                  <span className="font-bold text-foreground truncate mr-2">{prenda.nombre}</span>
+                  <span className="text-[10px] text-foreground/50 uppercase tracking-widest mt-1">Stock disponible: {prenda.stock}</span>
+                </div>
+                <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap shadow-sm">
+                  {prenda.vendidos} vendidas
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
 
         <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d">
           <h2 className="text-xl font-bold mb-6 flex items-center gap-2 border-b border-surface-border pb-4">
@@ -108,7 +183,6 @@ export default function DashboardInicio() {
             <p className="text-foreground/60 text-center py-8">Excelente. No tienes prendas con stock crítico.</p>
           )}
         </div>
-      </div>
     </div>
   );
 }

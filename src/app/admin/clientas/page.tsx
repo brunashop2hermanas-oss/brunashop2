@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Star, Gift, Search, Phone, Fingerprint, FileText } from "lucide-react";
 import { useState } from "react";
 
-import { getClientas } from "@/app/actions/clientas";
+import { getClientas, resetPuntosClientas } from "@/app/actions/clientas";
 import { useEffect } from "react";
 
 export default function AdminClientas() {
@@ -13,6 +13,7 @@ export default function AdminClientas() {
   const [isLoading, setIsLoading] = useState(true);
   const [clientaSeleccionada, setClientaSeleccionada] = useState<any>(null);
   const [criterioOrden, setCriterioOrden] = useState<"defecto" | "puntos">("defecto");
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchClientas = async () => {
@@ -59,6 +60,14 @@ export default function AdminClientas() {
           <p className="text-foreground/70 mt-1 text-lg">
             Directorio de clientas frecuentes y acumulación de puntos (1 Prenda = 1 Punto).
           </p>
+        </div>
+        <div className="no-print">
+          <button 
+            onClick={() => setIsResetModalOpen(true)}
+            className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all"
+          >
+            Resetear Todos los Puntos a 0
+          </button>
         </div>
       </div>
 
@@ -376,6 +385,49 @@ export default function AdminClientas() {
           .print-ficha { display: block !important; }
         }
       `}} />
+
+      {/* Modal de Confirmación de Reseteo */}
+      {isResetModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-surface border border-surface-border p-8 rounded-3xl max-w-md w-full shadow-2xl relative"
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-6">
+                <Star className="w-10 h-10" />
+              </div>
+              <h2 className="text-2xl font-black text-foreground mb-4">¿Resetear Puntos?</h2>
+              <p className="text-foreground/70 mb-8 leading-relaxed">
+                ¿Estás segura de querer resetear los puntos de <strong className="text-foreground">TODAS</strong> las clientas a 0? 
+                Esta acción no se puede deshacer y es ideal para iniciar una nueva temporada de premios.
+              </p>
+              <div className="flex gap-4 w-full">
+                <button 
+                  onClick={() => setIsResetModalOpen(false)}
+                  className="flex-1 px-4 py-3 rounded-xl font-bold text-foreground/70 bg-surface border border-surface-border hover:bg-surface-border transition-colors outline-none focus:ring-2 focus:ring-brand-primary"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={async () => {
+                    setIsResetModalOpen(false);
+                    setIsLoading(true);
+                    await resetPuntosClientas();
+                    const res = await getClientas();
+                    if (res.success) setClientas(res.data || []);
+                    setIsLoading(false);
+                  }}
+                  className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30 outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  Sí, Resetear
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

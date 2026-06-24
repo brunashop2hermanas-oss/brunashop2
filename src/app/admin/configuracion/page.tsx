@@ -3,7 +3,7 @@
 import toast from "react-hot-toast";
 import Link from "next/link";
 
-import { Settings, QrCode, Building, ShieldCheck, Upload, Save, Eye, EyeOff, BarChart3 } from "lucide-react";
+import { Settings, QrCode, Building, ShieldCheck, Upload, Save, Eye, EyeOff, BarChart3, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getConfiguracion, updateConfiguracion } from "@/app/actions/config";
 import { getUsuarios, createUsuario, updateUsuario, deleteUsuario } from "@/app/actions/usuarios";
@@ -13,17 +13,10 @@ import { Clock, MapPin, CheckSquare, Square, Trash2 } from "lucide-react";
 import LimpiezaDB from "./LimpiezaDB";
 import LicenciaPlanes from "./LicenciaPlanes";
 
-const BOLIVIA_DATA: Record<string, string[]> = {
-  "Beni": ["Cercado (Trinidad)", "Vaca Díez", "Iténez", "José Ballivián", "Mamoré", "Marbán", "Moxos", "Yacuma"],
-  "Chuquisaca": ["Oropeza (Sucre)", "Azurduy", "Zudáñez", "Tomina", "Hernando Siles", "Yamparáez", "Nor Cinti", "Sud Cinti", "Belisario Boeto", "Luis Calvo"],
-  "Cochabamba": ["Cercado (Cochabamba)", "Campero", "Ayopaya", "Esteban Arce", "Arani", "Arque", "Capinota", "Germán Jordán", "Quillacollo", "Chapare", "Tapacarí", "Carrasco", "Mizque", "Punata", "Bolívar", "Tiraque"],
-  "La Paz": ["Murillo (La Paz / El Alto)", "Omasuyos", "Pacajes", "Camacho", "Muñecas", "Larecaja", "Franz Tamayo", "Ingavi", "Loayza", "Inquisivi", "Sur Yungas", "Los Andes", "Aroma", "Nor Yungas", "Iturralde", "Bautista Saavedra", "Manco Kapac", "Gualberto Villarroel", "José Manuel Pando", "Caranavi"],
-  "Oruro": ["Cercado (Oruro)", "Abaroa", "Carangas", "Sajama", "Litoral", "Poopó", "Pantaleón Dalence", "Ladislao Cabrera", "Atahuallpa", "Saucari", "Tomás Barrón", "Sur Carangas", "San Pedro de Totora", "Sebastián Pagador", "Mejillones", "Nor Carangas"],
-  "Pando": ["Nicolás Suárez (Cobija)", "Manuripi", "Madre de Dios", "Abuná", "Federico Román"],
-  "Potosí": ["Tomás Frías (Potosí)", "Rafael Bustillo", "Cornelio Saavedra", "Chayanta", "Charcas", "Nor Chichas", "Alonso de Ibáñez", "Sur Chichas", "Nor Lípez", "Sur Lípez", "José María Linares", "Antonio Quijarro", "General Bernardino Bilbao", "Daniel Campos", "Modesto Omiste", "Enrique Baldivieso"],
-  "Santa Cruz": ["Andrés Ibáñez (Santa Cruz de la Sierra)", "Warnes", "Velasco", "Ichilo", "Chiquitos", "Sara", "Cordillera", "Vallegrande", "Florida", "Obispo Santistevan", "Ñuflo de Chávez", "Ángel Sandoval", "Manuel María Caballero", "Germán Busch", "Guarayos"],
-  "Tarija": ["Cercado (Tarija)", "Aniceto Arce", "Gran Chaco", "Avilés", "Méndez", "Burnet O'Connor"]
-};
+const DEPARTAMENTOS = [
+  "Beni", "Chuquisaca", "Cochabamba", "La Paz", "Oruro", 
+  "Pando", "Potosí", "Santa Cruz", "Tarija"
+];
 
 const POLITICA_POR_DEFECTO = `POLÍTICA DE PRIVACIDAD Y TRATAMIENTO DE DATOS PERSONALES
 
@@ -87,9 +80,11 @@ export default function AdminConfiguracion() {
     politicaPrivacidad: "",
     usarControlFinanciero: true,
     liveActivo: false,
+    liveProgramadoPara: "" as string,
     tiempoReservaMinutos: 4,
     tiempoLlenadoDatosMinutos: 10,
-    destinosHabilitados: {} as Record<string, string[]>
+    destinosHabilitados: {} as Record<string, { provincias: string[], municipios: string[] }>,
+    categoriasPrendas: [] as string[]
   });
   const [qrFile, setQrFile] = useState<File | null>(null);
   
@@ -101,6 +96,11 @@ export default function AdminConfiguracion() {
   const [mostrarModalUsuario, setMostrarModalUsuario] = useState(false);
   const [mostrarModalVerUsuario, setMostrarModalVerUsuario] = useState(false);
   const [usuarioActivo, setUsuarioActivo] = useState<{ id: string; nombres: string; apellidos: string; ci: string; telefono: string; username: string; pin: string; role: string } | null>(null);
+
+  // Modal para Destinos
+  const [modalDestino, setModalDestino] = useState<{isOpen: boolean, tipo: 'Provincia' | 'Municipio', depto: string}>({isOpen: false, tipo: 'Provincia', depto: ''});
+  const [inputDestino, setInputDestino] = useState("");
+  const [nuevaCategoriaInput, setNuevaCategoriaInput] = useState("");
 
   // Form states
   const [formUsr, setFormUsr] = useState<{nombres:string, apellidos:string, ci:string, telefono:string, username:string, pin:string, role:string, permisos:string[]}>({
@@ -130,10 +130,24 @@ export default function AdminConfiguracion() {
           politicaPrivacidad: resConfig.data.politicaPrivacidad || POLITICA_POR_DEFECTO,
           usarControlFinanciero: resConfig.data.usarControlFinanciero ?? true,
           liveActivo: resConfig.data.liveActivo ?? false,
+          liveProgramadoPara: resConfig.data.liveProgramadoPara ? new Date(new Date(resConfig.data.liveProgramadoPara).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "",
           tiempoReservaMinutos: resConfig.data.tiempoReservaMinutos ?? 4,
           tiempoLlenadoDatosMinutos: resConfig.data.tiempoLlenadoDatosMinutos ?? 10,
-          destinosHabilitados: (resConfig.data.destinosHabilitados as Record<string, string[]>) || {}
+          destinosHabilitados: {}, // Lo llenamos abajo
+          categoriasPrendas: resConfig.data.categoriasPrendas || ["Vestidos", "Conjuntos", "Blusas y Tops", "Pantalones y Jeans", "Chaquetas y Abrigos", "Enterizos", "Ofertas / Sale"]
         });
+
+        // Migración automática del formato viejo al nuevo
+        const loadedDestinos = (resConfig.data.destinosHabilitados as any) || {};
+        const parsedDestinos: Record<string, { provincias: string[], municipios: string[] }> = {};
+        for (const depto in loadedDestinos) {
+          if (Array.isArray(loadedDestinos[depto])) {
+            parsedDestinos[depto] = { provincias: loadedDestinos[depto], municipios: [] };
+          } else {
+            parsedDestinos[depto] = loadedDestinos[depto];
+          }
+        }
+        setConfig(prev => ({ ...prev, destinosHabilitados: parsedDestinos }));
       }
 
       const resUsr = await getUsuarios();
@@ -197,9 +211,11 @@ export default function AdminConfiguracion() {
         politicaPrivacidad: config.politicaPrivacidad,
         usarControlFinanciero: config.usarControlFinanciero,
         liveActivo: config.liveActivo,
+        liveProgramadoPara: config.liveProgramadoPara ? new Date(config.liveProgramadoPara) : null,
         tiempoReservaMinutos: config.tiempoReservaMinutos,
         tiempoLlenadoDatosMinutos: config.tiempoLlenadoDatosMinutos,
-        destinosHabilitados: config.destinosHabilitados
+        destinosHabilitados: config.destinosHabilitados,
+        categoriasPrendas: config.categoriasPrendas
       };
 
       const res = await updateConfiguracion(dataToSend);
@@ -310,22 +326,72 @@ export default function AdminConfiguracion() {
       if (newDestinos[depto]) {
         delete newDestinos[depto]; // Deshabilitar si ya existe
       } else {
-        newDestinos[depto] = []; // Habilitar sin provincias por defecto
+        newDestinos[depto] = { provincias: [], municipios: [] }; // Habilitar vacío
       }
       return { ...prev, destinosHabilitados: newDestinos };
     });
   };
 
-  const toggleProvincia = (depto: string, prov: string) => {
+  const addProvincia = (depto: string) => {
+    setModalDestino({isOpen: true, tipo: 'Provincia', depto});
+    setInputDestino("");
+  };
+
+  const removeProvincia = (depto: string, prov: string) => {
     setConfig(prev => {
       const newDestinos = { ...prev.destinosHabilitados };
-      if (!newDestinos[depto]) return prev; // El departamento debe estar activo
+      if (newDestinos[depto]) {
+        newDestinos[depto].provincias = newDestinos[depto].provincias.filter((p: string) => p !== prov);
+      }
+      return { ...prev, destinosHabilitados: newDestinos };
+    });
+  };
+
+  const handleAddCategoria = () => {
+    const val = nuevaCategoriaInput.trim();
+    if (val && !config.categoriasPrendas.includes(val)) {
+      setConfig(prev => ({ ...prev, categoriasPrendas: [...prev.categoriasPrendas, val] }));
+      setNuevaCategoriaInput("");
+    }
+  };
+
+  const handleRemoveCategoria = (cat: string) => {
+    setConfig(prev => ({ ...prev, categoriasPrendas: prev.categoriasPrendas.filter(c => c !== cat) }));
+  };
+
+  const addMunicipio = (depto: string) => {
+    setModalDestino({isOpen: true, tipo: 'Municipio', depto});
+    setInputDestino("");
+  };
+
+  const handleGuardarDestino = () => {
+    if (!inputDestino.trim()) return;
+    
+    setConfig(prev => {
+      const newDestinos = { ...prev.destinosHabilitados };
+      const { depto, tipo } = modalDestino;
       
-      const idx = newDestinos[depto].indexOf(prov);
-      if (idx > -1) {
-        newDestinos[depto] = newDestinos[depto].filter(p => p !== prov);
+      if (tipo === 'Provincia') {
+        if (newDestinos[depto] && !newDestinos[depto].provincias.includes(inputDestino.trim())) {
+          newDestinos[depto].provincias = [...newDestinos[depto].provincias, inputDestino.trim()];
+        }
       } else {
-        newDestinos[depto] = [...newDestinos[depto], prov];
+        if (newDestinos[depto] && !newDestinos[depto].municipios.includes(inputDestino.trim())) {
+          newDestinos[depto].municipios = [...newDestinos[depto].municipios, inputDestino.trim()];
+        }
+      }
+      return { ...prev, destinosHabilitados: newDestinos };
+    });
+    
+    setModalDestino({isOpen: false, tipo: 'Provincia', depto: ''});
+    setInputDestino("");
+  };
+
+  const removeMunicipio = (depto: string, mun: string) => {
+    setConfig(prev => {
+      const newDestinos = { ...prev.destinosHabilitados };
+      if (newDestinos[depto]) {
+        newDestinos[depto].municipios = newDestinos[depto].municipios.filter((m: string) => m !== mun);
       }
       return { ...prev, destinosHabilitados: newDestinos };
     });
@@ -424,20 +490,43 @@ export default function AdminConfiguracion() {
             </label>
           </div>
 
-          <div className="flex items-center justify-between bg-red-500/10 border border-red-500/20 p-4 rounded-xl">
-            <div>
-              <p className="font-bold text-red-600">Botón Maestro: TikTok LIVE</p>
-              <p className="text-sm text-red-500/80">Al activarlo, todas las prendas que marcaste como &quot;En Live&quot; aparecerán en la tienda virtual en una pestaña especial para tus clientes.</p>
+          <div className="flex flex-col gap-4 bg-red-500/10 border border-red-500/20 p-4 rounded-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-bold text-red-600">Botón Maestro: TikTok LIVE</p>
+                <p className="text-sm text-red-500/80">Al activarlo, todas las prendas que marcaste como &quot;En Live&quot; aparecerán en la tienda virtual en una pestaña especial para tus clientes.</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer ml-4">
+                <input 
+                  type="checkbox" 
+                  checked={config.liveActivo || false} 
+                  onChange={e => setConfig({...config, liveActivo: e.target.checked})} 
+                  className="sr-only peer" 
+                />
+                <div className="w-11 h-6 bg-surface-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+              </label>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer ml-4">
-              <input 
-                type="checkbox" 
-                checked={config.liveActivo || false} 
-                onChange={e => setConfig({...config, liveActivo: e.target.checked})} 
-                className="sr-only peer" 
-              />
-              <div className="w-11 h-6 bg-surface-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
-            </label>
+            
+            <div className="pt-4 border-t border-red-500/10">
+              <label className="block text-sm font-bold text-red-600 mb-2">Programar inicio de LIVE (Opcional)</label>
+              <div className="flex items-center gap-3">
+                <input 
+                  type="datetime-local" 
+                  value={config.liveProgramadoPara || ""}
+                  onChange={e => setConfig({...config, liveProgramadoPara: e.target.value})}
+                  className="bg-background border border-red-500/20 text-foreground p-2 rounded-lg outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                />
+                {config.liveProgramadoPara && (
+                  <button 
+                    onClick={() => setConfig({...config, liveProgramadoPara: ""})}
+                    className="text-xs text-red-500 hover:text-red-700 underline font-medium"
+                  >
+                    Borrar Programación
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-red-500/70 mt-2">Si configuras una fecha y hora aquí, el Botón Maestro se activará automáticamente llegado el momento.</p>
+            </div>
           </div>
         </div>
 
@@ -535,6 +624,37 @@ export default function AdminConfiguracion() {
             </div>
           </div>
 
+          <div className="bg-surface border border-surface-border p-6 rounded-2xl mb-6">
+            <h3 className="font-bold text-foreground mb-4">Categorías Editables de Prendas</h3>
+            <p className="text-sm text-foreground/70 mb-4">Añade o elimina las categorías que aparecerán al registrar nuevas prendas.</p>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {(config.categoriasPrendas || []).map(cat => (
+                <span key={cat} className="bg-brand-primary/10 text-brand-primary font-bold px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                  {cat}
+                  <button onClick={() => handleRemoveCategoria(cat)} className="text-brand-primary hover:text-red-500 transition-colors">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex items-center gap-3 mt-4 border-t border-surface-border pt-4">
+              <input 
+                type="text" 
+                placeholder="Nueva categoría..." 
+                value={nuevaCategoriaInput}
+                onChange={(e) => setNuevaCategoriaInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddCategoria()}
+                className="flex-1 bg-background border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none"
+              />
+              <button 
+                onClick={handleAddCategoria}
+                className="bg-brand-primary text-background font-bold px-6 py-3 rounded-xl hover:brightness-110 transition-colors whitespace-nowrap"
+              >
+                + Añadir Categoría
+              </button>
+            </div>
+          </div>
+
           <div>
             <h3 className="font-bold text-foreground mb-4">Destinos Habilitados para Envío</h3>
             <p className="text-sm text-foreground/70 mb-6">
@@ -542,8 +662,10 @@ export default function AdminConfiguracion() {
             </p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {Object.keys(BOLIVIA_DATA).map(depto => {
+              {DEPARTAMENTOS.map(depto => {
                 const isActive = config.destinosHabilitados[depto] !== undefined;
+                const deptoData = config.destinosHabilitados[depto];
+
                 return (
                   <div key={depto} className={`border rounded-2xl overflow-hidden transition-colors ${isActive ? 'border-brand-primary/50 bg-brand-primary/5' : 'border-surface-border bg-surface/50'}`}>
                     <div 
@@ -554,22 +676,49 @@ export default function AdminConfiguracion() {
                       <span className={`font-bold ${isActive ? 'text-brand-primary' : 'text-foreground/70'}`}>{depto}</span>
                     </div>
                     
-                    {isActive && (
-                      <div className="p-4 max-h-48 overflow-y-auto space-y-2 custom-scrollbar">
-                        <p className="text-xs font-bold text-foreground/50 mb-3 uppercase tracking-wider">Provincias Disponibles:</p>
-                        {BOLIVIA_DATA[depto].map(prov => {
-                          const isProvActive = config.destinosHabilitados[depto]?.includes(prov);
-                          return (
-                            <div 
-                              key={prov} 
-                              className="flex items-center gap-2 cursor-pointer hover:bg-background/50 p-1.5 rounded-lg"
-                              onClick={() => toggleProvincia(depto, prov)}
-                            >
-                              {isProvActive ? <CheckSquare className="text-brand-primary w-4 h-4 shrink-0" /> : <Square className="text-foreground/30 w-4 h-4 shrink-0" />}
-                              <span className={`text-sm ${isProvActive ? 'text-foreground font-medium' : 'text-foreground/60'}`}>{prov}</span>
+                    {isActive && deptoData && (
+                      <div className="p-4 space-y-4">
+                        
+                        {/* SECCIÓN PROVINCIAS */}
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <p className="text-xs font-bold text-foreground/50 uppercase tracking-wider">Provincias:</p>
+                            <button onClick={() => addProvincia(depto)} className="text-[10px] bg-brand-primary/10 text-brand-primary font-bold px-2 py-1 rounded-md hover:bg-brand-primary/20">+ Añadir</button>
+                          </div>
+                          {deptoData.provincias.length === 0 ? (
+                            <p className="text-xs text-foreground/40 italic">Ninguna provincia agregada.</p>
+                          ) : (
+                            <div className="flex flex-wrap gap-2">
+                              {deptoData.provincias.map(prov => (
+                                <div key={prov} className="flex items-center gap-1 bg-background border border-surface-border px-2 py-1 rounded-md text-xs">
+                                  <span>{prov}</span>
+                                  <button onClick={() => removeProvincia(depto, prov)} className="text-red-400 hover:text-red-600 ml-1"><X className="w-3 h-3" /></button>
+                                </div>
+                              ))}
                             </div>
-                          );
-                        })}
+                          )}
+                        </div>
+
+                        {/* SECCIÓN MUNICIPIOS */}
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <p className="text-xs font-bold text-foreground/50 uppercase tracking-wider">Municipios:</p>
+                            <button onClick={() => addMunicipio(depto)} className="text-[10px] bg-brand-primary/10 text-brand-primary font-bold px-2 py-1 rounded-md hover:bg-brand-primary/20">+ Añadir</button>
+                          </div>
+                          {deptoData.municipios.length === 0 ? (
+                            <p className="text-xs text-foreground/40 italic">Ningún municipio agregado.</p>
+                          ) : (
+                            <div className="flex flex-wrap gap-2">
+                              {deptoData.municipios.map(mun => (
+                                <div key={mun} className="flex items-center gap-1 bg-background border border-surface-border px-2 py-1 rounded-md text-xs">
+                                  <span>{mun}</span>
+                                  <button onClick={() => removeMunicipio(depto, mun)} className="text-red-400 hover:text-red-600 ml-1"><X className="w-3 h-3" /></button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
                       </div>
                     )}
                   </div>
@@ -723,6 +872,41 @@ export default function AdminConfiguracion() {
         </div>
 
       </div>
+
+      {/* Modal para Añadir Provincia / Municipio */}
+      {modalDestino.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-background w-full max-w-sm rounded-3xl p-8 border border-surface-border shadow-2xl relative">
+            <h2 className="text-xl font-bold text-foreground mb-2">Añadir {modalDestino.tipo}</h2>
+            <p className="text-sm text-foreground/70 mb-6">Departamento: <span className="font-bold">{modalDestino.depto}</span></p>
+            
+            <input 
+              type="text" 
+              autoFocus
+              placeholder={`Nombre del ${modalDestino.tipo === 'Provincia' ? 'la provincia' : 'municipio'}...`}
+              value={inputDestino}
+              onChange={e => setInputDestino(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleGuardarDestino()}
+              className="w-full bg-surface border border-surface-border p-4 rounded-xl outline-none focus:ring-2 focus:ring-brand-primary font-medium mb-6 text-foreground" 
+            />
+            
+            <div className="flex gap-3 justify-end">
+              <button 
+                onClick={() => setModalDestino({...modalDestino, isOpen: false})} 
+                className="px-5 py-2.5 rounded-xl font-bold text-foreground/70 hover:bg-surface border border-transparent transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleGuardarDestino} 
+                className="bg-brand-primary text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:brightness-110 transition-colors"
+              >
+                Añadir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Añadir / Editar Usuario */}
       {(mostrarModalUsuario || mostrarModalVerUsuario) && (

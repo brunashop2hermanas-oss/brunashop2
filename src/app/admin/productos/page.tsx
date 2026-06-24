@@ -5,6 +5,7 @@ import { Plus, Video, EyeOff, Edit, Trash2, X, Palette, Scaling } from "lucide-r
 import { motion, AnimatePresence } from "framer-motion";
 import { getPrendas, createPrenda, updatePrenda, deletePrenda } from "@/app/actions/productos";
 import { uploadImage } from "@/app/actions/upload";
+import { getConfiguracion, updateConfiguracion } from "@/app/actions/config";
 import { compressImage } from "@/lib/imageCompression";
 
 export default function AdminProductos() {
@@ -29,18 +30,59 @@ export default function AdminProductos() {
     marca: "",
     isConjunto: false,
     piezasDetalle: {} as any,
-    stockPorTalla: {} as any
+    stockPorTalla: {} as any,
+    descripcionLarga: "",
+    costoProveedor: ""
   });
+
+  const [usarControlFinanciero, setUsarControlFinanciero] = useState(false);
 
   const [categorias, setCategorias] = useState(["Vestidos", "Conjuntos", "Blusas y Tops", "Pantalones y Jeans", "Chaquetas y Abrigos", "Enterizos", "Ofertas / Sale"]);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("");
+  const [isGestionandoCategorias, setIsGestionandoCategorias] = useState(false);
   const [nuevaCategoria, setNuevaCategoria] = useState("");
-  
+  const [categoriaAEditar, setCategoriaAEditar] = useState<{old: string, new: string} | null>(null);
+
   const [tallasDisponibles, setTallasDisponibles] = useState(['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Talla Única']);
   const [tallasSeleccionadas, setTallasSeleccionadas] = useState<string[]>([]);
   const [nuevaTalla, setNuevaTalla] = useState("");
 
   const [fotosPreview, setFotosPreview] = useState<string[]>([]);
+
+  const guardarCategoriasEnBD = async (nuevasCategorias: string[]) => {
+    try {
+      await updateConfiguracion({ categoriasPrendas: nuevasCategorias });
+    } catch (e) {
+      console.error("Error al guardar categorías", e);
+    }
+  };
+
+  const agregarCategoriaLocal = () => {
+    const cat = nuevaCategoria.trim();
+    if (!cat || categorias.includes(cat)) return;
+    const actualizadas = [...categorias, cat];
+    setCategorias(actualizadas);
+    setNuevaCategoria("");
+    guardarCategoriasEnBD(actualizadas);
+  };
+
+  const eliminarCategoriaLocal = (cat: string) => {
+    const actualizadas = categorias.filter(c => c !== cat);
+    setCategorias(actualizadas);
+    if (categoriaSeleccionada === cat) setCategoriaSeleccionada("");
+    guardarCategoriasEnBD(actualizadas);
+  };
+
+  const guardarEdicionCategoriaLocal = () => {
+    if (!categoriaAEditar) return;
+    const catNuevo = categoriaAEditar.new.trim();
+    if (!catNuevo) return;
+    const actualizadas = categorias.map(c => c === categoriaAEditar.old ? catNuevo : c);
+    setCategorias(actualizadas);
+    if (categoriaSeleccionada === categoriaAEditar.old) setCategoriaSeleccionada(catNuevo);
+    setCategoriaAEditar(null);
+    guardarCategoriasEnBD(actualizadas);
+  };
 
   useEffect(() => {
     cargarProductos();
@@ -48,16 +90,32 @@ export default function AdminProductos() {
 
   const cargarProductos = async () => {
     setIsLoading(true);
-    const res = await getPrendas();
-    if (res.success) {
-      setProductos((res.data || []).map((p: any) => ({ ...p, originalStock: p.stockCount })));
+    const [resProd, resConf] = await Promise.all([getPrendas(), getConfiguracion()]);
+    
+    if (resProd.success) {
+      setProductos((resProd.data || []).map((p: any) => ({ ...p, originalStock: p.stockCount })));
     }
+    
+    if (resConf.success && resConf.data && resConf.data.categoriasPrendas) {
+      setCategorias(resConf.data.categoriasPrendas);
+      setUsarControlFinanciero(resConf.data.usarControlFinanciero ?? true);
+    }
+    
     setIsLoading(false);
   };
 
   const abrirModalNueva = () => {
     setProductoEditando(null);
-    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: false, piezasDetalle: {}, stockPorTalla: {} });
+    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: false, piezasDetalle: {}, stockPorTalla: {}, descripcionLarga: "", costoProveedor: "" });
+    setCategoriaSeleccionada("");
+    setTallasSeleccionadas([]);
+    setFotosPreview([]);
+    setIsModalOpen(true);
+  };
+
+  const abrirModalNuevoCombo = () => {
+    setProductoEditando(null);
+    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: true, piezasDetalle: {}, stockPorTalla: {}, descripcionLarga: "", costoProveedor: "" });
     setCategoriaSeleccionada("");
     setTallasSeleccionadas([]);
     setFotosPreview([]);
@@ -79,7 +137,9 @@ export default function AdminProductos() {
       marca: producto.marca || "",
       isConjunto: producto.isConjunto || false,
       piezasDetalle: producto.piezasDetalle || {},
-      stockPorTalla: producto.stockPorTalla || {}
+      stockPorTalla: producto.stockPorTalla || {},
+      descripcionLarga: producto.descripcionLarga || "",
+      costoProveedor: producto.costoProveedor?.toString() || ""
     });
     setCategoriaSeleccionada(categorias.includes(producto.categoria) ? producto.categoria : (producto.categoria ? "nueva" : ""));
     if (producto.categoria && !categorias.includes(producto.categoria)) {
@@ -106,16 +166,19 @@ export default function AdminProductos() {
     let stockTotal = 0;
     let coloresLimpios = formData.colores.split(",").map(c => c.trim()).filter(c => c);
 
+    let stockPorTallaLimpio: any = {};
     if (formData.isConjunto) {
       stockTotal = Number(formData.stockCount) || 0;
-    } else if (Object.keys(formData.stockPorTalla).length > 0) {
-      // Sumar de la matriz Talla x Color
-      for (const talla in formData.stockPorTalla) {
+    } else if (tallasSeleccionadas.length > 0 && Object.keys(formData.stockPorTalla).length > 0) {
+      for (const talla of tallasSeleccionadas) {
         if (typeof formData.stockPorTalla[talla] === 'object') {
+          stockPorTallaLimpio[talla] = {};
           for (const color in formData.stockPorTalla[talla]) {
-            stockTotal += Number(formData.stockPorTalla[talla][color]) || 0;
-            // Registrar dinámicamente colores usados si no estaban en el campo
-            if (color !== 'Unico' && !coloresLimpios.includes(color)) coloresLimpios.push(color);
+            // Solo contar 'Unico' si no hay colores especificados. Si hay colores, ignorar 'Unico'.
+            if ((coloresLimpios.length === 0 && color === 'Unico') || coloresLimpios.includes(color)) {
+              stockTotal += Number(formData.stockPorTalla[talla][color]) || 0;
+              stockPorTallaLimpio[talla][color] = formData.stockPorTalla[talla][color];
+            }
           }
         }
       }
@@ -125,7 +188,7 @@ export default function AdminProductos() {
 
     const dataAEnviar = {
       nombre: formData.nombre,
-      costoProveedor: 0,
+      costoProveedor: Number(formData.costoProveedor) || 0,
       precioVenta: precioVentaFinal,
       precioOriginal: precioOriginal,
       categoria: categoriaSeleccionada,
@@ -133,11 +196,12 @@ export default function AdminProductos() {
       tallas: tallasSeleccionadas,
       colores: coloresLimpios,
       stockCount: stockTotal,
-      stockPorTalla: formData.stockPorTalla,
+      stockPorTalla: stockPorTallaLimpio,
       material: formData.material,
       marca: formData.marca,
       isConjunto: formData.isConjunto,
       piezasDetalle: formData.piezasDetalle,
+      descripcionLarga: formData.descripcionLarga,
       imagenes: fotosPreview.length > 0 ? fotosPreview : ["https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"], // Placeholder
       enLive: productoEditando ? productoEditando.enLive : true,
       enPreventa: productoEditando ? productoEditando.enPreventa : false
@@ -367,12 +431,20 @@ export default function AdminProductos() {
           </h1>
           <p className="text-foreground/70">Gestiona tu inventario real en Supabase.</p>
         </div>
-        <button 
-          onClick={abrirModalNueva}
-          className="bg-brand-primary text-white px-6 py-3 rounded-full font-bold shadow-xl hover:bg-brand-accent transition-colors flex items-center gap-2"
-        >
-          <Plus className="w-5 h-5" /> Nueva Prenda
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={abrirModalNuevoCombo}
+            className="bg-yellow-500 text-white px-4 py-3 rounded-full font-bold shadow-xl hover:bg-yellow-600 transition-colors flex items-center gap-2 text-sm md:text-base"
+          >
+            <Plus className="w-5 h-5" /> Nuevo Combo
+          </button>
+          <button 
+            onClick={abrirModalNueva}
+            className="bg-brand-primary text-white px-4 py-3 rounded-full font-bold shadow-xl hover:bg-brand-accent transition-colors flex items-center gap-2 text-sm md:text-base"
+          >
+            <Plus className="w-5 h-5" /> Nueva Prenda
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -458,6 +530,17 @@ export default function AdminProductos() {
                     <label className="block text-sm font-bold text-foreground mb-2">Nombre de la Prenda</label>
                     <input type="text" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} placeholder="Ej. Vestido Gala Rojo" className="w-full bg-surface border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none" />
                   </div>
+                  {usarControlFinanciero && (
+                    <div>
+                      <label className="block text-sm font-bold text-red-500 mb-2">Costo Proveedor c/u (Bs.)</label>
+                      <input type="number" min="0" value={formData.costoProveedor} onChange={e => setFormData({...formData, costoProveedor: e.target.value})} placeholder="Ej. 120" className="w-full bg-red-500/5 border border-red-500/20 p-3 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-red-700" />
+                      {formData.costoProveedor && (
+                        <p className="mt-2 text-xs font-bold text-red-600">
+                          Inversión Total: Bs. {(Number(formData.costoProveedor) * (Number(formData.stockCount) || 1)).toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+                  )}
                   <div>
                     <label className="block text-sm font-bold text-foreground mb-2">Precio Base (Bs.)</label>
                     <input type="number" min="0" value={formData.precioBase} onChange={e => setFormData({...formData, precioBase: e.target.value})} placeholder="Ej. 200" className="w-full bg-surface border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none" />
@@ -489,16 +572,54 @@ export default function AdminProductos() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-bold text-foreground mb-2">Categoría</label>
-                    <select value={categoriaSeleccionada} onChange={(e) => setCategoriaSeleccionada(e.target.value)} className="w-full bg-surface border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none mb-2">
-                      <option value="">Selecciona una categoría...</option>
-                      {categorias.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                      <option value="nueva">+ Agregar nueva categoría...</option>
-                    </select>
-                    {categoriaSeleccionada === "nueva" && (
-                      <div className="flex gap-2 mt-2">
-                        <input type="text" placeholder="Escribe la nueva categoría" value={nuevaCategoria} onChange={(e) => setNuevaCategoria(e.target.value)} className="flex-1 bg-background border border-surface-border p-2 rounded-lg outline-none" />
-                        <button onClick={() => { if(nuevaCategoria.trim()) { setCategorias([...categorias, nuevaCategoria]); setCategoriaSeleccionada(nuevaCategoria); setNuevaCategoria(""); } }} className="bg-brand-primary text-background px-4 rounded-lg font-bold">Añadir</button>
+                    <div className="flex justify-between items-end mb-2">
+                      <label className="block text-sm font-bold text-foreground">Categoría</label>
+                      <button 
+                        onClick={() => setIsGestionandoCategorias(!isGestionandoCategorias)}
+                        className="text-xs text-brand-primary font-bold hover:underline flex items-center gap-1"
+                      >
+                        <Edit className="w-3 h-3" /> {isGestionandoCategorias ? "Cerrar gestión" : "Gestionar"}
+                      </button>
+                    </div>
+
+                    {!isGestionandoCategorias ? (
+                      <select value={categoriaSeleccionada} onChange={(e) => setCategoriaSeleccionada(e.target.value)} className="w-full bg-surface border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none">
+                        <option value="">Selecciona una categoría...</option>
+                        {categorias.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                      </select>
+                    ) : (
+                      <div className="bg-surface border border-surface-border p-4 rounded-xl space-y-4">
+                        <div className="flex gap-2">
+                          <input type="text" placeholder="Nueva categoría..." value={nuevaCategoria} onChange={(e) => setNuevaCategoria(e.target.value)} className="flex-1 bg-background border border-surface-border p-2 rounded-lg outline-none text-sm" />
+                          <button onClick={agregarCategoriaLocal} className="bg-brand-primary text-background px-4 rounded-lg font-bold text-sm whitespace-nowrap">Añadir</button>
+                        </div>
+                        <div className="space-y-2 max-h-[150px] overflow-y-auto custom-scrollbar">
+                          {categorias.map(cat => (
+                            <div key={cat} className="flex items-center justify-between bg-background p-2 rounded-lg border border-surface-border text-sm">
+                              {categoriaAEditar?.old === cat ? (
+                                <div className="flex items-center gap-2 flex-1">
+                                  <input 
+                                    type="text" 
+                                    value={categoriaAEditar.new} 
+                                    onChange={(e) => setCategoriaAEditar({...categoriaAEditar, new: e.target.value})} 
+                                    className="flex-1 bg-surface border border-brand-primary/50 p-1 rounded outline-none"
+                                    autoFocus
+                                  />
+                                  <button onClick={guardarEdicionCategoriaLocal} className="text-green-500 hover:text-green-600 font-bold px-2">✓</button>
+                                  <button onClick={() => setCategoriaAEditar(null)} className="text-gray-400 hover:text-gray-600 font-bold px-2">✕</button>
+                                </div>
+                              ) : (
+                                <>
+                                  <span className="font-medium text-foreground">{cat}</span>
+                                  <div className="flex gap-2">
+                                    <button onClick={() => setCategoriaAEditar({old: cat, new: cat})} className="text-brand-primary hover:text-brand-secondary transition-colors" title="Editar"><Edit className="w-4 h-4" /></button>
+                                    <button onClick={() => eliminarCategoriaLocal(cat)} className="text-red-400 hover:text-red-600 transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -506,6 +627,27 @@ export default function AdminProductos() {
                     <label className="block text-sm font-bold text-foreground mb-2">Colección (Opcional)</label>
                     <input type="text" value={formData.coleccion} onChange={e => setFormData({...formData, coleccion: e.target.value})} placeholder="Ej. Verano 2026" className="w-full bg-surface border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none" />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-bold text-foreground mb-2">Marca (Opcional)</label>
+                    <input type="text" value={formData.marca} onChange={e => setFormData({...formData, marca: e.target.value})} placeholder="Ej. Zara" className="w-full bg-surface border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-foreground mb-2">Material / Tela (Opcional)</label>
+                    <input type="text" value={formData.material} onChange={e => setFormData({...formData, material: e.target.value})} placeholder="Ej. Algodón" className="w-full bg-surface border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-foreground mb-2">Detalles / Descripción Larga (Opcional)</label>
+                  <textarea 
+                    value={formData.descripcionLarga} 
+                    onChange={e => setFormData({...formData, descripcionLarga: e.target.value})} 
+                    placeholder="Escribe aquí las medidas exactas, instrucciones de lavado, y cualquier detalle importante que quieras que la clienta vea." 
+                    className="w-full bg-surface border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none resize-y min-h-[100px]" 
+                  />
                 </div>
 
                 <div className="bg-brand-primary/5 border border-brand-primary/20 rounded-2xl p-5 space-y-5">

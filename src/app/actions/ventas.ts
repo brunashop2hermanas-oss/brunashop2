@@ -2,7 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath, unstable_noStore as noStore } from "next/cache";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 
 async function ajustarStock(tx: any, prendaId: string, cantidad: number, operacion: 'increment' | 'decrement', talla?: string | null, color?: string | null) {
   const prendaInfo = await tx.prenda.findUnique({ where: { id: prendaId } });
@@ -118,6 +118,14 @@ export async function vincularClientaReserva(ventaId: string, data: {
   celular?: string;
   ciudadDestino: string;
   provinciaDestino?: string;
+  municipioDestino?: string;
+  receptorDiferente?: boolean;
+  receptorNombres?: string;
+  receptorApPaterno?: string;
+  receptorApMaterno?: string;
+  receptorCi?: string;
+  receptorCelular?: string;
+  empresaBusesPreferida?: string;
   tiempoReservaMinutos: number;
   clientIp?: string;
 }) {
@@ -145,6 +153,19 @@ export async function vincularClientaReserva(ventaId: string, data: {
             puntos: 0,
           }
         });
+      } else if (clienta && data.nombres && data.apellidoPaterno && data.celular) {
+        // Actualizar datos si la clienta editó su información
+        const nuevosApellidos = `${data.apellidoPaterno} ${data.apellidoMaterno || ""}`.trim();
+        if (clienta.nombres !== data.nombres || clienta.apellidos !== nuevosApellidos || clienta.celular !== data.celular) {
+          clienta = await tx.clienta.update({
+            where: { id: clienta.id },
+            data: {
+              nombres: data.nombres,
+              apellidos: nuevosApellidos,
+              celular: data.celular.trim(),
+            }
+          });
+        }
       }
 
       if (!clienta) {
@@ -162,6 +183,14 @@ export async function vincularClientaReserva(ventaId: string, data: {
           clientaId: clienta.id,
           destino: data.ciudadDestino,
           provinciaDestino: data.provinciaDestino,
+          municipioDestino: data.municipioDestino,
+          receptorDiferente: data.receptorDiferente,
+          receptorNombres: data.receptorNombres,
+          receptorApPaterno: data.receptorApPaterno,
+          receptorApMaterno: data.receptorApMaterno,
+          receptorCi: data.receptorCi,
+          receptorCelular: data.receptorCelular,
+          empresaBusesPreferida: data.empresaBusesPreferida,
           expiresAt: expiresAt,
           terminosAceptados: true,
           fechaAceptacion: new Date(),
@@ -184,6 +213,7 @@ export async function confirmarPagoCheckout(ventaId: string, data: {
   depositanteApPaterno: string;
   depositanteApMaterno?: string;
   depositanteCi?: string;
+  depositanteCuenta?: string;
 }) {
   try {
     const venta = await prisma.venta.findUnique({ where: { id: ventaId }, include: { items: true } });
@@ -200,6 +230,7 @@ export async function confirmarPagoCheckout(ventaId: string, data: {
           depositanteNombres: data.depositanteNombres,
           depositanteApPaterno: data.depositanteApPaterno,
           depositanteApMaterno: data.depositanteApMaterno,
+          depositanteCuenta: data.depositanteCuenta,
           expiresAt: null // Limpiar expiración
         }
       });
@@ -322,9 +353,19 @@ export async function createVenta(data: {
       }
 
       // 2. Crear la Venta
+      let vendedorId = null;
+      try {
+        const cookieStore = await cookies();
+        const storedUserId = cookieStore.get("bruna_user_id")?.value;
+        if (storedUserId) {
+          vendedorId = storedUserId;
+        }
+      } catch(e) {}
+
       const venta = await tx.venta.create({
         data: {
           clientaId: clientaId,
+          vendedorId: vendedorId,
           total: data.total,
           metodoPago: data.metodoPago || "TRANSFERENCIA_QR",
           comprobante: data.comprobanteUrl,
@@ -371,6 +412,7 @@ export async function getVentas() {
       orderBy: { fecha: 'desc' },
       include: {
         clienta: true,
+        vendedor: true,
         items: {
           include: {
             prenda: true
@@ -385,11 +427,20 @@ export async function getVentas() {
       cliente: v.clienta ? `${v.clienta.nombres} ${v.clienta.apellidos}` : 'Cliente Desconocido',
       celular: v.clienta?.celular || '',
       ci: v.clienta?.ci || '',
-      destino: `${v.destino || ''} ${v.provinciaDestino ? `- ${v.provinciaDestino}` : ''}`.trim() || 'No especificado',
+      destino: `${v.destino || ''} ${v.provinciaDestino ? `- ${v.provinciaDestino}` : ''} ${v.municipioDestino ? `- ${v.municipioDestino}` : ''}`.trim() || 'No especificado',
       provinciaDestino: v.provinciaDestino || '',
+      municipioDestino: v.municipioDestino || '',
       depositanteNombres: v.depositanteNombres || '',
       depositanteApPaterno: v.depositanteApPaterno || '',
       depositanteApMaterno: v.depositanteApMaterno || '',
+      depositanteCuenta: v.depositanteCuenta || '',
+      receptorDiferente: v.receptorDiferente || false,
+      receptorNombres: v.receptorNombres || '',
+      receptorApPaterno: v.receptorApPaterno || '',
+      receptorApMaterno: v.receptorApMaterno || '',
+      receptorCi: v.receptorCi || '',
+      receptorCelular: v.receptorCelular || '',
+      empresaBusesPreferida: v.empresaBusesPreferida || '',
       guiaEnvioUrl: v.guiaEnvioUrl || null,
       total: v.total,
       estado: v.estado === 'PENDIENTE_VERIFICACION' ? 'Pendiente' : 
@@ -406,10 +457,11 @@ export async function getVentas() {
       puntosClienta: v.clienta?.puntos || 0,
       origen: v.origen,
       tipoEntrega: v.tipoEntrega,
-      registradoPor: null, // Podría ser el usuario logueado en el futuro
+      registradoPor: v.vendedor ? `${v.vendedor.nombres} ${v.vendedor.apellidos}`.trim() : (v.origen === "WEB" ? "Sistema Web" : "Caja"),
       articulos: v.items.map(item => ({
         id: item.id,
         nombre: item.prenda.nombre,
+        imagen: item.prenda.imagenes && item.prenda.imagenes.length > 0 ? item.prenda.imagenes[0] : null,
         cantidad: item.cantidad,
         talla: item.talla || "N/A",
         color: item.color || "N/A",

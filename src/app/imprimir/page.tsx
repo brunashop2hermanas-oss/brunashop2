@@ -137,17 +137,22 @@ export default function ImprimirVineta() {
               <div className="flex-1 space-y-3">
                 <div>
                   <p className="text-[9px] uppercase tracking-widest mb-0.5 font-bold" style={{ color: '#6b7280' }}>Destinatario / Clienta</p>
-                  <p className="text-lg font-black uppercase leading-tight line-clamp-2" style={{ color: '#000000' }}>{pedido.cliente}</p>
+                  <p className="text-lg font-black uppercase leading-tight line-clamp-2" style={{ color: '#000000' }}>
+                    {pedido.receptorDiferente ? `${pedido.receptorNombres || ''} ${pedido.receptorApPaterno || ''} ${pedido.receptorApMaterno || ''}`.trim() : pedido.cliente}
+                  </p>
+                  {pedido.receptorDiferente && (
+                    <p className="text-[10px] font-bold" style={{ color: '#6b7280' }}>(Comprado por: {pedido.cliente})</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <p className="text-[9px] uppercase tracking-widest mb-0.5 font-bold" style={{ color: '#6b7280' }}>C.I.</p>
-                    <p className="text-sm font-bold" style={{ color: '#000000' }}>{pedido.ci}</p>
+                    <p className="text-sm font-bold" style={{ color: '#000000' }}>{pedido.receptorDiferente ? pedido.receptorCi : pedido.ci}</p>
                   </div>
                   <div>
                     <p className="text-[9px] uppercase tracking-widest mb-0.5 font-bold" style={{ color: '#6b7280' }}>Celular</p>
-                    <p className="text-sm font-bold" style={{ color: '#000000' }}>{pedido.celular}</p>
+                    <p className="text-sm font-bold" style={{ color: '#000000' }}>{pedido.receptorDiferente ? pedido.receptorCelular : pedido.celular}</p>
                   </div>
                 </div>
 
@@ -159,8 +164,12 @@ export default function ImprimirVineta() {
 
               {/* Pie de Viñeta - Transportadora */}
               <div className="mt-auto pt-2 border-t border-dashed" style={{ borderColor: '#9ca3af' }}>
-                <p className="text-[9px] uppercase tracking-widest mb-4 font-bold" style={{ color: '#6b7280' }}>Empresa de Transporte (Flota)</p>
-                <div className="w-full border-b h-4" style={{ borderColor: '#000000' }}></div>
+                <p className="text-[9px] uppercase tracking-widest mb-1 font-bold" style={{ color: '#6b7280' }}>Empresa de Transporte (Flota)</p>
+                {pedido.empresaBusesPreferida ? (
+                  <p className="text-sm font-black uppercase mb-1" style={{ color: '#000000' }}>{pedido.empresaBusesPreferida}</p>
+                ) : (
+                  <div className="w-full border-b h-4 mb-1" style={{ borderColor: '#000000' }}></div>
+                )}
                 <div className="flex justify-between items-end mt-2">
                    <p className="text-[8px] font-mono" style={{ color: '#9ca3af' }}>ID: {pedido.id}</p>
                    <p className="text-[8px] font-bold" style={{ color: '#9ca3af' }}>FRÁGIL</p>

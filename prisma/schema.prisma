@@ -77,10 +77,21 @@ model Venta {
   tipoEntrega   String      @default("RECOJO_TIENDA") // "RECOJO_TIENDA", "ENVIO"
   destino       String?     // Dirección de envío (Departamento)
   provinciaDestino String?  // Provincia específica
+  municipioDestino String?  // Municipio específico
   
   depositanteNombres   String?
   depositanteApPaterno String?
   depositanteApMaterno String?
+  depositanteCuenta    String?
+  
+  receptorDiferente Boolean @default(false)
+  receptorNombres String?
+  receptorApPaterno String?
+  receptorApMaterno String?
+  receptorCi String?
+  receptorCelular String?
+  
+  empresaBusesPreferida String?
   
   terminosAceptados Boolean @default(false)
   fechaAceptacion   DateTime?
@@ -126,6 +137,8 @@ model Configuracion {
   tiempoReservaMinutos  Int      @default(4)
   tiempoLlenadoDatosMinutos Int  @default(10)
   destinosHabilitados   Json?    // Array de { departamento: "...", provincias: ["..."] }
+  categoriasPrendas     String[] @default(["Vestidos", "Conjuntos", "Blusas y Tops", "Pantalones y Jeans", "Chaquetas y Abrigos", "Enterizos", "Ofertas / Sale"])
+  liveProgramadoPara    DateTime?
   planSupabase          String   @default("Gratuito") // "Gratuito" o "Pro"
   updatedAt             DateTime @updatedAt
 }

@@ -9,7 +9,6 @@ import { confirmarPagoCheckout, buscarClientaPorCI, getVenta, cancelarVentaExpir
 import { getConfiguracion } from "@/app/actions/config";
 import { uploadImage } from "@/app/actions/upload";
 import { getPrendas } from "@/app/actions/productos";
-import { extraerDatosComprobante } from "@/app/actions/ocr";
 import { compressImage } from "@/lib/imageCompression";
 import toast from "react-hot-toast";
 
@@ -23,10 +22,15 @@ function CheckoutContent() {
   const [ci, setCi] = useState("");
   const [clientaEncontrada, setClientaEncontrada] = useState<any>(null);
   const [buscandoCi, setBuscandoCi] = useState(false);
+  const [editandoClienta, setEditandoClienta] = useState(false);
 
   const [departamentosHabilitados, setDepartamentosHabilitados] = useState<string[]>([]);
   const [provinciasHabilitadas, setProvinciasHabilitadas] = useState<string[]>([]);
+  const [municipiosHabilitados, setMunicipiosHabilitados] = useState<string[]>([]);
   const [departamento, setDepartamento] = useState("");
+  
+  const [receptorDiferente, setReceptorDiferente] = useState(false);
+  const [empresaBus, setEmpresaBus] = useState("");
 
   const [ventaEnCurso, setVentaEnCurso] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -43,12 +47,12 @@ function CheckoutContent() {
   const [imagenAmpliada, setImagenAmpliada] = useState<string | null>(null);
   const [serverTimeOffset, setServerTimeOffset] = useState<number>(0);
 
-  // Estados para autocompletado OCR
-  const [analizandoOCR, setAnalizandoOCR] = useState(false);
+  // Estados para datos manuales del comprobante
   const [depositanteNombres, setDepositanteNombres] = useState("");
   const [depositanteApPaterno, setDepositanteApPaterno] = useState("");
   const [depositanteApMaterno, setDepositanteApMaterno] = useState("");
   const [depositanteCi, setDepositanteCi] = useState("");
+  const [depositanteCuenta, setDepositanteCuenta] = useState("");
 
   // Interval reference for cleanup
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -179,9 +183,18 @@ function CheckoutContent() {
     const val = e.target.value;
     setDepartamento(val);
     if (config?.destinosHabilitados && config.destinosHabilitados[val]) {
-      setProvinciasHabilitadas(config.destinosHabilitados[val]);
+      // Migración si está en formato viejo (array) o formato nuevo (objeto)
+      const data = config.destinosHabilitados[val];
+      if (Array.isArray(data)) {
+        setProvinciasHabilitadas(data);
+        setMunicipiosHabilitados([]);
+      } else {
+        setProvinciasHabilitadas(data.provincias || []);
+        setMunicipiosHabilitados(data.municipios || []);
+      }
     } else {
       setProvinciasHabilitadas([]);
+      setMunicipiosHabilitados([]);
     }
   };
 
@@ -191,6 +204,7 @@ function CheckoutContent() {
     const formData = new FormData(e.currentTarget);
     const ciudadDestino = formData.get("ciudadDestino") as string;
     const provinciaDestino = formData.get("provinciaDestino") as string;
+    const municipioDestino = formData.get("municipioDestino") as string;
     
     let ventaActualId = ventaEnCurso?.id;
 
@@ -225,27 +239,27 @@ function CheckoutContent() {
     } catch(e) {
       clientIp = "IP local/Desconocida";
     }
-
-    const data: any = {
+    const dataToSend = {
+      nombres: (formData.get("nombres") as string) || clientaEncontrada?.nombres,
+      apellidoPaterno: (formData.get("apellidoPaterno") as string) || clientaEncontrada?.apellidos,
+      apellidoMaterno: (formData.get("apellidoMaterno") as string) || "",
+      celular: (formData.get("celular") as string) || clientaEncontrada?.celular,
       ci: ci || (formData.get("ci") as string),
-      ciudadDestino,
-      provinciaDestino,
+      ciudadDestino: ciudadDestino,
+      provinciaDestino: provinciaDestino || "",
+      municipioDestino: municipioDestino || "",
+      receptorDiferente: receptorDiferente,
+      receptorNombres: receptorDiferente ? (formData.get("receptorNombres") as string) : "",
+      receptorApPaterno: receptorDiferente ? (formData.get("receptorApPaterno") as string) : "",
+      receptorApMaterno: receptorDiferente ? (formData.get("receptorApMaterno") as string) : "",
+      receptorCi: receptorDiferente ? (formData.get("receptorCi") as string) : "",
+      receptorCelular: receptorDiferente ? (formData.get("receptorCelular") as string) : "",
+      empresaBusesPreferida: empresaBus,
       tiempoReservaMinutos: config?.tiempoReservaMinutos || 4,
-      clientIp
+      clientIp: clientIp
     };
 
-    if (esNuevaClienta && !clientaEncontrada) {
-      data.nombres = formData.get("nombres");
-      data.apellidoPaterno = formData.get("apellidoPaterno");
-      data.apellidoMaterno = formData.get("apellidoMaterno");
-      data.celular = formData.get("celular");
-    } else {
-      data.nombres = clientaEncontrada?.nombres;
-      data.apellidoPaterno = clientaEncontrada?.apellidos; 
-      data.celular = clientaEncontrada?.celular;
-    }
-
-    const res = await vincularClientaReserva(ventaActualId, data);
+    const res = await vincularClientaReserva(ventaActualId, dataToSend);
     setIsSubmitting(false);
 
     if (res.success && res.data) {
@@ -291,6 +305,7 @@ function CheckoutContent() {
       depositanteApPaterno: depositanteApPaterno || (formData.get("depositanteApPaterno") as string),
       depositanteApMaterno: depositanteApMaterno || (formData.get("depositanteApMaterno") as string),
       depositanteCi: depositanteCi || (formData.get("depositanteCi") as string),
+      depositanteCuenta: depositanteCuenta || (formData.get("depositanteCuenta") as string),
     };
 
     const res = await confirmarPagoCheckout(ventaEnCurso.id, reqData);
@@ -397,26 +412,34 @@ function CheckoutContent() {
                 {(clientaEncontrada || esNuevaClienta) && (
                   <form id="paso1-form" onSubmit={procesarPaso1} className="space-y-10">
                     <div className="bg-brand-primary/5 border border-brand-primary/20 p-6 rounded-xl">
-                      {clientaEncontrada ? (
+                      {clientaEncontrada && !editandoClienta ? (
                         <div>
-                          <h3 className="text-xl font-bold text-brand-primary mb-2">¡Bienvenida de nuevo, {clientaEncontrada.nombres}!</h3>
+                          <div className="flex justify-between items-start mb-2">
+                            <h3 className="text-xl font-bold text-brand-primary">¡Bienvenida de nuevo, {clientaEncontrada.nombres}!</h3>
+                            <button type="button" onClick={() => setEditandoClienta(true)} className="text-xs border border-black/20 px-3 py-1 hover:bg-black hover:text-white transition-colors">Editar mis datos</button>
+                          </div>
                           <p className="text-sm">Tus datos están guardados. Solo dinos a dónde enviamos tu pedido.</p>
                         </div>
                       ) : (
                         <div className="space-y-6">
-                          <h3 className="text-lg font-bold uppercase tracking-widest border-b border-black/10 pb-3">Registro de Clienta</h3>
+                          <h3 className="text-lg font-bold uppercase tracking-widest border-b border-black/10 pb-3">
+                            {editandoClienta ? "Actualizar mis datos" : "Registro de Clienta"}
+                          </h3>
+                          {editandoClienta && (
+                            <p className="text-xs text-foreground/60 mb-2">Modifica los campos que necesites corregir o actualizar.</p>
+                          )}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                               <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Nombres</label>
-                              <input name="nombres" required type="text" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
+                              <input name="nombres" defaultValue={clientaEncontrada?.nombres || ""} required type="text" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
                             </div>
                             <div>
                               <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Ap. Paterno</label>
-                              <input name="apellidoPaterno" required type="text" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
+                              <input name="apellidoPaterno" defaultValue={clientaEncontrada?.apellidos?.split(' ')[0] || ""} required type="text" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
                             </div>
                             <div>
                               <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Ap. Materno (Opc.)</label>
-                              <input name="apellidoMaterno" type="text" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
+                              <input name="apellidoMaterno" defaultValue={clientaEncontrada?.apellidos?.split(' ').slice(1).join(' ') || ""} type="text" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
                             </div>
                             <div>
                               <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Carnet (C.I.)</label>
@@ -424,9 +447,14 @@ function CheckoutContent() {
                             </div>
                             <div>
                               <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Celular / WhatsApp</label>
-                              <input name="celular" required type="text" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
+                              <input name="celular" defaultValue={clientaEncontrada?.celular || ""} required type="text" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
                             </div>
                           </div>
+                          {editandoClienta && (
+                            <div className="flex justify-end pt-2">
+                              <button type="button" onClick={() => setEditandoClienta(false)} className="text-xs underline text-foreground/50 hover:text-black">Cancelar edición</button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -445,13 +473,62 @@ function CheckoutContent() {
                         </div>
                         {provinciasHabilitadas.length > 0 && (
                           <div>
-                            <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Provincia</label>
-                            <select name="provinciaDestino" required className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black cursor-pointer rounded-none appearance-none">
-                              <option value="" disabled>Seleccionar Provincia...</option>
+                            <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Provincia (Opcional)</label>
+                            <select name="provinciaDestino" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black cursor-pointer rounded-none appearance-none">
+                              <option value="">Ninguna...</option>
                               {provinciasHabilitadas.map(p => <option key={p} value={p}>{p}</option>)}
                             </select>
                           </div>
                         )}
+                        {municipiosHabilitados.length > 0 && (
+                          <div className="md:col-span-2">
+                            <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Municipio / Localidad (Opcional)</label>
+                            <select name="municipioDestino" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black cursor-pointer rounded-none appearance-none">
+                              <option value="">Ninguno...</option>
+                              {municipiosHabilitados.map(m => <option key={m} value={m}>{m}</option>)}
+                            </select>
+                          </div>
+                        )}
+                        <div className="md:col-span-2 mt-4 pt-4 border-t border-black/10">
+                          <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Empresa de Buses de Preferencia (Opcional)</label>
+                          <input type="text" value={empresaBus} onChange={e => setEmpresaBus(e.target.value)} placeholder="Ej. Trans Copacabana, Bolívar, etc." className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
+                        </div>
+                      </div>
+
+                      <div className="mt-8 bg-surface border border-surface-border p-6 rounded-xl">
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <input type="checkbox" checked={receptorDiferente} onChange={e => setReceptorDiferente(e.target.checked)} className="w-5 h-5 accent-brand-primary" />
+                          <span className="font-bold text-sm uppercase tracking-widest">¿Otra persona recibirá o recogerá el envío?</span>
+                        </label>
+                        
+                        <AnimatePresence>
+                          {receptorDiferente && (
+                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 pt-6 border-t border-black/10">
+                                <div>
+                                  <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Nombres de la persona que recibirá</label>
+                                  <input name="receptorNombres" required={receptorDiferente} type="text" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
+                                </div>
+                                <div>
+                                  <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Ap. Paterno de la persona</label>
+                                  <input name="receptorApPaterno" required={receptorDiferente} type="text" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
+                                </div>
+                                <div>
+                                  <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Ap. Materno de la persona (Opc.)</label>
+                                  <input name="receptorApMaterno" type="text" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
+                                </div>
+                                <div>
+                                  <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Carnet (C.I.) de la persona</label>
+                                  <input name="receptorCi" required={receptorDiferente} type="text" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
+                                </div>
+                                <div>
+                                  <label className="block text-xs uppercase tracking-widest mb-2 font-bold">Celular de la persona</label>
+                                  <input name="receptorCelular" required={receptorDiferente} type="text" className="w-full bg-transparent border-b border-black/20 py-2 outline-none focus:border-black" />
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </div>
 
@@ -552,9 +629,15 @@ function CheckoutContent() {
                           <input name="depositanteApMaterno" value={depositanteApMaterno} onChange={(e) => setDepositanteApMaterno(e.target.value)} type="text" className="w-full border-b border-black/20 bg-transparent py-2 outline-none focus:border-brand-primary" placeholder="Ej: Lopez" />
                         </div>
                       </div>
-                      <div>
-                        <label className="block text-xs uppercase font-bold mb-1">C.I. del Depositante (Opcional)</label>
-                        <input name="depositanteCi" value={depositanteCi} onChange={(e) => setDepositanteCi(e.target.value)} type="text" className="w-full border-b border-black/20 bg-transparent py-2 outline-none focus:border-brand-primary" placeholder="Ej: 1234567" />
+                      <div className="flex gap-4">
+                        <div className="flex-1">
+                          <label className="block text-xs uppercase font-bold mb-1">C.I. (Opcional)</label>
+                          <input name="depositanteCi" value={depositanteCi} onChange={(e) => setDepositanteCi(e.target.value)} type="text" className="w-full border-b border-black/20 bg-transparent py-2 outline-none focus:border-brand-primary" placeholder="Ej: 1234567" />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-xs uppercase font-bold mb-1">Nº Cuenta (Opcional)</label>
+                          <input name="depositanteCuenta" value={depositanteCuenta} onChange={(e) => setDepositanteCuenta(e.target.value)} type="text" className="w-full border-b border-black/20 bg-transparent py-2 outline-none focus:border-brand-primary" placeholder="Ej: 1000123456" />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -567,47 +650,12 @@ function CheckoutContent() {
                         if(e.target.files && e.target.files[0]) {
                           const file = e.target.files[0];
                           setComprobante(file);
-                          
-                          // Convertir a base64 y enviar a OCR
-                          setAnalizandoOCR(true);
-                          try {
-                            const compressed = await compressImage(file, "baja");
-                            const reader = new FileReader();
-                            reader.onloadend = async () => {
-                              const base64data = reader.result as string;
-                              const res = await extraerDatosComprobante(base64data, compressed.type);
-                              if (res.success && res.data) {
-                                if (res.data.nombres || res.data.apellidoPaterno) {
-                                  setDepositanteNombres(res.data.nombres || "");
-                                  setDepositanteApPaterno(res.data.apellidoPaterno || "");
-                                  setDepositanteApMaterno(res.data.apellidoMaterno || "");
-                                  setDepositanteCi(res.data.ci || "");
-                                  toast.success("¡Datos extraídos del comprobante automáticamente!");
-                                } else {
-                                  toast.error("No se pudieron extraer los datos del comprobante. Por favor, complete los campos de forma manual.");
-                                }
-                              } else {
-                                console.error("OCR:", res.error);
-                                toast.error("Nuestros servidores están muy ocupados en este momento. Por favor ingresa tus datos manualmente.");
-                              }
-                              setAnalizandoOCR(false);
-                            };
-                            reader.readAsDataURL(compressed);
-                          } catch (error) {
-                            console.error(error);
-                            setAnalizandoOCR(false);
-                          }
                         }
                       }} 
                       className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer" 
                     />
                     <div className={`p-8 text-center transition-all ${comprobante ? 'bg-black text-white p-0' : 'bg-transparent text-black hover:bg-black/5'}`}>
-                      {analizandoOCR ? (
-                        <div className="flex flex-col items-center justify-center p-12 gap-4">
-                          <div className="w-10 h-10 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
-                          <span className="font-bold uppercase tracking-widest text-sm text-brand-primary">Procesando comprobante...</span>
-                        </div>
-                      ) : comprobante ? (
+                      {comprobante ? (
                         <div className="relative w-full h-48 bg-black flex flex-col items-center justify-center">
                           <img 
                             src={URL.createObjectURL(comprobante)} 
@@ -634,9 +682,16 @@ function CheckoutContent() {
                     <p className="text-[10px] text-foreground/60 mb-4 px-2">
                       Al completar tu compra, aceptas que tus datos y la imagen del comprobante serán procesados de forma segura conforme a nuestra <Link href="/privacidad" target="_blank" className="underline font-bold hover:text-black">Política de Privacidad</Link>, exclusivamente para la verificación de tu pago.
                     </p>
-                    <button disabled={isSubmitting || !comprobante} type="submit" className="w-full bg-black text-white py-5 text-sm uppercase tracking-[0.2em] font-bold hover:bg-brand-primary transition-colors disabled:opacity-50">
-                      {isSubmitting ? "Confirmando Pago..." : "Completar Compra"}
-                    </button>
+
+                    <div className="flex justify-end pt-6 border-t border-black/10">
+                      <button 
+                        type="submit" 
+                        disabled={isSubmitting || !comprobante} 
+                        className="w-full md:w-auto bg-black text-white px-8 py-4 font-bold uppercase tracking-widest hover:bg-brand-primary transition-colors disabled:opacity-50"
+                      >
+                        {isSubmitting ? "Verificando..." : "Finalizar Compra"}
+                      </button>
+                    </div>
                   </div>
                 </form>
               </div>
@@ -663,7 +718,7 @@ function CheckoutContent() {
         </div>
 
         {paso < 3 && !tiempoExpirado && (
-          <div className="w-full lg:w-[400px] shrink-0 sticky top-12 bg-surface border border-surface-border p-8 mt-12 lg:mt-0 order-first lg:order-last mb-10 lg:mb-0">
+          <div className="w-full lg:w-[400px] shrink-0 sticky top-12 bg-surface border border-surface-border p-8 mt-12 lg:mt-0 order-last mb-10 lg:mb-0">
             <h3 className="text-sm uppercase tracking-widest font-bold mb-6 pb-4 border-b">Resumen</h3>
             <div className="space-y-4">
               {carrito.map((item, idx) => (

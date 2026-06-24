@@ -122,10 +122,10 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
       <AnimatePresence>
         {toast && (
           <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.9 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-black text-white px-6 py-3 text-xs tracking-widest uppercase font-medium shadow-2xl rounded-full flex items-center gap-3 w-11/12 max-w-md justify-center text-center"
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            className="fixed top-6 left-1/2 -translate-x-1/2 z-[99999] bg-black text-white px-6 py-3 text-xs tracking-widest uppercase font-medium shadow-2xl rounded-full flex items-center gap-3 w-11/12 max-w-md justify-center text-center"
           >
             {toast}
           </motion.div>
@@ -522,7 +522,26 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
             )}
           </div>
           
-          <p className="text-sm text-gray-600 mb-6">{producto.descripcionLarga || "Sin descripción detallada."}</p>
+          {producto.descripcionLarga && (
+            <p className="text-sm text-gray-600 mb-6 whitespace-pre-wrap">{producto.descripcionLarga}</p>
+          )}
+
+          {(producto.marca || producto.material) && (
+            <div className="mb-6 space-y-1 bg-gray-50 p-3 rounded border border-gray-100">
+              {producto.marca && (
+                <p className="text-sm text-gray-800">
+                  <span className="font-bold uppercase tracking-wider text-[10px] text-gray-500 mr-2">Marca:</span> 
+                  <span className="capitalize">{producto.marca}</span>
+                </p>
+              )}
+              {producto.material && (
+                <p className="text-sm text-gray-800">
+                  <span className="font-bold uppercase tracking-wider text-[10px] text-gray-500 mr-2">Material / Tela:</span> 
+                  <span className="capitalize">{producto.material}</span>
+                </p>
+              )}
+            </div>
+          )}
 
           {producto.isConjunto && producto.piezasDetalle && (
             <div className="mb-6 bg-gray-50 p-4 rounded-sm border border-gray-200">

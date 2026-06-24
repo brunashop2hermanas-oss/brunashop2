@@ -381,8 +381,35 @@ const imprimirVineta = (pedido: any) => {
                     <div className="text-xs font-mono text-foreground/50 mt-0.5">
                       CI: {pedido.ci}
                     </div>
+                    {pedido.receptorDiferente && (
+                      <div className="mt-2 p-2 bg-blue-500/10 border border-blue-500/20 rounded-md text-xs">
+                        <span className="font-bold text-blue-600 block mb-1 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" /> Entregar a:
+                        </span>
+                        <div className="text-foreground/90 font-bold">{pedido.receptorNombres} {pedido.receptorApPaterno} {pedido.receptorApMaterno}</div>
+                        <div className="font-mono mt-0.5 text-foreground/70">CI: {pedido.receptorCi}</div>
+                        {pedido.receptorCelular && (
+                          <a 
+                            href={`https://wa.me/591${pedido.receptorCelular}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-0.5 text-[#25D366] flex items-center gap-1 font-bold hover:underline"
+                          >
+                            <WhatsappIcon className="w-[12px] h-[12px] shrink-0" />
+                            {pedido.receptorCelular}
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </td>
-                  <td className="p-4 text-foreground/90">{pedido.destino}</td>
+                  <td className="p-4 text-foreground/90">
+                    <div>{pedido.destino}</div>
+                    {pedido.empresaBusesPreferida && (
+                      <div className="mt-2 p-1.5 bg-orange-500/10 border border-orange-500/20 rounded text-[10px] uppercase font-bold text-orange-600">
+                        🚍 Flota: {pedido.empresaBusesPreferida}
+                      </div>
+                    )}
+                  </td>
                   <td className="p-4 font-bold text-foreground">{pedido.total.toFixed(2)}</td>
                   <td className="p-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${
@@ -447,7 +474,7 @@ const imprimirVineta = (pedido: any) => {
                           <button 
                             title="Enviar Guía por WhatsApp"
                             onClick={() => {
-                              const mensaje = `¡Hola ${pedido.cliente}! 😊 Tu pedido de BrunaShop (ID: ${pedido.id.slice(-6).toUpperCase()}) ya fue enviado. Aquí tienes la foto de tu guía de envío para que puedas recogerlo: ${pedido.guiaEnvioUrl}\n\n¡Gracias por tu preferencia!`;
+                              const mensaje = `¡Hola ${pedido.cliente}! 😊 Tu pedido de BrunaShop ya fue enviado.\n\nEl siguiente enlace abrirá la imagen o foto de tu guía de envío para que puedas recogerlo:\n${pedido.guiaEnvioUrl}\n\n¡Gracias por tu preferencia!`;
                               enviarWhatsApp(pedido.celular, mensaje);
                             }}
                             className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-md border border-green-600"
@@ -545,7 +572,7 @@ const imprimirVineta = (pedido: any) => {
                         <input type="file" className="hidden" accept="image/*" disabled={!todasEmpaquetadas || isUploadingGuia === pedido.id} onChange={(e) => handleSubirGuia(e, pedido)} />
                       </label>
                       {pedido.guiaEnvioUrl && (
-                        <button onClick={() => enviarWhatsApp(pedido.celular, `¡Hola ${pedido.cliente}! 😊 Tu pedido de BrunaShop (ID: ${pedido.id.slice(-6).toUpperCase()}) ya fue enviado. Aquí tienes la foto de tu guía de envío para que puedas recogerlo: ${pedido.guiaEnvioUrl}`)} className="px-3 py-1.5 bg-[#25D366] hover:bg-[#1da851] transition-colors text-white shadow-md rounded-lg"><WhatsappIcon className="w-4 h-4"/></button>
+                        <button onClick={() => enviarWhatsApp(pedido.celular, `¡Hola ${pedido.cliente}! 😊 Tu pedido de BrunaShop ya fue enviado.\n\nEl siguiente enlace abrirá la imagen o foto de tu guía de envío para que puedas recogerlo:\n${pedido.guiaEnvioUrl}`)} className="px-3 py-1.5 bg-[#25D366] hover:bg-[#1da851] transition-colors text-white shadow-md rounded-lg"><WhatsappIcon className="w-4 h-4"/></button>
                       )}
                     </div>
                   )}
@@ -610,7 +637,10 @@ const imprimirVineta = (pedido: any) => {
                     {pedidoSeleccionado.depositanteNombres || "No registrado"} {pedidoSeleccionado.depositanteApPaterno} {pedidoSeleccionado.depositanteApMaterno}
                   </p>
                   <p className="text-xs text-foreground/50 mt-1">
-                    Cuenta: {pedidoSeleccionado.cliente} (CI: {pedidoSeleccionado.ci})
+                    Nº Cuenta: {pedidoSeleccionado.depositanteCuenta || "N/A"}
+                  </p>
+                  <p className="text-xs text-foreground/50 mt-0.5">
+                    Cliente: {pedidoSeleccionado.cliente} (CI: {pedidoSeleccionado.ci})
                   </p>
                 </div>
               </div>
@@ -706,8 +736,10 @@ const imprimirVineta = (pedido: any) => {
                 {(pedidoEmpaquetando.articulos || []).map((art: any) => (
                   <div key={art.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-colors ${art.empaquetado ? 'bg-green-500/10 border-green-500/30' : 'bg-background border-surface-border'}`}>
                     <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-sm ${art.empaquetado ? 'bg-green-500 text-white' : 'bg-surface border border-surface-border'}`}>
-                        {art.empaquetado ? <CheckCircle className="w-6 h-6" /> : '👗'}
+                      <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-xl shadow-sm overflow-hidden shrink-0 ${art.empaquetado ? 'bg-green-500 text-white' : 'bg-surface border border-surface-border'}`}>
+                        {art.empaquetado ? <CheckCircle className="w-8 h-8" /> : (
+                          art.imagen ? <img src={art.imagen} alt={art.nombre} className="w-full h-full object-cover cursor-zoom-in hover:opacity-80 transition-opacity" onClick={() => setComprobanteAmpliado(art.imagen)} /> : '👗'
+                        )}
                       </div>
                       <div>
                         <h4 className={`font-bold ${art.empaquetado ? 'text-green-700 dark:text-green-400 line-through' : 'text-foreground'}`}>{art.nombre}</h4>

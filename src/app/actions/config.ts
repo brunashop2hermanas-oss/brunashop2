@@ -12,6 +12,19 @@ export async function getConfiguracion() {
         data: {}
       });
     }
+
+    // Lógica para Live Programado
+    if (config.liveProgramadoPara && new Date() >= config.liveProgramadoPara) {
+      config.liveActivo = true;
+      
+      // Actualizar en BD para consolidar el estado y limpiar la programación
+      await prisma.configuracion.update({
+        where: { id: config.id },
+        data: { liveActivo: true, liveProgramadoPara: null }
+      });
+      config.liveProgramadoPara = null;
+    }
+
     return { success: true, data: config };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -35,6 +48,8 @@ export async function updateConfiguracion(data: {
   tiempoReservaMinutos?: number;
   tiempoLlenadoDatosMinutos?: number;
   destinosHabilitados?: any;
+  categoriasPrendas?: string[];
+  liveProgramadoPara?: Date | null;
 }) {
   try {
     let config = await prisma.configuracion.findFirst();

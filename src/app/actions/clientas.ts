@@ -69,3 +69,14 @@ export async function getClientaByCI(ci: string) {
     return { success: false, error: error.message };
   }
 }
+
+export async function resetPuntosClientas() {
+  try {
+    await prisma.clienta.updateMany({
+      data: { puntos: 0 }
+    });
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

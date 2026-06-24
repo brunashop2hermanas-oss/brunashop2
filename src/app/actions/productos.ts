@@ -32,30 +32,92 @@ export async function getPrendas() {
   }
 }
 
+async function adjustPiecesStock(tx: any, piezasDetalle: any, combosCount: number, action: 'deduct' | 'restore') {
+  if (!piezasDetalle) return;
+  const detailObj = typeof piezasDetalle === 'string' ? JSON.parse(piezasDetalle) : piezasDetalle;
+  
+  for (const piezaId in detailObj) {
+    const pz = detailObj[piezaId];
+    const qtyPerCombo = Number(pz.cantidad) || 0;
+    if (qtyPerCombo <= 0) continue;
+    const totalQty = qtyPerCombo * combosCount;
+    if (totalQty === 0) continue;
+
+    const prenda = await tx.prenda.findUnique({ where: { id: pz.id } });
+    if (!prenda) continue;
+
+    let newStockCount = prenda.stockCount;
+    let newStockPorTalla = { ...(prenda.stockPorTalla as any || {}) };
+
+    if (action === 'deduct') {
+      newStockCount = Math.max(0, newStockCount - totalQty);
+      
+      if (pz.tallaEspecifica) {
+        if (typeof newStockPorTalla[pz.tallaEspecifica] === 'object') {
+           const color = pz.colorEspecifico || 'Unico';
+           const current = Number(newStockPorTalla[pz.tallaEspecifica][color] || 0);
+           newStockPorTalla[pz.tallaEspecifica][color] = Math.max(0, current - totalQty).toString();
+        } else {
+           const current = Number(newStockPorTalla[pz.tallaEspecifica] || 0);
+           newStockPorTalla[pz.tallaEspecifica] = Math.max(0, current - totalQty).toString();
+        }
+      }
+    } else if (action === 'restore') {
+      newStockCount = newStockCount + totalQty;
+      
+      if (pz.tallaEspecifica) {
+        if (typeof newStockPorTalla[pz.tallaEspecifica] === 'object') {
+           const color = pz.colorEspecifico || 'Unico';
+           const current = Number(newStockPorTalla[pz.tallaEspecifica][color] || 0);
+           newStockPorTalla[pz.tallaEspecifica][color] = (current + totalQty).toString();
+        } else {
+           const current = Number(newStockPorTalla[pz.tallaEspecifica] || 0);
+           newStockPorTalla[pz.tallaEspecifica] = (current + totalQty).toString();
+        }
+      }
+    }
+
+    await tx.prenda.update({
+      where: { id: prenda.id },
+      data: { stockCount: newStockCount, stockPorTalla: newStockPorTalla }
+    });
+  }
+}
+
 export async function createPrenda(data: any) {
   try {
-    const prenda = await prisma.prenda.create({
-      data: {
-        nombre: data.nombre,
-        costoProveedor: data.costoProveedor,
-        precioVenta: data.precioVenta,
-        precioOriginal: data.precioOriginal || null,
-        categoria: data.categoria,
-        coleccion: data.coleccion || null,
-        marca: data.marca || null,
-        tallas: data.tallas || [],
-        stockPorTalla: data.stockPorTalla || {},
-        colores: data.colores || [],
-        material: data.material || null,
-        imagenes: data.imagenes || [],
-        stockCount: data.stockCount || 0,
-        enLive: data.enLive || false,
-        enPreventa: data.enPreventa || false,
-        isConjunto: data.isConjunto || false,
-        piezasId: data.piezasId || [],
-        piezasDetalle: data.piezasDetalle || null,
-      },
+    const prenda = await prisma.$transaction(async (tx) => {
+      const p = await tx.prenda.create({
+        data: {
+          nombre: data.nombre,
+          costoProveedor: data.costoProveedor,
+          precioVenta: data.precioVenta,
+          precioOriginal: data.precioOriginal || null,
+          categoria: data.categoria,
+          coleccion: data.coleccion || null,
+          marca: data.marca || null,
+          tallas: data.tallas || [],
+          stockPorTalla: data.stockPorTalla || {},
+          colores: data.colores || [],
+          material: data.material || null,
+          imagenes: data.imagenes || [],
+          stockCount: data.stockCount || 0,
+          enLive: data.enLive || false,
+          enPreventa: data.enPreventa || false,
+          isConjunto: data.isConjunto || false,
+          piezasId: data.piezasId || [],
+          piezasDetalle: data.piezasDetalle || null,
+          descripcionLarga: data.descripcionLarga || null,
+        },
+      });
+
+      if (data.isConjunto && data.piezasDetalle && data.stockCount > 0) {
+        await adjustPiecesStock(tx, data.piezasDetalle, data.stockCount, 'deduct');
+      }
+
+      return p;
     });
+
     revalidatePath("/admin/productos");
     revalidatePath("/");
     return { success: true, data: prenda };
@@ -66,29 +128,47 @@ export async function createPrenda(data: any) {
 
 export async function updatePrenda(id: string, data: any) {
   try {
-    const prenda = await prisma.prenda.update({
-      where: { id },
-      data: {
-        nombre: data.nombre,
-        costoProveedor: data.costoProveedor,
-        precioVenta: data.precioVenta,
-        precioOriginal: data.precioOriginal !== undefined ? data.precioOriginal : undefined,
-        categoria: data.categoria,
-        coleccion: data.coleccion,
-        marca: data.marca,
-        tallas: data.tallas,
-        stockPorTalla: data.stockPorTalla,
-        colores: data.colores,
-        material: data.material,
-        imagenes: data.imagenes,
-        stockCount: data.stockCount,
-        enLive: data.enLive,
-        enPreventa: data.enPreventa,
-        isConjunto: data.isConjunto,
-        piezasId: data.piezasId,
-        piezasDetalle: data.piezasDetalle !== undefined ? data.piezasDetalle : undefined,
-      },
+    const prenda = await prisma.$transaction(async (tx) => {
+      const oldPrenda = await tx.prenda.findUnique({ where: { id } });
+      
+      // Restaurar el stock viejo antes de aplicar los nuevos cambios
+      if (oldPrenda && oldPrenda.isConjunto && oldPrenda.piezasDetalle && oldPrenda.stockCount > 0) {
+        await adjustPiecesStock(tx, oldPrenda.piezasDetalle, oldPrenda.stockCount, 'restore');
+      }
+
+      const p = await tx.prenda.update({
+        where: { id },
+        data: {
+          nombre: data.nombre,
+          costoProveedor: data.costoProveedor,
+          precioVenta: data.precioVenta,
+          precioOriginal: data.precioOriginal !== undefined ? data.precioOriginal : undefined,
+          categoria: data.categoria,
+          coleccion: data.coleccion,
+          marca: data.marca,
+          tallas: data.tallas,
+          stockPorTalla: data.stockPorTalla,
+          colores: data.colores,
+          material: data.material,
+          imagenes: data.imagenes,
+          stockCount: data.stockCount,
+          enLive: data.enLive,
+          enPreventa: data.enPreventa,
+          isConjunto: data.isConjunto,
+          piezasId: data.piezasId,
+          piezasDetalle: data.piezasDetalle !== undefined ? data.piezasDetalle : undefined,
+          descripcionLarga: data.descripcionLarga !== undefined ? data.descripcionLarga : undefined,
+        },
+      });
+
+      // Deducir el stock nuevo en base a las nuevas reglas
+      if (p.isConjunto && p.piezasDetalle && p.stockCount > 0) {
+        await adjustPiecesStock(tx, p.piezasDetalle, p.stockCount, 'deduct');
+      }
+
+      return p;
     });
+
     revalidatePath("/admin/productos");
     revalidatePath("/");
     return { success: true, data: prenda };
@@ -99,88 +179,21 @@ export async function updatePrenda(id: string, data: any) {
 
 export async function deletePrenda(id: string) {
   try {
-    await prisma.prenda.delete({
-      where: { id },
+    await prisma.$transaction(async (tx) => {
+      const oldPrenda = await tx.prenda.findUnique({ where: { id } });
+      
+      // Si era un conjunto, devolvemos las piezas al inventario libre
+      if (oldPrenda && oldPrenda.isConjunto && oldPrenda.piezasDetalle && oldPrenda.stockCount > 0) {
+        await adjustPiecesStock(tx, oldPrenda.piezasDetalle, oldPrenda.stockCount, 'restore');
+      }
+
+      await tx.prenda.delete({
+        where: { id },
+      });
     });
+
     revalidatePath("/admin/productos");
     revalidatePath("/");
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
-export async function procesarTransferenciasCombo(transferencias: Record<string, { cantidad: number, talla: string, color: string }>) {
-  try {
-    const piezaIds = Object.keys(transferencias);
-    if (piezaIds.length === 0) return { success: true };
-
-    const prendas = await prisma.prenda.findMany({
-      where: { id: { in: piezaIds } }
-    });
-
-    let totalTransferido = 0;
-
-    // Validar stock de cada pieza individual
-    for (const piezaId of piezaIds) {
-      const prenda = prendas.find(p => p.id === piezaId);
-      if (!prenda) throw new Error(`Prenda ${piezaId} no encontrada`);
-
-      const trans = transferencias[piezaId];
-      if (trans.cantidad <= 0) continue;
-
-      if (prenda.stockPorTalla && Object.keys(prenda.stockPorTalla).length > 0) {
-        const stockTallaObj = prenda.stockPorTalla as Record<string, any>;
-        let stockTalla = 0;
-        if (typeof stockTallaObj[trans.talla] === 'object' && trans.color) {
-           stockTalla = Number(stockTallaObj[trans.talla][trans.color] || 0);
-        } else {
-           stockTalla = Number(stockTallaObj[trans.talla] || 0);
-        }
-        if (stockTalla < trans.cantidad) {
-          throw new Error(`La prenda ${prenda.nombre} no tiene suficiente stock en la talla ${trans.talla}${trans.color ? ' color ' + trans.color : ''}.`);
-        }
-      } else {
-        if (prenda.stockCount < trans.cantidad) {
-          throw new Error(`La prenda ${prenda.nombre} no tiene suficiente stock (requiere ${trans.cantidad}, tiene ${prenda.stockCount}).`);
-        }
-      }
-      totalTransferido += trans.cantidad;
-    }
-
-    if (totalTransferido === 0) return { success: true };
-
-    // Efectuar el descuento en transacción
-    await prisma.$transaction(async (tx) => {
-      for (const piezaId of piezaIds) {
-        const trans = transferencias[piezaId];
-        if (trans.cantidad <= 0) continue;
-        const prenda = prendas.find(p => p.id === piezaId)!;
-
-        if (prenda.stockPorTalla && Object.keys(prenda.stockPorTalla).length > 0) {
-          const nuevoStockTalla = { ...(prenda.stockPorTalla as Record<string, any>) };
-          if (typeof nuevoStockTalla[trans.talla] === 'object' && trans.color) {
-            const current = Number(nuevoStockTalla[trans.talla][trans.color] || 0);
-            nuevoStockTalla[trans.talla][trans.color] = Math.max(0, current - trans.cantidad).toString();
-          } else {
-            const current = Number(nuevoStockTalla[trans.talla] || 0);
-            nuevoStockTalla[trans.talla] = Math.max(0, current - trans.cantidad).toString();
-          }
-          
-          await tx.prenda.update({
-            where: { id: prenda.id },
-            data: { stockPorTalla: nuevoStockTalla }
-          });
-        } else {
-          await tx.prenda.update({
-            where: { id: prenda.id },
-            data: { stockCount: prenda.stockCount - trans.cantidad }
-          });
-        }
-      }
-    });
-
-    revalidatePath("/admin/productos");
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
