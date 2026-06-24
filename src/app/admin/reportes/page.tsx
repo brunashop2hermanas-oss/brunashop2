@@ -7,6 +7,7 @@ import { getReportesFinancieros } from "@/app/actions/reportes";
 
 export default function AdminReportes() {
   const [rango, setRango] = useState("Mensual");
+  const [fechaEspecifica, setFechaEspecifica] = useState("");
   const [printMode, setPrintMode] = useState<"resumen" | "detalle">("resumen");
   const [reportes, setReportes] = useState({
     ingresosBrutos: 0,
@@ -23,14 +24,19 @@ export default function AdminReportes() {
   useEffect(() => {
     const fetchReportes = async () => {
       setLoading(true);
-      const res = await getReportesFinancieros(rango);
+      if (rango === "Especifica" && !fechaEspecifica) {
+        setLoading(false);
+        return; // Esperar a que elija una fecha
+      }
+      const queryParam = rango === "Especifica" ? `fecha:${fechaEspecifica}` : rango;
+      const res = await getReportesFinancieros(queryParam);
       if (res.success && res.data) {
         setReportes(res.data as any);
       }
       setLoading(false);
     };
     fetchReportes();
-  }, [rango]);
+  }, [rango, fechaEspecifica]);
 
   const handlePrintResumen = () => {
     setPrintMode("resumen");
@@ -51,33 +57,63 @@ export default function AdminReportes() {
           <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-3">
             <BarChart3 className="w-8 h-8 text-brand-primary" /> Reportes y Ganancias
           </h1>
-          <p className="text-foreground/70 mt-1">
+          <p className="text-foreground/70 mt-1 mb-4">
             Visualiza tus ventas y exporta reportes financieros.
           </p>
+          <div className="p-4 bg-brand-primary/10 border border-brand-primary/20 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
+            <span className="text-xl shrink-0">💡</span>
+            <p className="text-sm font-medium text-foreground/80 leading-relaxed">
+              <strong>Tip de uso:</strong> Puedes descargar un PDF para entregar a tu contador o archivar. Usa el filtro de fechas para ver cómo te fue hoy, esta semana o este mes.
+            </p>
+          </div>
         </div>
-        <div className="flex gap-4 items-center">
-          <select 
-            value={rango}
-            onChange={(e) => setRango(e.target.value)}
-            className="bg-surface border border-surface-border px-4 py-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-bold cursor-pointer"
-          >
-            <option value="Diario">Hoy</option>
-            <option value="Semanal">Esta Semana</option>
-            <option value="Mensual">Este Mes</option>
-            <option value="Anual">Este Año</option>
-          </select>
-          <button 
-            onClick={handlePrintResumen} 
-            className="bg-brand-primary text-background px-6 py-3 rounded-xl font-bold shadow-lg hover:brightness-90 transition-all flex items-center gap-2"
-          >
-            <Download className="w-5 h-5" /> PDF Resumen
-          </button>
-          <button 
-            onClick={handlePrintDetalle} 
-            className="bg-surface border border-surface-border text-foreground px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-surface-border transition-all flex items-center gap-2"
-          >
-            <FileText className="w-5 h-5" /> PDF Transacciones
-          </button>
+        <div className="flex flex-col xl:flex-row gap-4 items-stretch xl:items-center w-full md:w-auto">
+          {/* Selector de Rango y Fecha */}
+          <div className="flex flex-col sm:flex-row gap-2 w-full xl:w-auto">
+            <div className="flex items-center bg-background border border-surface-border px-3 py-2 rounded-xl shadow-inner w-full sm:w-auto relative group">
+              <Calendar className="w-5 h-5 text-brand-primary mr-2 shrink-0" />
+              <select 
+                value={rango}
+                onChange={(e) => setRango(e.target.value)}
+                className="bg-transparent border-none outline-none w-full sm:w-40 text-sm font-bold text-foreground cursor-pointer appearance-none pr-6"
+              >
+                <option value="Diario">📅 Hoy</option>
+                <option value="Semanal">📅 Esta Semana</option>
+                <option value="Mensual">📅 Este Mes</option>
+                <option value="Anual">📅 Este Año</option>
+                <option value="Especifica">📌 Fecha Específica</option>
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-foreground/50">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+            </div>
+            {rango === 'Especifica' && (
+              <input 
+                type="date" 
+                value={fechaEspecifica}
+                onChange={(e) => setFechaEspecifica(e.target.value)}
+                className="bg-background border border-brand-primary/50 px-3 py-2 rounded-xl text-sm font-bold text-foreground outline-none focus:ring-2 focus:ring-brand-primary shadow-inner w-full sm:w-auto"
+              />
+            )}
+          </div>
+          
+          {/* Botones de Descarga */}
+          <div className="flex flex-col sm:flex-row gap-2 w-full xl:w-auto border-t xl:border-t-0 xl:border-l border-surface-border pt-4 xl:pt-0 xl:pl-4">
+            <button 
+              onClick={handlePrintResumen} 
+              className="w-full sm:w-auto justify-center bg-brand-primary text-white px-4 py-3 rounded-xl font-bold shadow-lg hover:brightness-90 transition-all flex items-center gap-2 text-sm"
+              title="Descarga el resumen financiero general de ingresos y productos"
+            >
+              <Download className="w-5 h-5 shrink-0" /> <span className="whitespace-nowrap">PDF Resumen</span>
+            </button>
+            <button 
+              onClick={handlePrintDetalle} 
+              className="w-full sm:w-auto justify-center bg-surface border border-surface-border text-foreground px-4 py-3 rounded-xl font-bold shadow-lg hover:bg-surface-border transition-all flex items-center gap-2 text-sm"
+              title="Descarga un PDF con la lista detallada de cada transacción"
+            >
+              <FileText className="w-5 h-5 shrink-0" /> <span className="whitespace-nowrap">PDF Transacciones</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -95,7 +131,7 @@ export default function AdminReportes() {
             </div>
             <div className="text-right">
               <p className="text-sm font-bold">Fecha de Emisión: <span className="font-normal">{new Date().toLocaleDateString()}</span></p>
-              <p className="text-sm font-bold">Período: <span className="font-normal uppercase">{rango}</span></p>
+              <p className="text-sm font-bold">Período: <span className="font-normal uppercase">{rango === 'Especifica' ? fechaEspecifica : rango}</span></p>
             </div>
           </div>
         </div>
@@ -223,8 +259,10 @@ export default function AdminReportes() {
                     <p className="font-bold print-text-black">{t.clientaNombre}</p>
                     <p className="text-xs text-foreground/60 print-text-black">{t.clientaDatos}</p>
                   </td>
-                  <td className="p-4">
-                    <span className="bg-brand-primary/10 text-brand-primary px-3 py-1 rounded-full text-xs font-bold print-tag print-text-black">{t.responsable}</span>
+                  <td className="p-4 print-text-black text-sm whitespace-nowrap">
+                    <span className="inline-flex items-center justify-center bg-brand-primary/10 text-brand-primary px-3 py-1 rounded-full text-xs font-bold print-tag whitespace-nowrap">
+                      {t.responsable}
+                    </span>
                   </td>
                   <td className="p-4 text-right text-sm text-foreground/70 print-text-black">
                     {t.fecha.split(', ')[0]}<br/>{t.fecha.split(', ')[1] || ""}
@@ -240,7 +278,7 @@ export default function AdminReportes() {
       </div> {/* FIN DEL BLOQUE DE TRANSACCIONES DETALLADAS */}
 
       {/* Firmas Oficiales para PDF */}
-      <div className="hidden print-footer mt-20">
+      <div className="hidden print-footer mt-20" style={{ pageBreakInside: 'avoid' }}>
         <div className="flex justify-around">
           <div className="text-center">
             <div className="w-48 border-b-2 border-black mb-2 mx-auto"></div>
@@ -322,6 +360,20 @@ export default function AdminReportes() {
           
           .print-border { border: 1px solid #000 !important; background: transparent !important; }
           .print-bar { background: black !important; }
+
+          /* Permitir que la tabla se divida entre hojas */
+          .print-table-container {
+            page-break-inside: auto !important;
+          }
+          
+          .print-table { width: 100% !important; border-collapse: collapse !important; }
+          .print-table th, .print-table td { 
+            border: 1px solid #000 !important; 
+            padding: 0.5rem !important; 
+            color: black !important;
+          }
+          .print-table-header { background: #f0f0f0 !important; }
+          .print-table-body tr { page-break-inside: avoid; }
         }
       `}} />
     </div>

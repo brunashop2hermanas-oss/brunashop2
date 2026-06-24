@@ -128,6 +128,7 @@ model Configuracion {
   instagramUrl          String?
   tiktokUrl             String?
   whatsappUrl           String?
+  facebookUrl           String?
   footerDescripcion     String?  // Texto de la marca en el footer
   terminosCondiciones   String?  @db.Text
   politicasEnvio        String?  @db.Text
@@ -138,7 +139,7 @@ model Configuracion {
   tiempoLlenadoDatosMinutos Int  @default(10)
   destinosHabilitados   Json?    // Array de { departamento: "...", provincias: ["..."] }
   categoriasPrendas     String[] @default(["Vestidos", "Conjuntos", "Blusas y Tops", "Pantalones y Jeans", "Chaquetas y Abrigos", "Enterizos", "Ofertas / Sale"])
-  liveProgramadoPara    DateTime?
+  liveHorariosRecurrentes Json? // Array de { diaSemana: number, hora: string } donde 0=Dom, 1=Lun, etc.
   planSupabase          String   @default("Gratuito") // "Gratuito" o "Pro"
   updatedAt             DateTime @updatedAt
 }

@@ -157,6 +157,8 @@ export async function getReportesFinancieros(rango: string) {
   try {
     const ahora = new Date();
     let fechaInicio = new Date();
+    let fechaFin = new Date();
+    let isRangoCerrado = false;
 
     if (rango === "Diario") {
       fechaInicio.setHours(0, 0, 0, 0);
@@ -171,15 +173,26 @@ export async function getReportesFinancieros(rango: string) {
     } else if (rango === "Anual") {
       fechaInicio.setMonth(0, 1);
       fechaInicio.setHours(0, 0, 0, 0);
+    } else if (rango.startsWith("fecha:")) {
+      const dateStr = rango.split(":")[1];
+      const [year, month, day] = dateStr.split("-").map(Number);
+      fechaInicio = new Date(year, month - 1, day, 0, 0, 0);
+      fechaFin = new Date(year, month - 1, day, 23, 59, 59);
+      isRangoCerrado = true;
     }
 
     const config = await prisma.configuracion.findFirst();
     const usarControlFinanciero = config?.usarControlFinanciero ?? true;
 
+    const dateQuery: any = { gte: fechaInicio };
+    if (isRangoCerrado) {
+      dateQuery.lte = fechaFin;
+    }
+
     // Traer las ventas del rango
     const ventas = await prisma.venta.findMany({
       where: {
-        fecha: { gte: fechaInicio },
+        fecha: dateQuery,
         estado: { in: ['PREPARANDO', 'ENTREGADO'] }
       },
       include: {
@@ -206,9 +219,11 @@ export async function getReportesFinancieros(rango: string) {
     for (const venta of ventas) {
       ingresosBrutos += venta.total;
 
-      // Calcular ciudad
-      const ciudad = venta.destino || "No especificada";
-      ciudades[ciudad] = (ciudades[ciudad] || 0) + 1;
+      // Calcular ciudad (Ignorando las ventas en Tienda Física)
+      if (venta.destino !== "Tienda Física" && venta.tipoEntrega !== "TIENDA" && venta.tipoEntrega !== "RECOJO_TIENDA") {
+        const ciudad = venta.destino || "No especificada";
+        ciudades[ciudad] = (ciudades[ciudad] || 0) + 1;
+      }
 
       // Calcular mejor día
       const nombreDia = venta.fecha.toLocaleDateString('es-ES', { weekday: 'long' });
@@ -223,17 +238,27 @@ export async function getReportesFinancieros(rango: string) {
           const cat = item.prenda.categoria || "Otros";
           categorias[cat] = (categorias[cat] || 0) + item.cantidad;
 
-          // Añadir a transacciones
-          transaccionesDetalladas.push({
-            id: item.id,
-            prendaNombre: item.prenda.nombre,
-            cantidad: item.cantidad,
-            monto: item.precio * item.cantidad,
-            clientaNombre: venta.clienta ? `${venta.clienta.nombres} ${venta.clienta.apellidos}`.trim() : "Cliente General",
-            clientaDatos: venta.clienta ? `CI: ${venta.clienta.ci} - Cel: ${venta.clienta.celular}` : "Sin datos",
-            responsable: venta.origen === "WEB" ? "Sistema Web" : (venta.vendedor ? `${venta.vendedor.nombres} ${venta.vendedor.apellidos}`.trim() : "Caja"),
-            fecha: venta.fecha.toLocaleString()
-          });
+            let responsableTexto = "Sistema Web";
+            if (venta.origen !== "WEB") {
+              if (venta.vendedor) {
+                const rolStr = (venta.vendedor.role === 'ADMINISTRADOR' || venta.vendedor.role === 'ADMIN') ? 'Admin' : 'Empleada';
+                responsableTexto = `${rolStr}: ${venta.vendedor.nombres} ${venta.vendedor.apellidos}`.trim();
+              } else {
+                responsableTexto = "Admin Principal (Caja)";
+              }
+            }
+
+            // Añadir a transacciones
+            transaccionesDetalladas.push({
+              id: item.id,
+              prendaNombre: item.prenda.nombre,
+              cantidad: item.cantidad,
+              monto: item.precio * item.cantidad,
+              clientaNombre: venta.clienta ? `${venta.clienta.nombres} ${venta.clienta.apellidos}`.trim() : "Cliente General",
+              clientaDatos: venta.clienta ? `CI: ${venta.clienta.ci} - Cel: ${venta.clienta.celular}` : "Sin datos",
+              responsable: responsableTexto,
+              fecha: venta.fecha.toLocaleString()
+            });
         }
       }
     }

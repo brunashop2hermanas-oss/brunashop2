@@ -46,7 +46,14 @@ export default function DashboardInicio() {
   return (
     <div className={`flex-1 transition-opacity duration-300 ${loading ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
       <h1 className="text-3xl font-extrabold text-foreground mb-2">Bienvenida, Dueña</h1>
-      <p className="text-foreground/70 mb-8">Aquí tienes el resumen de cómo va BrunaShop2 hoy.</p>
+      <p className="text-foreground/70 mb-6">Aquí tienes el resumen de cómo va BrunaShop2 hoy.</p>
+      
+      <div className="mb-8 p-4 bg-brand-primary/10 border border-brand-primary/20 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
+        <span className="text-xl shrink-0">💡</span>
+        <p className="text-sm font-medium text-foreground/80 leading-relaxed">
+          <strong>Tip de uso:</strong> Esta es tu pantalla principal. Aquí puedes ver de un vistazo tus ingresos, pedidos de hoy, prendas más vendidas y alertas de stock bajo. <strong className="text-brand-primary">No necesitas modificar nada aquí, solo úsalo para revisar cómo va tu negocio.</strong>
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <div className="glass p-6 rounded-3xl border border-surface-border shadow-3d flex items-center gap-4">

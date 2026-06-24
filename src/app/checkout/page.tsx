@@ -198,6 +198,38 @@ function CheckoutContent() {
     }
   };
 
+  const handleGuardarEdicion = () => {
+    const form = document.getElementById('paso1-form') as HTMLFormElement;
+    if (!form) return;
+    
+    const formData = new FormData(form);
+    const nn = formData.get("nombres") as string;
+    const ap = formData.get("apellidoPaterno") as string;
+    const am = formData.get("apellidoMaterno") as string;
+    const cel = formData.get("celular") as string;
+    const newCi = (formData.get("ci") as string) || ci;
+    
+    if (!nn || !ap || !cel || !newCi) {
+      toast.error("Por favor completa los campos obligatorios.");
+      return;
+    }
+    
+    setClientaEncontrada({
+      ...clientaEncontrada,
+      id: clientaEncontrada?.id || "",
+      nombres: nn,
+      apellidos: `${ap} ${am || ""}`.trim(),
+      celular: cel,
+      ci: newCi,
+      puntos: clientaEncontrada?.puntos || 0,
+      nivel: clientaEncontrada?.nivel || "Bronce",
+      createdAt: clientaEncontrada?.createdAt || new Date(),
+    });
+    setCi(newCi);
+    setEditandoClienta(false);
+    toast.success("¡Datos actualizados para este pedido!");
+  };
+
   const procesarPaso1 = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
@@ -414,9 +446,9 @@ function CheckoutContent() {
                     <div className="bg-brand-primary/5 border border-brand-primary/20 p-6 rounded-xl">
                       {clientaEncontrada && !editandoClienta ? (
                         <div>
-                          <div className="flex justify-between items-start mb-2">
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
                             <h3 className="text-xl font-bold text-brand-primary">¡Bienvenida de nuevo, {clientaEncontrada.nombres}!</h3>
-                            <button type="button" onClick={() => setEditandoClienta(true)} className="text-xs border border-black/20 px-3 py-1 hover:bg-black hover:text-white transition-colors">Editar mis datos</button>
+                            <button type="button" onClick={() => setEditandoClienta(true)} className="text-xs font-bold uppercase tracking-widest bg-black text-white px-5 py-2 hover:bg-black/80 transition-colors">Editar mis datos</button>
                           </div>
                           <p className="text-sm">Tus datos están guardados. Solo dinos a dónde enviamos tu pedido.</p>
                         </div>
@@ -451,8 +483,9 @@ function CheckoutContent() {
                             </div>
                           </div>
                           {editandoClienta && (
-                            <div className="flex justify-end pt-2">
-                              <button type="button" onClick={() => setEditandoClienta(false)} className="text-xs underline text-foreground/50 hover:text-black">Cancelar edición</button>
+                            <div className="flex justify-end pt-4 gap-4 border-t border-black/10 mt-6">
+                              <button type="button" onClick={() => setEditandoClienta(false)} className="text-xs uppercase tracking-widest font-bold text-foreground/50 hover:text-black px-4 py-2 transition-colors">Cancelar</button>
+                              <button type="button" onClick={handleGuardarEdicion} className="text-xs uppercase tracking-widest font-bold bg-brand-primary text-white px-6 py-2 hover:bg-brand-primary/90 transition-colors">Guardar datos</button>
                             </div>
                           )}
                         </div>

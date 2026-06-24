@@ -41,6 +41,7 @@ export async function getClientas() {
         puntos: clienta.puntos,
         nivel: clienta.nivel,
         createdAt: clienta.createdAt,
+        fechaRegistroRaw: clienta.createdAt.toISOString(),
         totalPedidos: clienta.ventas.length,
         dineroGastado: clienta.ventas.reduce((sum, v) => sum + v.total, 0),
         prendasCompradas: clienta.puntos, // Asumiendo 1 punto = 1 prenda

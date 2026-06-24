@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Eye, CheckCircle, XCircle, Printer, MessageCircle, Star, PackageCheck, Download, X, Upload } from "lucide-react";
+import { Search, Eye, CheckCircle, XCircle, Printer, MessageCircle, Star, PackageCheck, Download, X, Upload, Wallet, Package, Truck, History, Calendar } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getVentas, updateEstadoVenta, toggleEmpaquetado, subirGuiaEnvio } from "@/app/actions/ventas";
 import { uploadImage } from "@/app/actions/upload";
@@ -48,6 +48,9 @@ export default function AdminDashboard() {
   const [pedidoEmpaquetando, setPedidoEmpaquetando] = useState<any>(null); // Modal de Empaquetado
   const [pedidosParaImprimir, setPedidosParaImprimir] = useState<string[]>([]);
   const [filtroTab, setFiltroTab] = useState<'pagos' | 'empaquetar' | 'guias' | 'historial'>('pagos');
+  const [filtroFecha, setFiltroFecha] = useState<'hoy' | 'semana' | 'mes' | 'año' | 'todo' | 'dia_especifico' | 'mes_especifico'>('todo');
+  const [fechaEspecifica, setFechaEspecifica] = useState("");
+  const [mesEspecifico, setMesEspecifico] = useState("");
   const [comprobanteAmpliado, setComprobanteAmpliado] = useState<string | null>(null);
   const [isUploadingGuia, setIsUploadingGuia] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState("");
@@ -193,7 +196,30 @@ const imprimirVineta = (pedido: any) => {
   }
 
 
-  const pedidosFiltrados = pedidos.filter(pedido => {
+  const pedidosPorFecha = pedidos.filter(pedido => {
+    if (!pedido.fechaRaw) return true; // Fallback para registros antiguos
+    const fechaPedido = new Date(pedido.fechaRaw);
+    const hoy = new Date();
+    
+    if (filtroFecha === 'todo') return true;
+    if (filtroFecha === 'hoy') return fechaPedido.getDate() === hoy.getDate() && fechaPedido.getMonth() === hoy.getMonth() && fechaPedido.getFullYear() === hoy.getFullYear();
+    if (filtroFecha === 'semana') return (hoy.getTime() - fechaPedido.getTime()) <= (7 * 24 * 60 * 60 * 1000);
+    if (filtroFecha === 'mes') return fechaPedido.getMonth() === hoy.getMonth() && fechaPedido.getFullYear() === hoy.getFullYear();
+    if (filtroFecha === 'año') return fechaPedido.getFullYear() === hoy.getFullYear();
+    
+    if (filtroFecha === 'dia_especifico' && fechaEspecifica) {
+      const [y, m, d] = fechaEspecifica.split("-").map(Number);
+      return fechaPedido.getDate() === d && fechaPedido.getMonth() === m - 1 && fechaPedido.getFullYear() === y;
+    }
+    if (filtroFecha === 'mes_especifico' && mesEspecifico) {
+      const [y, m] = mesEspecifico.split("-").map(Number);
+      return fechaPedido.getMonth() === m - 1 && fechaPedido.getFullYear() === y;
+    }
+    
+    return true;
+  });
+
+  const pedidosFiltrados = pedidosPorFecha.filter(pedido => {
     if (pedido.origen === 'CAJA' || pedido.origen === 'POS') return false;
 
     const arts = pedido.articulos || [];
@@ -220,61 +246,160 @@ const imprimirVineta = (pedido: any) => {
 
   const pedidosARenderizar = filtroTab === 'historial' ? pedidosFiltrados.slice(0, 50) : pedidosFiltrados;
 
+  const counts = { pagos: 0, empaquetar: 0, guias: 0, historial: 0 };
+  pedidosPorFecha.forEach(pedido => {
+    if (pedido.origen === 'CAJA' || pedido.origen === 'POS') return;
+    const arts = pedido.articulos || [];
+    const esTiendaDirecta = pedido.tipoEntrega === 'TIENDA' || (!pedido.tipoEntrega && (pedido.destino === 'Tienda Física' || pedido.origen === 'CAJA'));
+    const todasEmpaquetadas = esTiendaDirecta ? true : (arts.length > 0 && arts.every((art: any) => art.empaquetado));
+    const esAbandonado = pedido.estado === 'Esperando Pago' || pedido.estado === 'Expirado';
+
+    if (pedido.estado === 'Pendiente' && !esAbandonado) counts.pagos++;
+    else if ((pedido.estado === 'Aprobado' || pedido.estado === 'PREPARANDO') && !todasEmpaquetadas && !esAbandonado && pedido.estado !== 'ENTREGADO') counts.empaquetar++;
+    else if ((pedido.estado === 'Aprobado' || pedido.estado === 'PREPARANDO') && todasEmpaquetadas && !pedido.guiaEnvioUrl && !esAbandonado && pedido.estado !== 'ENTREGADO') counts.guias++;
+    else if (pedido.estado === 'ENTREGADO' || pedido.estado === 'ENVIADO' || (todasEmpaquetadas && !!pedido.guiaEnvioUrl) || (esTiendaDirecta && pedido.estado === 'ENTREGADO')) counts.historial++;
+  });
+
   return (
     <div className="flex-1 p-6 md:p-10 relative">
       <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-foreground mb-2">Gestión de Pedidos</h1>
-          <p className="text-foreground/70">Verifica comprobantes y prepara envíos.</p>
+          <p className="text-foreground/70 mb-4">Verifica comprobantes y prepara envíos.</p>
+          <div className="p-4 bg-brand-primary/10 border border-brand-primary/20 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
+            <span className="text-xl shrink-0">💡</span>
+            <p className="text-sm font-medium text-foreground/80 leading-relaxed">
+              <strong>Tip de uso:</strong> Esta pantalla es el "corazón" de tus envíos. Sigue el flujo de izquierda a derecha en las pestañas: primero verifica los pagos (1), luego empaqueta las prendas (2) y por último, sube el comprobante de envío o despáchalo (3).
+            </p>
+          </div>
         </div>
         
-        <div className="flex items-center bg-surface border border-surface-border px-4 py-2 rounded-xl shadow-inner max-w-sm w-full relative">
-          <Search className="w-5 h-5 text-foreground/50 mr-3" />
-          <input 
-            type="text" 
-            placeholder="Buscar por nombre, CI o ID..." 
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            className="bg-transparent border-none outline-none w-full text-sm font-medium"
-          />
-          {busqueda && <X className="w-4 h-4 text-foreground/50 cursor-pointer absolute right-4" onClick={() => setBusqueda("")} />}
-        </div>
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+          {/* Selector de Fechas (Dropdown) */}
+          <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center bg-surface border border-surface-border px-3 py-2 rounded-xl shadow-inner w-full sm:w-auto relative group">
+              <Calendar className="w-5 h-5 text-brand-primary mr-2 shrink-0" />
+              <select 
+                value={filtroFecha}
+                onChange={(e) => setFiltroFecha(e.target.value as any)}
+                className="bg-transparent border-none outline-none w-full sm:w-40 text-sm font-bold text-foreground cursor-pointer appearance-none"
+              >
+                <option value="todo">Ver todo el historial</option>
+                <option value="hoy">⭐ Pedidos de HOY</option>
+                <option value="dia_especifico">🔍 Buscar otro día...</option>
+                <option value="mes_especifico">🔍 Buscar un mes...</option>
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-foreground/50">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+            </div>
 
-        {/* Pestañas (Tabs) */}
-        <div className="flex flex-wrap bg-surface border border-surface-border p-1 rounded-xl gap-1">
+            {filtroFecha === 'dia_especifico' && (
+              <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-300">
+                <input 
+                  type="date" 
+                  value={fechaEspecifica}
+                  onChange={(e) => setFechaEspecifica(e.target.value)}
+                  className="bg-brand-primary/10 border-2 border-brand-primary px-4 py-2 rounded-xl text-sm font-bold text-brand-primary outline-none focus:ring-4 focus:ring-brand-primary/40 shadow-lg w-full sm:w-auto cursor-pointer"
+                />
+                {!fechaEspecifica && <span className="text-xs font-extrabold text-brand-primary animate-pulse whitespace-nowrap">👈 Toca para elegir</span>}
+              </div>
+            )}
+            {filtroFecha === 'mes_especifico' && (
+              <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-300">
+                <input 
+                  type="month" 
+                  value={mesEspecifico}
+                  onChange={(e) => setMesEspecifico(e.target.value)}
+                  className="bg-brand-primary/10 border-2 border-brand-primary px-4 py-2 rounded-xl text-sm font-bold text-brand-primary outline-none focus:ring-4 focus:ring-brand-primary/40 shadow-lg w-full sm:w-auto cursor-pointer"
+                />
+                {!mesEspecifico && <span className="text-xs font-extrabold text-brand-primary animate-pulse whitespace-nowrap">👈 Toca para elegir</span>}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center bg-surface border border-surface-border px-4 py-2 rounded-xl shadow-inner w-full sm:max-w-xs relative">
+            <Search className="w-5 h-5 text-foreground/50 mr-3 shrink-0" />
+            <input 
+              type="text" 
+              placeholder="Buscar por nombre, CI o ID..." 
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="bg-transparent border-none outline-none w-full text-sm font-medium"
+            />
+            {busqueda && <X className="w-4 h-4 text-foreground/50 cursor-pointer absolute right-4 shrink-0" onClick={() => setBusqueda("")} />}
+          </div>
+        </div>
+      </div>
+
+      {/* Pestañas (Tabs) Pipeline */}
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row bg-surface border border-surface-border p-1.5 rounded-2xl gap-2 overflow-x-auto custom-scrollbar">
           <button 
             onClick={() => setFiltroTab('pagos')}
-            className={`px-3 py-2 rounded-lg font-bold text-xs transition-all ${filtroTab === 'pagos' ? 'bg-brand-primary text-white shadow-md' : 'text-foreground/60 hover:text-foreground'}`}
+            className={`flex-1 min-w-[140px] px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 relative ${filtroTab === 'pagos' ? 'bg-brand-primary text-white shadow-lg scale-[1.02]' : 'bg-surface hover:bg-surface-border/50 text-foreground/70'}`}
           >
-            Confirmar Pago
+            <Wallet className="w-5 h-5" /> Confirmar Pago
+            {counts.pagos > 0 && (
+              <span className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-surface shadow-sm ${filtroTab === 'pagos' ? 'bg-white text-brand-primary' : 'bg-brand-primary text-white animate-pulse'}`}>
+                {counts.pagos}
+              </span>
+            )}
           </button>
+          
+          <div className="hidden sm:flex items-center text-surface-border shrink-0">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </div>
+
           <button 
             onClick={() => setFiltroTab('empaquetar')}
-            className={`px-3 py-2 rounded-lg font-bold text-xs transition-all ${filtroTab === 'empaquetar' ? 'bg-orange-500 text-white shadow-md' : 'text-foreground/60 hover:text-foreground'}`}
+            className={`flex-1 min-w-[160px] px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 relative ${filtroTab === 'empaquetar' ? 'bg-orange-500 text-white shadow-lg scale-[1.02]' : 'bg-surface hover:bg-surface-border/50 text-foreground/70'}`}
           >
-            Empaquetado Pendiente
+            <Package className="w-5 h-5" /> Empaquetar
+            {counts.empaquetar > 0 && (
+              <span className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-surface shadow-sm ${filtroTab === 'empaquetar' ? 'bg-white text-orange-500' : 'bg-orange-500 text-white animate-pulse'}`}>
+                {counts.empaquetar}
+              </span>
+            )}
           </button>
+
+          <div className="hidden sm:flex items-center text-surface-border shrink-0">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </div>
+
           <button 
             onClick={() => setFiltroTab('guias')}
-            className={`px-3 py-2 rounded-lg font-bold text-xs transition-all ${filtroTab === 'guias' ? 'bg-blue-500 text-white shadow-md' : 'text-foreground/60 hover:text-foreground'}`}
+            className={`flex-1 min-w-[140px] px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 relative ${filtroTab === 'guias' ? 'bg-blue-500 text-white shadow-lg scale-[1.02]' : 'bg-surface hover:bg-surface-border/50 text-foreground/70'}`}
           >
-            Enviar Guía
+            <Truck className="w-5 h-5" /> Enviar Guía
+            {counts.guias > 0 && (
+              <span className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-surface shadow-sm ${filtroTab === 'guias' ? 'bg-white text-blue-500' : 'bg-blue-500 text-white animate-pulse'}`}>
+                {counts.guias}
+              </span>
+            )}
           </button>
+
+          <div className="hidden sm:flex items-center text-surface-border shrink-0">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </div>
+
           <button 
             onClick={() => setFiltroTab('historial')}
-            className={`px-3 py-2 rounded-lg font-bold text-xs transition-all ${filtroTab === 'historial' ? 'bg-green-500 text-white shadow-md' : 'text-foreground/60 hover:text-foreground'}`}
+            className={`flex-1 min-w-[120px] px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 relative ${filtroTab === 'historial' ? 'bg-green-500 text-white shadow-lg scale-[1.02]' : 'bg-surface hover:bg-surface-border/50 text-foreground/70'}`}
           >
-            Historial
+            <History className="w-5 h-5" /> Historial
           </button>
         </div>
-
+        
         {pedidosParaImprimir.length > 0 && (
-          <button 
-            onClick={imprimirSeleccionados}
-            className="bg-brand-primary text-white px-6 py-3 rounded-full font-bold shadow-xl hover:bg-brand-accent transition-colors flex items-center gap-2 animate-bounce"
-          >
-            <Printer className="w-5 h-5" /> Imprimir {pedidosParaImprimir.length} Viñetas
-          </button>
+          <div className="mt-4 flex justify-end">
+            <button 
+              onClick={imprimirSeleccionados}
+              className="bg-brand-primary text-white px-6 py-3 rounded-xl font-bold shadow-xl hover:bg-brand-accent transition-colors flex items-center justify-center gap-2 animate-bounce w-full sm:w-auto"
+            >
+              <Printer className="w-5 h-5" /> Imprimir {pedidosParaImprimir.length} Viñetas de Envío
+            </button>
+          </div>
         )}
       </div>
 

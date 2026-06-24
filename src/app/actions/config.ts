@@ -13,16 +13,61 @@ export async function getConfiguracion() {
       });
     }
 
-    // Lógica para Live Programado
-    if (config.liveProgramadoPara && new Date() >= config.liveProgramadoPara) {
-      config.liveActivo = true;
-      
-      // Actualizar en BD para consolidar el estado y limpiar la programación
-      await prisma.configuracion.update({
-        where: { id: config.id },
-        data: { liveActivo: true, liveProgramadoPara: null }
-      });
-      config.liveProgramadoPara = null;
+    // Lógica para Live Programado Recurrente
+    if (config.liveHorariosRecurrentes && typeof config.liveHorariosRecurrentes === 'object' && !Array.isArray(config.liveHorariosRecurrentes)) {
+      const data = config.liveHorariosRecurrentes as { horarios?: { diaSemana: number, hora: string, unSoloUso?: boolean }[], ultimaActivacion?: string };
+      if (data.horarios && data.horarios.length > 0) {
+        // Ajuste de zona horaria para Bolivia (UTC-4)
+        const now = new Date();
+        const nowBolivia = new Date(now.getTime() - (4 * 60 * 60 * 1000));
+        
+        const hoyDia = nowBolivia.getUTCDay(); // 0=Dom, 1=Lun, ..., 6=Sab
+        const horaStr = nowBolivia.getUTCHours().toString().padStart(2, '0') + ':' + nowBolivia.getUTCMinutes().toString().padStart(2, '0');
+        const hoyStr = nowBolivia.toISOString().split('T')[0];
+
+        // Buscar si hay un horario programado que deba activarse hoy/ahora
+        let toActivate = false;
+        let isOneTime = false;
+        let horarioToRemove: any = null;
+
+        for (const h of data.horarios) {
+          if (h.diaSemana === hoyDia && horaStr >= h.hora) {
+            // Activa si es un solo uso, o si es frecuente y no se ha activado hoy
+            if (h.unSoloUso || data.ultimaActivacion !== hoyStr) {
+              toActivate = true;
+              if (h.unSoloUso) {
+                isOneTime = true;
+                horarioToRemove = h;
+              }
+              break;
+            }
+          }
+        }
+
+        if (toActivate) {
+          config.liveActivo = true;
+          
+          let newHorarios = data.horarios;
+          if (isOneTime && horarioToRemove) {
+            newHorarios = newHorarios.filter(h => h !== horarioToRemove);
+          }
+
+          const newJson = {
+            ...data,
+            horarios: newHorarios,
+            ultimaActivacion: isOneTime ? data.ultimaActivacion : hoyStr
+          };
+
+          await prisma.configuracion.update({
+            where: { id: config.id },
+            data: { 
+              liveActivo: true, 
+              liveHorariosRecurrentes: newJson
+            }
+          });
+          config.liveHorariosRecurrentes = newJson;
+        }
+      }
     }
 
     return { success: true, data: config };
@@ -38,6 +83,7 @@ export async function updateConfiguracion(data: {
   qrImagen?: string | null;
   instagramUrl?: string;
   tiktokUrl?: string;
+  facebookUrl?: string;
   whatsappUrl?: string;
   footerDescripcion?: string;
   terminosCondiciones?: string;
@@ -49,7 +95,7 @@ export async function updateConfiguracion(data: {
   tiempoLlenadoDatosMinutos?: number;
   destinosHabilitados?: any;
   categoriasPrendas?: string[];
-  liveProgramadoPara?: Date | null;
+  liveHorariosRecurrentes?: any;
 }) {
   try {
     let config = await prisma.configuracion.findFirst();

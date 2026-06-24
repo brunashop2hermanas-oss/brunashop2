@@ -450,6 +450,7 @@ export async function getVentas() {
               v.estado === 'PREPARANDO' ? 'PREPARANDO' :
               v.estado === 'ENTREGADO' ? 'ENTREGADO' : 'Aprobado',
       fecha: v.fecha.toLocaleString(),
+      fechaRaw: v.fecha.toISOString(),
       terminosAceptados: v.terminosAceptados,
       fechaAceptacion: v.fechaAceptacion ? v.fechaAceptacion.toLocaleString() : null,
       ipAceptacion: v.ipAceptacion,

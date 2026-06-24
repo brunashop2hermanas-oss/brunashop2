@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, X, Minus, Trash2, CheckCircle2, UserPlus, CreditCard, Banknote, QrCode, Truck, PackageCheck, Loader2 } from 'lucide-react';
+import { Search, Plus, X, Minus, Trash2, CheckCircle2, UserPlus, CreditCard, Banknote, QrCode, Truck, PackageCheck, Loader2, UserCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getPrendas } from '@/app/actions/productos';
 import { getConfiguracion } from '@/app/actions/config';
@@ -40,12 +40,21 @@ export default function NuevaVenta() {
   
   const [ventaCompletada, setVentaCompletada] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [vendedora, setVendedora] = useState('Dueña');
+  const [vendedora, setVendedora] = useState('Cargando...');
+  const [userRole, setUserRole] = useState('');
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [productoVistaRapida, setProductoVistaRapida] = useState<any>(null);
   const [imagenAmpliada, setImagenAmpliada] = useState<string | null>(null);
 
   useEffect(() => {
+    if (typeof document !== "undefined") {
+      const nameMatch = document.cookie.match(/(?:^|; )bruna_user_name=([^;]*)/);
+      if (nameMatch) setVendedora(decodeURIComponent(nameMatch[1]));
+      
+      const roleMatch = document.cookie.match(/(?:^|; )bruna_user_role=([^;]*)/);
+      if (roleMatch) setUserRole(decodeURIComponent(roleMatch[1]));
+    }
+
     const fetchDatos = async () => {
       const res = await getPrendas();
       if (res.success) {
@@ -255,20 +264,28 @@ export default function NuevaVenta() {
       <div className="flex justify-between items-end">
         <div>
           <h1 className="text-4xl font-black text-brand-primary font-serif tracking-tight">Caja / Nueva Venta</h1>
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-foreground/60 text-sm">Punto de Venta (Caja) - Atendido por:</span>
-            <select 
-              value={vendedora} 
-              onChange={(e) => setVendedora(e.target.value)}
-              className="bg-brand-primary/10 text-brand-primary font-bold border border-brand-primary/20 rounded-lg px-2 py-1 text-sm outline-none cursor-pointer"
-            >
-              <option value="Dueña">Dueña</option>
-              <option value="María">María</option>
-              <option value="Valeria">Valeria</option>
-              <option value="Carla">Carla</option>
-            </select>
+          <div className="flex flex-wrap items-center gap-3 mt-3 bg-surface border border-surface-border p-2 pr-5 rounded-full w-max shadow-sm">
+            <div className="bg-brand-primary/10 text-brand-primary p-2 rounded-full">
+              <UserCircle2 className="w-5 h-5" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase tracking-widest font-bold text-foreground/50 leading-none mb-1">
+                Atendido por
+              </span>
+              <span className="text-foreground font-bold text-sm leading-none flex items-center gap-2">
+                {vendedora} 
+                <span className="bg-brand-primary/20 text-brand-primary text-[9px] px-1.5 py-0.5 rounded-md uppercase tracking-wider">{userRole || 'CAJERA'}</span>
+              </span>
+            </div>
           </div>
         </div>
+      </div>
+
+      <div className="mb-2 p-4 bg-brand-primary/10 border border-brand-primary/20 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
+        <span className="text-xl shrink-0">💡</span>
+        <p className="text-sm font-medium text-foreground/80 leading-relaxed">
+          <strong>Tip de uso:</strong> Toca cualquier prenda para añadirla a la venta actual. Puedes buscar por nombre o código. Si es una venta presencial, asegúrate de registrar a la clienta para que sume puntos VIP.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

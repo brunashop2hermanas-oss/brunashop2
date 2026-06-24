@@ -9,7 +9,7 @@ import { getConfiguracion, updateConfiguracion } from "@/app/actions/config";
 import { getUsuarios, createUsuario, updateUsuario, deleteUsuario } from "@/app/actions/usuarios";
 import { uploadImage } from "@/app/actions/upload";
 import { compressImage } from "@/lib/imageCompression";
-import { Clock, MapPin, CheckSquare, Square, Trash2 } from "lucide-react";
+import { Clock, MapPin, CheckSquare, Square, Trash2, Pencil, RefreshCw } from "lucide-react";
 import LimpiezaDB from "./LimpiezaDB";
 import LicenciaPlanes from "./LicenciaPlanes";
 
@@ -72,6 +72,7 @@ export default function AdminConfiguracion() {
     bancoTitular: "",
     qrImagen: null as string | null,
     instagramUrl: "",
+    facebookUrl: "",
     tiktokUrl: "",
     whatsappUrl: "",
     footerDescripcion: "",
@@ -80,7 +81,7 @@ export default function AdminConfiguracion() {
     politicaPrivacidad: "",
     usarControlFinanciero: true,
     liveActivo: false,
-    liveProgramadoPara: "" as string,
+    liveHorariosRecurrentes: { horarios: [] as {diaSemana: number, hora: string, unSoloUso?: boolean}[], ultimaActivacion: undefined as string | undefined },
     tiempoReservaMinutos: 4,
     tiempoLlenadoDatosMinutos: 10,
     destinosHabilitados: {} as Record<string, { provincias: string[], municipios: string[] }>,
@@ -99,6 +100,12 @@ export default function AdminConfiguracion() {
 
   // Modal para Destinos
   const [modalDestino, setModalDestino] = useState<{isOpen: boolean, tipo: 'Provincia' | 'Municipio', depto: string}>({isOpen: false, tipo: 'Provincia', depto: ''});
+  const [isGestorDestinosOpen, setIsGestorDestinosOpen] = useState(false);
+  const [isConfirmGuardarOpen, setIsConfirmGuardarOpen] = useState(false);
+  const [isRecurrent, setIsRecurrent] = useState(true);
+  const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [editData, setEditData] = useState<{diaSemana: number, hora: string, unSoloUso: boolean} | null>(null);
+  const [deleteScheduleIndex, setDeleteScheduleIndex] = useState<number | null>(null);
   const [inputDestino, setInputDestino] = useState("");
   const [nuevaCategoriaInput, setNuevaCategoriaInput] = useState("");
 
@@ -122,6 +129,7 @@ export default function AdminConfiguracion() {
           bancoTitular: resConfig.data.bancoTitular || "",
           qrImagen: resConfig.data.qrImagen,
           instagramUrl: resConfig.data.instagramUrl || "",
+          facebookUrl: resConfig.data.facebookUrl || "",
           tiktokUrl: resConfig.data.tiktokUrl || "",
           whatsappUrl: resConfig.data.whatsappUrl || "",
           footerDescripcion: resConfig.data.footerDescripcion || "",
@@ -130,7 +138,7 @@ export default function AdminConfiguracion() {
           politicaPrivacidad: resConfig.data.politicaPrivacidad || POLITICA_POR_DEFECTO,
           usarControlFinanciero: resConfig.data.usarControlFinanciero ?? true,
           liveActivo: resConfig.data.liveActivo ?? false,
-          liveProgramadoPara: resConfig.data.liveProgramadoPara ? new Date(new Date(resConfig.data.liveProgramadoPara).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "",
+          liveHorariosRecurrentes: (resConfig.data.liveHorariosRecurrentes as any) || { horarios: [] },
           tiempoReservaMinutos: resConfig.data.tiempoReservaMinutos ?? 4,
           tiempoLlenadoDatosMinutos: resConfig.data.tiempoLlenadoDatosMinutos ?? 10,
           destinosHabilitados: {}, // Lo llenamos abajo
@@ -160,6 +168,58 @@ export default function AdminConfiguracion() {
     fetchData();
   }, []);
 
+  // Auto-activate liveActivo visually
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setConfig((prevConfig) => {
+        if (prevConfig.liveActivo || !prevConfig.liveHorariosRecurrentes?.horarios?.length) return prevConfig;
+        
+        const now = new Date();
+        const nowBolivia = new Date(now.getTime() - (4 * 60 * 60 * 1000));
+        const hoyDia = nowBolivia.getUTCDay();
+        const horaStr = nowBolivia.getUTCHours().toString().padStart(2, '0') + ':' + nowBolivia.getUTCMinutes().toString().padStart(2, '0');
+        const hoyStr = nowBolivia.toISOString().split('T')[0];
+
+        let toActivate = false;
+        let isOneTime = false;
+        let horarioToRemove: any = null;
+
+        for (const h of prevConfig.liveHorariosRecurrentes.horarios) {
+          if (h.diaSemana === hoyDia && horaStr >= h.hora) {
+            // Activa si es un solo uso, o si es frecuente y no se ha activado hoy
+            if (h.unSoloUso || prevConfig.liveHorariosRecurrentes.ultimaActivacion !== hoyStr) {
+              toActivate = true;
+              if (h.unSoloUso) {
+                isOneTime = true;
+                horarioToRemove = h;
+              }
+              break;
+            }
+          }
+        }
+
+        if (toActivate) {
+          let newHorarios = prevConfig.liveHorariosRecurrentes.horarios;
+          if (isOneTime && horarioToRemove) {
+            newHorarios = newHorarios.filter((x: any) => x !== horarioToRemove);
+          }
+          return {
+            ...prevConfig,
+            liveActivo: true,
+            liveHorariosRecurrentes: {
+              ...prevConfig.liveHorariosRecurrentes,
+              horarios: newHorarios,
+              ultimaActivacion: isOneTime ? prevConfig.liveHorariosRecurrentes.ultimaActivacion : hoyStr
+            }
+          };
+        }
+        return prevConfig;
+      });
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
 
   const handleSubirQR = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -169,7 +229,7 @@ export default function AdminConfiguracion() {
     }
   };
 
-  const handleGuardarConfiguracion = async () => {
+  const handleSaveConfig = async () => {
     setSavingConfig(true);
     setMensajeConfig("");
     try {
@@ -203,6 +263,7 @@ export default function AdminConfiguracion() {
         bancoTitular: config.bancoTitular,
         qrImagen: finalUrl,
         instagramUrl: config.instagramUrl,
+        facebookUrl: config.facebookUrl,
         tiktokUrl: config.tiktokUrl,
         whatsappUrl: config.whatsappUrl,
         footerDescripcion: config.footerDescripcion,
@@ -211,7 +272,7 @@ export default function AdminConfiguracion() {
         politicaPrivacidad: config.politicaPrivacidad,
         usarControlFinanciero: config.usarControlFinanciero,
         liveActivo: config.liveActivo,
-        liveProgramadoPara: config.liveProgramadoPara ? new Date(config.liveProgramadoPara) : null,
+        liveHorariosRecurrentes: config.liveHorariosRecurrentes,
         tiempoReservaMinutos: config.tiempoReservaMinutos,
         tiempoLlenadoDatosMinutos: config.tiempoLlenadoDatosMinutos,
         destinosHabilitados: config.destinosHabilitados,
@@ -400,30 +461,311 @@ export default function AdminConfiguracion() {
   if (loading) return <div className="flex justify-center p-10"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-primary"></div></div>;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <>
+      <div className="space-y-8 animate-in fade-in duration-500 pb-24">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-3">
             <Settings className="w-8 h-8 text-brand-primary" /> Configuración de la Tienda
           </h1>
-          <p className="text-foreground/70 mt-1">
+          <p className="text-foreground/70 mt-1 mb-4">
             Actualiza tu QR de pago, cuentas bancarias y datos de contacto.
           </p>
-        </div>
-        <div className="flex flex-col items-end">
-          <button 
-            onClick={handleGuardarConfiguracion}
-            disabled={savingConfig}
-            className="bg-brand-primary text-background px-6 py-3 rounded-xl font-bold shadow-lg hover:brightness-90 transition-all flex items-center gap-2 disabled:opacity-50"
-          >
-            <Save className="w-5 h-5" /> {savingConfig ? "Guardando..." : "Guardar Cambios"}
-          </button>
-          {mensajeConfig && <span className="text-sm font-bold text-green-500 mt-2">{mensajeConfig}</span>}
+          <div className="p-4 bg-brand-primary/10 border border-brand-primary/20 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
+            <span className="text-xl shrink-0">💡</span>
+            <p className="text-sm font-medium text-foreground/80 leading-relaxed">
+              <strong>Tip de uso:</strong> Esta es la sala de máquinas. Los cambios que hagas aquí se reflejarán de inmediato en la tienda pública (el QR que ven tus clientas, políticas y redes sociales). ¡No olvides darle a "Guardar Cambios" en el botón flotante de abajo a la derecha!
+            </p>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* =========================================
+            PRIORIDAD 1: HERRAMIENTAS DE VENTAS Y FINANZAS (BOTÓN LIVE)
+            ========================================= */}
+        {/* Control Financiero Simplificado y Live */}
+        <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d space-y-6 lg:col-span-2">
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6 border-b border-surface-border pb-4">
+            <BarChart3 className="w-6 h-6 text-brand-primary" /> Configuraciones Globales
+          </h2>
+          
+          <div className="flex items-center justify-between bg-surface border border-surface-border p-4 rounded-xl">
+            <div>
+              <p className="font-bold text-foreground">Control Financiero (Costo Proveedor)</p>
+              <p className="text-sm text-foreground/70">Actívalo si quieres registrar cuánto te cuestan las prendas para ver tus ganancias netas reales.</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer ml-4">
+              <input 
+                type="checkbox" 
+                checked={config.usarControlFinanciero} 
+                onChange={e => setConfig({...config, usarControlFinanciero: e.target.checked})} 
+                className="sr-only peer" 
+              />
+              <div className="w-11 h-6 bg-surface-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
+            </label>
+          </div>
+
+          <div className="flex flex-col gap-4 bg-red-500/10 border border-red-500/20 p-4 rounded-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-bold text-red-600">Botón Maestro: TikTok LIVE</p>
+                <p className="text-sm text-red-500/80">Al activarlo, todas las prendas que marcaste como &quot;En Live&quot; aparecerán en la tienda virtual en una pestaña especial para tus clientes.</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer ml-4">
+                <input 
+                  type="checkbox" 
+                  checked={config.liveActivo || false} 
+                  onChange={e => setConfig({...config, liveActivo: e.target.checked})} 
+                  className="sr-only peer" 
+                />
+                <div className="w-11 h-6 bg-surface-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+              </label>
+            </div>
+            
+            <div className="pt-4 border-t border-red-500/10">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 gap-2">
+                <label className="block text-sm font-bold text-red-600">Programar inicio de LIVE</label>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row items-center gap-3 bg-red-50/50 p-2.5 rounded-xl border border-red-100">
+                  <div className="flex flex-wrap sm:flex-nowrap gap-2">
+                    <select 
+                      id="newLiveDay"
+                      className="bg-white border border-red-500/20 text-foreground p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-red-500 text-sm font-medium shadow-sm w-40"
+                    >
+                      <option value="1">Lunes</option>
+                      <option value="2">Martes</option>
+                      <option value="3">Miércoles</option>
+                      <option value="4">Jueves</option>
+                      <option value="5">Viernes</option>
+                      <option value="6">Sábado</option>
+                      <option value="0">Domingo</option>
+                    </select>
+                    <input 
+                      type="time" 
+                      id="newLiveTime"
+                      className="bg-white border border-red-500/20 text-foreground p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-red-500 text-sm w-32 font-medium shadow-sm"
+                    />
+                  </div>
+                  
+                  <div className="flex flex-1 sm:flex-none bg-white rounded-lg p-1 shadow-sm border border-red-500/20">
+                    <button 
+                      onClick={() => setIsRecurrent(true)}
+                      className={`px-3 py-2 text-xs font-bold rounded-md transition-all w-full sm:w-auto ${isRecurrent ? 'bg-red-500 text-white shadow-sm' : 'text-red-700 hover:bg-red-50'}`}
+                    >
+                      Frecuente
+                    </button>
+                    <button 
+                      onClick={() => setIsRecurrent(false)}
+                      className={`px-3 py-2 text-xs font-bold rounded-md transition-all w-full sm:w-auto ${!isRecurrent ? 'bg-red-500 text-white shadow-sm' : 'text-red-700 hover:bg-red-50'}`}
+                    >
+                      1 Solo Uso
+                    </button>
+                  </div>
+                  
+                  <button 
+                    onClick={() => {
+                      const dayInput = document.getElementById("newLiveDay") as HTMLSelectElement;
+                      const timeInput = document.getElementById("newLiveTime") as HTMLInputElement;
+                      if (!timeInput.value) return;
+                      
+                      const newSchedule = { 
+                        diaSemana: parseInt(dayInput.value), 
+                        hora: timeInput.value,
+                        unSoloUso: !isRecurrent 
+                      };
+
+                      let newHorarios = [...(config.liveHorariosRecurrentes.horarios || [])];
+                      newHorarios.push(newSchedule);
+
+                      setConfig({
+                        ...config, 
+                        liveHorariosRecurrentes: {
+                          ...config.liveHorariosRecurrentes,
+                          horarios: newHorarios
+                        }
+                      });
+                      timeInput.value = "";
+                    }}
+                    className="bg-red-600 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-red-700 transition-all text-sm shadow-md active:scale-95 w-full sm:w-auto"
+                  >
+                    Agregar
+                  </button>
+                </div>
+                
+                {/* Lista de horarios guardados */}
+                {config.liveHorariosRecurrentes?.horarios?.length > 0 && (
+                  <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-red-500/10">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
+                      Tus programaciones activas:
+                    </label>
+                    {config.liveHorariosRecurrentes.horarios.map((h: any, i: number) => {
+                      const dias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+                      return (
+                        <div key={i} className="flex flex-col items-start">
+                          <div className={`flex items-center gap-3 border px-4 py-2 rounded-full text-sm font-bold transition-all ${editIndex === i ? 'bg-blue-50 border-blue-300 text-blue-900 shadow-sm' : h.unSoloUso ? 'bg-orange-50 border-orange-200 text-orange-900' : 'bg-red-50 border-red-200 text-red-900'}`}>
+                            <span className="flex items-center gap-2">
+                              {h.unSoloUso ? (
+                                <span className="bg-orange-200 text-orange-900 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-black">1 Solo Uso</span>
+                              ) : (
+                                <span className="bg-red-200 text-red-900 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-black flex items-center gap-1"><RefreshCw className="w-3 h-3" /> Frecuente</span>
+                              )}
+                              <span>{dias[h.diaSemana]} a las {h.hora}</span>
+                            </span>
+                            <div className="flex items-center gap-2 ml-2 border-l pl-3 border-current/20">
+                              <button 
+                                title="Editar este horario"
+                                onClick={() => {
+                                  if (editIndex === i) {
+                                    setEditIndex(null);
+                                    setEditData(null);
+                                    return;
+                                  }
+                                  setEditIndex(i);
+                                  setEditData({ diaSemana: h.diaSemana, hora: h.hora, unSoloUso: h.unSoloUso });
+                                }}
+                                className={`p-1 rounded-md transition-colors ${editIndex === i ? 'bg-blue-200 text-blue-800' : 'hover:bg-black/5'}`}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button 
+                                title="Eliminar este horario"
+                                onClick={() => setDeleteScheduleIndex(i)}
+                                className="p-1 rounded-md text-red-500 hover:bg-red-100 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Editor Desplegable */}
+                          {editIndex === i && editData && (
+                            <div className="mt-2 ml-4 p-3 bg-white border-2 border-blue-200 shadow-lg rounded-xl flex flex-col sm:flex-row gap-3 items-center animate-in slide-in-from-top-2">
+                              <div className="flex bg-blue-100 rounded-lg p-1">
+                                <button 
+                                  onClick={() => setEditData({...editData, unSoloUso: false})}
+                                  className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${!editData.unSoloUso ? 'bg-blue-600 text-white shadow-sm' : 'text-blue-800 hover:bg-blue-200'}`}
+                                >
+                                  Frecuente
+                                </button>
+                                <button 
+                                  onClick={() => setEditData({...editData, unSoloUso: true})}
+                                  className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${editData.unSoloUso ? 'bg-blue-600 text-white shadow-sm' : 'text-blue-800 hover:bg-blue-200'}`}
+                                >
+                                  Un solo uso
+                                </button>
+                              </div>
+                              <select 
+                                value={editData.diaSemana}
+                                onChange={(e) => setEditData({...editData, diaSemana: parseInt(e.target.value)})}
+                                className="bg-gray-50 border border-gray-200 text-gray-700 p-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium w-36"
+                              >
+                                <option value="1">Lunes</option>
+                                <option value="2">Martes</option>
+                                <option value="3">Miércoles</option>
+                                <option value="4">Jueves</option>
+                                <option value="5">Viernes</option>
+                                <option value="6">Sábado</option>
+                                <option value="0">Domingo</option>
+                              </select>
+                              <input 
+                                type="time" 
+                                value={editData.hora}
+                                onChange={(e) => setEditData({...editData, hora: e.target.value})}
+                                className="bg-gray-50 border border-gray-200 text-gray-700 p-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm w-32 font-medium"
+                              />
+                              <button 
+                                onClick={() => {
+                                  const newArr = [...config.liveHorariosRecurrentes.horarios];
+                                  newArr[i] = { diaSemana: editData.diaSemana, hora: editData.hora, unSoloUso: editData.unSoloUso };
+                                  setConfig({...config, liveHorariosRecurrentes: {...config.liveHorariosRecurrentes, horarios: newArr}});
+                                  setEditIndex(null);
+                                  setEditData(null);
+                                }}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold text-sm shadow-md active:scale-95"
+                              >
+                                Guardar
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                
+              </div>
+              <p className="text-xs text-red-500/70 mt-2">El Botón Maestro se activará automáticamente llegado el momento. Los de "Un solo uso" se borrarán automáticamente.</p>
+            </div>
+          </div>
+        </div>
+
         
+        
+        {/* =========================================
+            PRIORIDAD 2: PERSONAL Y ADMINISTRADORES
+            ========================================= */}
+        {/* Gestión de Personal / Administradores */}
+        <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d space-y-6 lg:col-span-2">
+          <div className="flex justify-between items-center border-b border-surface-border pb-4 mb-4">
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <ShieldCheck className="w-6 h-6 text-brand-primary" /> Personal y Administradores
+            </h2>
+            <button 
+              onClick={abrirModalNuevo}
+              className="bg-surface border border-surface-border text-foreground hover:bg-brand-primary/10 hover:text-brand-primary hover:border-brand-primary transition-colors px-4 py-2 rounded-xl font-bold text-sm"
+            >
+              + Añadir Usuario
+            </button>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-background/50 border-b border-surface-border text-foreground/70 uppercase text-xs font-bold tracking-wider">
+                  <th className="p-4 rounded-tl-xl">Usuario (Login)</th>
+                  <th className="p-4">Nombre Real</th>
+                  <th className="p-4 text-center">Rol</th>
+                  <th className="p-4 text-right rounded-tr-xl">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-border">
+                {usuarios.length === 0 ? (
+                  <tr><td colSpan={4} className="p-4 text-center text-foreground/60">No hay usuarios registrados.</td></tr>
+                ) : usuarios.map((u) => (
+                  <tr key={u.id} className="hover:bg-brand-primary/5 transition-colors">
+                    <td className="p-4 font-bold">{u.username}</td>
+                    <td className="p-4 text-foreground/80 font-medium">{u.nombres} {u.apellidos}</td>
+                    <td className="p-4 text-center">
+                      <span className={u.role === "ADMINISTRADOR" 
+                        ? "px-2.5 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-bold tracking-wider" 
+                        : "px-2.5 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold tracking-wider"}>
+                        {u.role === "ADMINISTRADOR" ? "Administrador" : "Empleado"}
+                      </span>
+                    </td>
+                    <td className="p-4 text-right flex justify-end gap-3 items-center">
+                      <button onClick={() => abrirModalVer(u)} className="text-sm font-bold text-foreground/50 hover:text-brand-primary">Ver / Editar</button>
+                      <button onClick={() => confirmarBorrarUsuario(u.id, `${u.nombres} ${u.apellidos}`)} className="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-colors" title="Borrar Empleado">
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-foreground/50 text-center">
+            Los nombres reales configurados aquí son los que aparecerán en la columna &quot;Responsable (Cajero)&quot; de tus reportes financieros.
+          </p>
+        </div>
+
+        
+        
+        {/* =========================================
+            PRIORIDAD 3: PAGOS Y FACTURACIÓN
+            ========================================= */}
         {/* Configuración Bancaria */}
         <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d space-y-6">
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6 border-b border-surface-border pb-4">
@@ -468,132 +810,38 @@ export default function AdminConfiguracion() {
           </div>
         </div>
 
-        {/* Control Financiero Simplificado y Live */}
+        
+        {/* Configuración de QR */}
         <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d space-y-6">
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6 border-b border-surface-border pb-4">
-            <BarChart3 className="w-6 h-6 text-brand-primary" /> Configuraciones Globales
+            <QrCode className="w-6 h-6 text-brand-primary" /> Código QR
           </h2>
-          
-          <div className="flex items-center justify-between bg-surface border border-surface-border p-4 rounded-xl">
-            <div>
-              <p className="font-bold text-foreground">Control Financiero (Costo Proveedor)</p>
-              <p className="text-sm text-foreground/70">Actívalo si quieres registrar cuánto te cuestan las prendas para ver tus ganancias netas reales.</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer ml-4">
-              <input 
-                type="checkbox" 
-                checked={config.usarControlFinanciero} 
-                onChange={e => setConfig({...config, usarControlFinanciero: e.target.checked})} 
-                className="sr-only peer" 
-              />
-              <div className="w-11 h-6 bg-surface-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
-            </label>
-          </div>
 
-          <div className="flex flex-col gap-4 bg-red-500/10 border border-red-500/20 p-4 rounded-xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-bold text-red-600">Botón Maestro: TikTok LIVE</p>
-                <p className="text-sm text-red-500/80">Al activarlo, todas las prendas que marcaste como &quot;En Live&quot; aparecerán en la tienda virtual en una pestaña especial para tus clientes.</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer ml-4">
-                <input 
-                  type="checkbox" 
-                  checked={config.liveActivo || false} 
-                  onChange={e => setConfig({...config, liveActivo: e.target.checked})} 
-                  className="sr-only peer" 
-                />
-                <div className="w-11 h-6 bg-surface-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
-              </label>
-            </div>
-            
-            <div className="pt-4 border-t border-red-500/10">
-              <label className="block text-sm font-bold text-red-600 mb-2">Programar inicio de LIVE (Opcional)</label>
-              <div className="flex items-center gap-3">
-                <input 
-                  type="datetime-local" 
-                  value={config.liveProgramadoPara || ""}
-                  onChange={e => setConfig({...config, liveProgramadoPara: e.target.value})}
-                  className="bg-background border border-red-500/20 text-foreground p-2 rounded-lg outline-none focus:ring-2 focus:ring-red-500 text-sm"
-                />
-                {config.liveProgramadoPara && (
-                  <button 
-                    onClick={() => setConfig({...config, liveProgramadoPara: ""})}
-                    className="text-xs text-red-500 hover:text-red-700 underline font-medium"
-                  >
-                    Borrar Programación
-                  </button>
-                )}
-              </div>
-              <p className="text-xs text-red-500/70 mt-2">Si configuras una fecha y hora aquí, el Botón Maestro se activará automáticamente llegado el momento.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Páginas Legales */}
-        <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d space-y-6 lg:col-span-2">
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6 border-b border-surface-border pb-4">
-            <ShieldCheck className="w-6 h-6 text-brand-primary" /> Páginas Legales
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <label className="block text-sm font-bold text-foreground mb-2">Términos y Condiciones</label>
-              <textarea 
-                rows={10}
-                value={config.terminosCondiciones} 
-                onChange={e => setConfig({...config, terminosCondiciones: e.target.value})}
-                placeholder="Ingresa aquí los términos y condiciones de tu tienda..."
-                className="w-full bg-background border border-surface-border p-4 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium custom-scrollbar" 
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-foreground mb-2">Políticas de Envío</label>
-              <textarea 
-                rows={10}
-                value={config.politicasEnvio} 
-                onChange={e => setConfig({...config, politicasEnvio: e.target.value})}
-                placeholder="Explica aquí cómo funcionan los envíos, tiempos de entrega, etc..."
-                className="w-full bg-background border border-surface-border p-4 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium custom-scrollbar" 
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-foreground mb-2">Política de Privacidad</label>
-              <textarea 
-                rows={10}
-                value={config.politicaPrivacidad} 
-                onChange={e => setConfig({...config, politicaPrivacidad: e.target.value})}
-                placeholder="Ingresa aquí tu política de privacidad..."
-                className="w-full bg-background border border-surface-border p-4 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium custom-scrollbar" 
-              />
-            </div>
-          </div>
-
-          {/* Vista Previa en Tiempo Real */}
-          <div className="mt-8 pt-8 border-t border-surface-border">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
-              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                <Eye className="w-5 h-5 text-brand-primary" /> Vista Previa del Anexo Legal
-              </h3>
-              <Link href="/privacidad" target="_blank" className="text-sm font-bold bg-brand-primary text-white px-4 py-2 rounded-xl hover:brightness-110 transition-colors shadow-md flex items-center justify-center gap-2">
-                Ver Página Pública (Clientas) &rarr;
-              </Link>
-            </div>
-            <p className="text-sm text-foreground/70 mb-4">Así es exactamente como se imprimirá el texto legal al final de los certificados de cada clienta. ¡Cualquier cambio que hagas arriba se reflejará aquí al instante!</p>
-            
-            <div className="bg-gray-50 border border-gray-200 p-6 rounded-lg text-[10px] sm:text-xs text-gray-600 whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto">
-              {config.terminosCondiciones && (
-                <>
-                  <strong className="text-gray-900 uppercase block mb-2 text-sm">Términos y Condiciones:</strong>
-                  {config.terminosCondiciones}
-                  <div className="my-6 border-b border-gray-300" />
-                </>
+          <div className="flex flex-col items-center gap-6">
+            <div className="bg-white p-4 rounded-3xl border border-gray-200 shadow-md">
+              {config.qrImagen ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={config.qrImagen} alt="QR" className="w-full h-auto rounded-lg shadow-sm border border-surface-border object-contain" />
+              ) : (
+                <div className="w-48 h-48 flex items-center justify-center text-gray-400">Sin QR</div>
               )}
-              <strong className="text-gray-900 uppercase block mb-2 text-sm">Política de Privacidad y Tratamiento de Datos:</strong>
-              {config.politicaPrivacidad}
             </div>
+
+            <label className="bg-surface border border-surface-border hover:border-brand-primary hover:text-brand-primary cursor-pointer px-6 py-3 rounded-xl font-bold transition-colors w-full text-center relative overflow-hidden flex justify-center items-center gap-2">
+              <Upload className="w-5 h-5" /> Subir Nuevo QR
+              <input type="file" accept="image/*" onChange={handleSubirQR} className="absolute inset-0 opacity-0 cursor-pointer" />
+            </label>
+            <p className="text-xs text-foreground/50 text-center px-4">
+              Asegúrate de que el QR sea legible. Cuando subas uno nuevo, reemplazará al anterior automáticamente en el checkout.
+            </p>
           </div>
         </div>
 
+        
+        
+        {/* =========================================
+            PRIORIDAD 4: LOGÍSTICA Y ENVÍOS
+            ========================================= */}
         {/* Envíos y Reservas */}
         <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d space-y-6 lg:col-span-2">
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6 border-b border-surface-border pb-4">
@@ -624,36 +872,6 @@ export default function AdminConfiguracion() {
             </div>
           </div>
 
-          <div className="bg-surface border border-surface-border p-6 rounded-2xl mb-6">
-            <h3 className="font-bold text-foreground mb-4">Categorías Editables de Prendas</h3>
-            <p className="text-sm text-foreground/70 mb-4">Añade o elimina las categorías que aparecerán al registrar nuevas prendas.</p>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {(config.categoriasPrendas || []).map(cat => (
-                <span key={cat} className="bg-brand-primary/10 text-brand-primary font-bold px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                  {cat}
-                  <button onClick={() => handleRemoveCategoria(cat)} className="text-brand-primary hover:text-red-500 transition-colors">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div className="flex items-center gap-3 mt-4 border-t border-surface-border pt-4">
-              <input 
-                type="text" 
-                placeholder="Nueva categoría..." 
-                value={nuevaCategoriaInput}
-                onChange={(e) => setNuevaCategoriaInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddCategoria()}
-                className="flex-1 bg-background border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none"
-              />
-              <button 
-                onClick={handleAddCategoria}
-                className="bg-brand-primary text-background font-bold px-6 py-3 rounded-xl hover:brightness-110 transition-colors whitespace-nowrap"
-              >
-                + Añadir Categoría
-              </button>
-            </div>
-          </div>
 
           <div>
             <h3 className="font-bold text-foreground mb-4">Destinos Habilitados para Envío</h3>
@@ -728,30 +946,46 @@ export default function AdminConfiguracion() {
           </div>
         </div>
 
+        
+        
+        {/* =========================================
+            PRIORIDAD 5: REDES SOCIALES
+            ========================================= */}
         {/* Redes Sociales */}
         <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d space-y-6 lg:col-span-2">
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6 border-b border-surface-border pb-4">
             Redes Sociales (Pie de Página)
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div>
               <label className="block text-sm font-bold text-foreground mb-2">Instagram URL</label>
               <input 
                 type="text" 
                 placeholder="https://instagram.com/..."
-                value={config.instagramUrl} 
+                value={config.instagramUrl || ""} 
                 onChange={e => setConfig({...config, instagramUrl: e.target.value})}
                 className="w-full bg-background border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium" 
               />
             </div>
             
             <div>
+              <label className="block text-sm font-bold text-foreground mb-2">Facebook URL</label>
+              <input 
+                type="text" 
+                placeholder="https://facebook.com/..."
+                value={config.facebookUrl || ""} 
+                onChange={e => setConfig({...config, facebookUrl: e.target.value})}
+                className="w-full bg-background border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium" 
+              />
+            </div>
+
+            <div>
               <label className="block text-sm font-bold text-foreground mb-2">TikTok URL</label>
               <input 
                 type="text" 
                 placeholder="https://tiktok.com/@..."
-                value={config.tiktokUrl} 
+                value={config.tiktokUrl || ""} 
                 onChange={e => setConfig({...config, tiktokUrl: e.target.value})}
                 className="w-full bg-background border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium" 
               />
@@ -762,7 +996,7 @@ export default function AdminConfiguracion() {
               <input 
                 type="text" 
                 placeholder="https://wa.me/591..."
-                value={config.whatsappUrl} 
+                value={config.whatsappUrl || ""} 
                 onChange={e => setConfig({...config, whatsappUrl: e.target.value})}
                 className="w-full bg-background border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium" 
               />
@@ -781,97 +1015,94 @@ export default function AdminConfiguracion() {
           </div>
         </div>
 
-        {/* Configuración de QR */}
-        <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d space-y-6">
+        
+        
+        {/* =========================================
+            PRIORIDAD 6: PÁGINAS LEGALES
+            ========================================= */}
+        {/* Páginas Legales */}
+        <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d space-y-6 lg:col-span-2">
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6 border-b border-surface-border pb-4">
-            <QrCode className="w-6 h-6 text-brand-primary" /> Código QR
+            <ShieldCheck className="w-6 h-6 text-brand-primary" /> Páginas Legales
           </h2>
-
-          <div className="flex flex-col items-center gap-6">
-            <div className="bg-white p-4 rounded-3xl border border-gray-200 shadow-md">
-              {config.qrImagen ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={config.qrImagen} alt="QR" className="w-full h-auto rounded-lg shadow-sm border border-surface-border object-contain" />
-              ) : (
-                <div className="w-48 h-48 flex items-center justify-center text-gray-400">Sin QR</div>
-              )}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+              <label className="block text-sm font-bold text-foreground mb-2">Términos y Condiciones</label>
+              <textarea 
+                rows={10}
+                value={config.terminosCondiciones} 
+                onChange={e => setConfig({...config, terminosCondiciones: e.target.value})}
+                placeholder="Ingresa aquí los términos y condiciones de tu tienda..."
+                className="w-full bg-background border border-surface-border p-4 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium custom-scrollbar" 
+              />
             </div>
+            <div>
+              <label className="block text-sm font-bold text-foreground mb-2">Políticas de Envío</label>
+              <textarea 
+                rows={10}
+                value={config.politicasEnvio} 
+                onChange={e => setConfig({...config, politicasEnvio: e.target.value})}
+                placeholder="Explica aquí cómo funcionan los envíos, tiempos de entrega, etc..."
+                className="w-full bg-background border border-surface-border p-4 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium custom-scrollbar" 
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-foreground mb-2">Política de Privacidad</label>
+              <textarea 
+                rows={10}
+                value={config.politicaPrivacidad} 
+                onChange={e => setConfig({...config, politicaPrivacidad: e.target.value})}
+                placeholder="Ingresa aquí tu política de privacidad..."
+                className="w-full bg-background border border-surface-border p-4 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium custom-scrollbar" 
+              />
+            </div>
+          </div>
 
-            <label className="bg-surface border border-surface-border hover:border-brand-primary hover:text-brand-primary cursor-pointer px-6 py-3 rounded-xl font-bold transition-colors w-full text-center relative overflow-hidden flex justify-center items-center gap-2">
-              <Upload className="w-5 h-5" /> Subir Nuevo QR
-              <input type="file" accept="image/*" onChange={handleSubirQR} className="absolute inset-0 opacity-0 cursor-pointer" />
-            </label>
-            <p className="text-xs text-foreground/50 text-center px-4">
-              Asegúrate de que el QR sea legible. Cuando subas uno nuevo, reemplazará al anterior automáticamente en el checkout.
-            </p>
+          {/* Vista Previa en Tiempo Real */}
+          <div className="mt-8 pt-8 border-t border-surface-border">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <Eye className="w-5 h-5 text-brand-primary" /> Vista Previa del Anexo Legal
+              </h3>
+              <Link href="/privacidad" target="_blank" className="text-sm font-bold bg-brand-primary text-white px-4 py-2 rounded-xl hover:brightness-110 transition-colors shadow-md flex items-center justify-center gap-2">
+                Ver Página Pública (Clientas) &rarr;
+              </Link>
+            </div>
+            <p className="text-sm text-foreground/70 mb-4">Así es exactamente como se imprimirá el texto legal al final de los certificados de cada clienta. ¡Cualquier cambio que hagas arriba se reflejará aquí al instante!</p>
+            
+            <div className="bg-gray-50 border border-gray-200 p-6 rounded-lg text-[10px] sm:text-xs text-gray-600 whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto">
+              {config.terminosCondiciones && (
+                <>
+                  <strong className="text-gray-900 uppercase block mb-2 text-sm">Términos y Condiciones:</strong>
+                  {config.terminosCondiciones}
+                  <div className="my-6 border-b border-gray-300" />
+                </>
+              )}
+              <strong className="text-gray-900 uppercase block mb-2 text-sm">Política de Privacidad y Tratamiento de Datos:</strong>
+              {config.politicaPrivacidad}
+            </div>
           </div>
         </div>
 
-        {/* Gestión de Personal / Administradores */}
-        <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d space-y-6 lg:col-span-2 mt-4">
-          <div className="flex justify-between items-center border-b border-surface-border pb-4 mb-4">
-            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <ShieldCheck className="w-6 h-6 text-brand-primary" /> Personal y Administradores
-            </h2>
-            <button 
-              onClick={abrirModalNuevo}
-              className="bg-surface border border-surface-border text-foreground hover:bg-brand-primary/10 hover:text-brand-primary hover:border-brand-primary transition-colors px-4 py-2 rounded-xl font-bold text-sm"
-            >
-              + Añadir Usuario
-            </button>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-background/50 border-b border-surface-border text-foreground/70 uppercase text-xs font-bold tracking-wider">
-                  <th className="p-4 rounded-tl-xl">Usuario (Login)</th>
-                  <th className="p-4">Nombre Real</th>
-                  <th className="p-4 text-center">Rol</th>
-                  <th className="p-4 text-right rounded-tr-xl">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-border">
-                {usuarios.length === 0 ? (
-                  <tr><td colSpan={4} className="p-4 text-center text-foreground/60">No hay usuarios registrados.</td></tr>
-                ) : usuarios.map((u) => (
-                  <tr key={u.id} className="hover:bg-brand-primary/5 transition-colors">
-                    <td className="p-4 font-bold">{u.username}</td>
-                    <td className="p-4 text-foreground/80 font-medium">{u.nombres} {u.apellidos}</td>
-                    <td className="p-4 text-center">
-                      <span className={u.role === "ADMINISTRADOR" 
-                        ? "px-2.5 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-bold tracking-wider" 
-                        : "px-2.5 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold tracking-wider"}>
-                        {u.role === "ADMINISTRADOR" ? "Administrador" : "Empleado"}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right flex justify-end gap-3 items-center">
-                      <button onClick={() => abrirModalVer(u)} className="text-sm font-bold text-foreground/50 hover:text-brand-primary">Ver / Editar</button>
-                      <button onClick={() => confirmarBorrarUsuario(u.id, `${u.nombres} ${u.apellidos}`)} className="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-colors" title="Borrar Empleado">
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="text-xs text-foreground/50 text-center">
-            Los nombres reales configurados aquí son los que aparecerán en la columna &quot;Responsable (Cajero)&quot; de tus reportes financieros.
-          </p>
-        </div>
-
+        
+        
+        {/* =========================================
+            PRIORIDAD 7: MANTENIMIENTO DEL SISTEMA
+            ========================================= */}
         {/* Sección de Licencia y Planes */}
         <div className="lg:col-span-2 mt-4">
           <LicenciaPlanes />
         </div>
 
+        
         {/* Sección de Limpieza de BD */}
         <div className="lg:col-span-2 mt-4">
           <LimpiezaDB />
         </div>
 
-      </div>
+      
+
+</div>
 
       {/* Modal para Añadir Provincia / Municipio */}
       {modalDestino.isOpen && (
@@ -1049,6 +1280,114 @@ export default function AdminConfiguracion() {
           </div>
         </div>
       )}
-    </div>
+
+      {/* MODAL ELIMINAR HORARIO LIVE */}
+      {deleteScheduleIndex !== null && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-red-50 p-6 flex flex-col items-center justify-center border-b border-red-100">
+              <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4">
+                <Trash2 className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 text-center">Eliminar horario</h3>
+            </div>
+            
+            <div className="p-6 text-center">
+              <p className="text-gray-600 mb-6">
+                ¿Estás segura de que deseas eliminar este horario de LIVE? Esta acción no se puede deshacer.
+              </p>
+              
+              <div className="flex gap-3 w-full">
+                <button 
+                  onClick={() => setDeleteScheduleIndex(null)}
+                  className="flex-1 bg-gray-100 text-gray-700 font-bold py-3 px-4 rounded-xl hover:bg-gray-200 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={() => {
+                    const newArr = [...config.liveHorariosRecurrentes.horarios];
+                    newArr.splice(deleteScheduleIndex, 1);
+                    setConfig({...config, liveHorariosRecurrentes: {...config.liveHorariosRecurrentes, horarios: newArr}});
+                    if (editIndex === deleteScheduleIndex) {
+                      setEditIndex(null);
+                      setEditData(null);
+                    }
+                    setDeleteScheduleIndex(null);
+                  }}
+                  className="flex-1 bg-red-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-red-700 transition-colors shadow-md shadow-red-200"
+                >
+                  Sí, eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      </div>
+
+      {/* Botón Flotante para Guardar */}
+      <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-40 flex flex-col items-end gap-2">
+        <div className={`
+          px-4 py-2 rounded-full text-xs font-bold shadow-lg transition-all duration-300 transform
+          ${mensajeConfig 
+            ? mensajeConfig.includes('Error') 
+              ? 'bg-red-100 text-red-600 scale-100 opacity-100' 
+              : 'bg-green-100 text-green-600 scale-100 opacity-100'
+            : 'bg-yellow-100 text-yellow-700 scale-100 opacity-100'
+          }
+        `}>
+          {mensajeConfig || "⚠️ Recuerde guardar para aplicar sus modificaciones"}
+        </div>
+        <button 
+          onClick={() => setIsConfirmGuardarOpen(true)}
+          disabled={savingConfig}
+          className="bg-brand-primary text-white p-4 md:px-8 md:py-4 rounded-full shadow-2xl hover:bg-brand-accent hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center gap-3 disabled:opacity-50 disabled:scale-100"
+        >
+          {savingConfig ? (
+            <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <Save className="w-6 h-6 md:w-5 md:h-5" />
+          )}
+          <span className="hidden md:inline font-bold text-lg">Guardar Cambios</span>
+        </button>
+      </div>
+
+      {/* MODAL DE CONFIRMACION PARA GUARDAR */}
+      {isConfirmGuardarOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-surface rounded-3xl max-w-sm w-full p-6 shadow-2xl text-center relative animate-in zoom-in-95 duration-200 border border-surface-border">
+            <div className="w-16 h-16 bg-brand-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Save className="w-8 h-8 text-brand-primary" />
+            </div>
+            <h3 className="text-xl font-bold text-foreground mb-2">¿Guardar los cambios?</h3>
+            <p className="text-sm text-foreground/70 mb-6">
+              Esta acción actualizará la configuración de tu tienda inmediatamente para todas tus clientas.
+            </p>
+            <div className="flex gap-3 w-full">
+              <button 
+                onClick={() => setIsConfirmGuardarOpen(false)}
+                className="flex-1 bg-surface-border text-foreground font-bold py-3 rounded-xl hover:bg-surface-border/80 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => {
+                  setIsConfirmGuardarOpen(false);
+                  handleSaveConfig();
+                }}
+                className="flex-1 bg-brand-primary text-white font-bold py-3 rounded-xl hover:bg-brand-accent transition-colors"
+              >
+                Sí, guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Espaciador inferior para no tapar contenido con el botón flotante */}
+      <div className="h-24"></div>
+    </>
   );
 }

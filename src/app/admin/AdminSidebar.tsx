@@ -59,7 +59,7 @@ export default function AdminSidebar() {
   return (
     <>
       {/* Cabecera Móvil (Solo visible en pantallas pequeñas) */}
-      <div className="md:hidden flex items-center justify-between p-4 bg-white border-b border-gray-200 sticky top-0 z-30">
+      <div className="md:hidden print:hidden flex items-center justify-between p-4 bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="BrunaShop" className="w-8 h-8 object-cover rounded-full" />
           <h2 className="text-lg font-bold text-black tracking-tight">BrunaShop</h2>
@@ -82,7 +82,7 @@ export default function AdminSidebar() {
 
       {/* Menú Lateral (Sidebar) */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 bg-white border-r border-gray-200 flex flex-col shadow-2xl md:shadow-none
+        fixed inset-y-0 left-0 z-50 bg-white border-r border-gray-200 flex flex-col shadow-2xl md:shadow-none print:hidden
         transition-all duration-300 ease-in-out
         ${isOpenMobile ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0'}
         ${isCollapsed ? 'md:w-20' : 'md:w-64'}

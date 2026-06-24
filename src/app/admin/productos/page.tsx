@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Video, EyeOff, Edit, Trash2, X, Palette, Scaling } from "lucide-react";
+import { Plus, Video, EyeOff, Edit, Trash2, X, Palette, Scaling, Tag, Package, Image as ImageIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getPrendas, createPrenda, updatePrenda, deletePrenda } from "@/app/actions/productos";
 import { uploadImage } from "@/app/actions/upload";
@@ -11,6 +11,7 @@ import { compressImage } from "@/lib/imageCompression";
 export default function AdminProductos() {
   const [productos, setProductos] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalCategoriasOpen, setIsModalCategoriasOpen] = useState(false);
   const [productoEditando, setProductoEditando] = useState<any>(null);
   const [productoABorrar, setProductoABorrar] = useState<string | null>(null);
   const [notificacion, setNotificacion] = useState<string | null>(null);
@@ -338,30 +339,36 @@ export default function AdminProductos() {
         </div>
         
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between bg-surface/50 p-3 rounded-xl border border-surface-border">
-            <span className="text-sm font-bold text-foreground">Mostrar que estará en live (Tik-Tok)</span>
-            <button 
-              onClick={() => toggleLiveBD(producto.id, producto.enLive)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${producto.enLive ? 'bg-red-500' : 'bg-gray-300'}`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${producto.enLive ? 'translate-x-6' : 'translate-x-1'}`} />
-            </button>
+          <div className="flex gap-2">
+            <div className={`flex-1 flex flex-col items-center justify-center border p-2 rounded-xl transition-colors cursor-pointer shadow-sm ${producto.enLive ? 'bg-red-500/10 border-red-500/30' : 'bg-surface/50 border-surface-border hover:bg-surface-border/80'}`} onClick={() => toggleLiveBD(producto.id, producto.enLive)}>
+              <span className={`text-[11px] font-bold mb-1 flex items-center gap-1 ${producto.enLive ? 'text-red-600' : 'text-foreground/60'}`}><Video className="w-3 h-3" /> Destacar LIVE</span>
+              <button className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${producto.enLive ? 'bg-red-500' : 'bg-gray-300'}`}>
+                <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${producto.enLive ? 'translate-x-5' : 'translate-x-1'}`} />
+              </button>
+            </div>
+            
+            <div className={`flex-1 flex flex-col items-center justify-center border p-2 rounded-xl transition-colors cursor-pointer shadow-sm ${producto.enPreventa ? 'bg-purple-500/10 border-purple-500/30' : 'bg-surface/50 border-surface-border hover:bg-surface-border/80'}`} onClick={() => togglePreventaBD(producto.id, producto.enPreventa)}>
+              <span className={`text-[11px] font-bold mb-1 ${producto.enPreventa ? 'text-purple-600' : 'text-foreground/60'}`}>Preventa</span>
+              <button className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${producto.enPreventa ? 'bg-purple-500' : 'bg-gray-300'}`}>
+                <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${producto.enPreventa ? 'translate-x-5' : 'translate-x-1'}`} />
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-col bg-surface/50 p-3 rounded-xl border border-surface-border gap-2">
+          <div className="flex flex-col bg-surface border border-surface-border p-3 rounded-xl gap-2 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
-                <span className="text-sm font-bold text-foreground">Stock</span>
+                <span className="text-sm font-bold text-foreground flex items-center gap-1"><Package className="w-4 h-4 text-brand-primary"/> Stock Total</span>
                 {producto.originalStock !== Number(producto.stockCount) && (
-                  <span className="text-[10px] font-bold text-brand-primary">
+                  <span className="text-[10px] font-bold text-brand-primary animate-pulse">
                     (Antes: {producto.originalStock})
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1 bg-background border border-surface-border rounded-lg p-1">
+              <div className="flex items-center bg-background border border-surface-border rounded-lg p-0.5 shadow-inner">
                 <button 
                   onClick={() => setProductos(productos.map(p => p.id === producto.id ? { ...p, stockCount: Math.max(0, p.stockCount - 1) } : p))}
-                  className="w-7 h-7 flex items-center justify-center hover:bg-surface-border rounded text-foreground/70 font-black transition-colors"
+                  className="w-8 h-8 flex items-center justify-center hover:bg-surface-border rounded-md text-foreground/70 font-black transition-colors"
                 >
                   -
                 </button>
@@ -373,7 +380,7 @@ export default function AdminProductos() {
                 />
                 <button 
                   onClick={() => setProductos(productos.map(p => p.id === producto.id ? { ...p, stockCount: p.stockCount + 1 } : p))}
-                  className="w-7 h-7 flex items-center justify-center hover:bg-surface-border rounded text-foreground/70 font-black transition-colors"
+                  className="w-8 h-8 flex items-center justify-center hover:bg-surface-border rounded-md text-foreground/70 font-black transition-colors"
                 >
                   +
                 </button>
@@ -385,37 +392,28 @@ export default function AdminProductos() {
                 <motion.button 
                   initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
                   onClick={() => confirmarStockBD(producto.id, producto.stockCount)}
-                  className="w-full bg-brand-primary text-white text-xs font-bold py-2 rounded-lg hover:bg-brand-accent transition-colors"
+                  className="w-full bg-brand-primary text-white text-xs font-bold py-2 mt-1 rounded-lg hover:bg-brand-accent transition-colors shadow-md"
                 >
-                  Confirmar Stock
+                  Guardar nuevo stock
                 </motion.button>
               )}
             </AnimatePresence>
           </div>
-
-          <div className="flex items-center justify-between bg-surface/50 p-3 rounded-xl border border-surface-border">
-            <span className="text-sm font-bold text-brand-primary">Activar Preventa</span>
-            <button 
-              onClick={() => togglePreventaBD(producto.id, producto.enPreventa)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${producto.enPreventa ? 'bg-purple-500' : 'bg-gray-300'}`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${producto.enPreventa ? 'translate-x-6' : 'translate-x-1'}`} />
-            </button>
-          </div>
         </div>
 
-        <div className="mt-4 pt-4 border-t border-surface-border flex justify-between">
+        <div className="mt-4 pt-4 border-t border-surface-border flex justify-between gap-2">
           <button 
             onClick={() => abrirModalEditar(producto)}
-            className="text-foreground/50 hover:text-brand-primary transition-colors flex items-center gap-1 text-sm font-bold"
+            className="flex-1 bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20 transition-colors flex justify-center items-center gap-1 text-sm font-bold py-2 rounded-xl"
           >
             <Edit className="w-4 h-4" /> Editar
           </button>
           <button 
             onClick={() => setProductoABorrar(producto.id)}
-            className="text-foreground/50 hover:text-red-500 transition-colors flex items-center gap-1 text-sm font-bold"
+            className="bg-red-50 text-red-500 hover:bg-red-100 transition-colors flex items-center justify-center px-3 rounded-xl"
+            title="Borrar prenda"
           >
-            <Trash2 className="w-4 h-4" /> Borrar
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -429,20 +427,33 @@ export default function AdminProductos() {
           <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-3">
             <Video className="w-8 h-8 text-red-500" /> Catálogo y Live
           </h1>
-          <p className="text-foreground/70">Gestiona tu inventario real en Supabase.</p>
+          <p className="text-foreground/70 mb-4">Gestiona tu inventario real en Supabase.</p>
+          
+          <div className="p-4 bg-brand-primary/10 border border-brand-primary/20 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
+            <span className="text-xl shrink-0">💡</span>
+            <p className="text-sm font-medium text-foreground/80 leading-relaxed">
+              <strong>Tip de uso:</strong> Desde aquí subes y editas tus prendas. Si estás haciendo un en vivo (Live), activa el switch verde en la tarjeta de cada prenda para separarla y encontrarla más rápido en la parte de arriba.
+            </p>
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+          <button 
+            onClick={() => setIsModalCategoriasOpen(true)}
+            className="w-full sm:w-auto justify-center bg-surface border-2 border-brand-primary text-brand-primary px-4 py-3 rounded-full font-bold shadow hover:bg-brand-primary/10 transition-colors flex items-center gap-2 text-sm md:text-base"
+          >
+            <Tag className="w-5 h-5 shrink-0" /> Categorías
+          </button>
           <button 
             onClick={abrirModalNuevoCombo}
-            className="bg-yellow-500 text-white px-4 py-3 rounded-full font-bold shadow-xl hover:bg-yellow-600 transition-colors flex items-center gap-2 text-sm md:text-base"
+            className="w-full sm:w-auto justify-center bg-yellow-500 text-white px-4 py-3 rounded-full font-bold shadow-xl hover:bg-yellow-600 transition-colors flex items-center gap-2 text-sm md:text-base"
           >
-            <Plus className="w-5 h-5" /> Nuevo Combo
+            <Plus className="w-5 h-5 shrink-0" /> Nuevo Combo
           </button>
           <button 
             onClick={abrirModalNueva}
-            className="bg-brand-primary text-white px-4 py-3 rounded-full font-bold shadow-xl hover:bg-brand-accent transition-colors flex items-center gap-2 text-sm md:text-base"
+            className="w-full sm:w-auto justify-center bg-brand-primary text-white px-4 py-3 rounded-full font-bold shadow-xl hover:bg-brand-accent transition-colors flex items-center gap-2 text-sm md:text-base"
           >
-            <Plus className="w-5 h-5" /> Nueva Prenda
+            <Plus className="w-5 h-5 shrink-0" /> Nueva Prenda
           </button>
         </div>
       </div>
@@ -503,10 +514,14 @@ export default function AdminProductos() {
                 </button>
               </div>
 
-              <div className="p-6 overflow-y-auto flex-1 space-y-6">
+              <div className="p-4 md:p-6 overflow-y-auto overflow-x-hidden flex-1 space-y-6">
                 <div>
-                  <label className="block text-sm font-bold text-foreground mb-2">Fotos de la Prenda (Por ahora usa URLs o el botón)</label>
-                  <div className="flex gap-4 flex-wrap">
+                  <div className="flex justify-between items-end mb-4">
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-brand-primary" /> Fotos de la Prenda
+                  </h3>
+                  <span className="text-[10px] text-foreground/50 uppercase tracking-widest bg-surface px-2 py-0.5 rounded-full border border-surface-border">Click para subir foto</span>
+                </div>  <div className="flex gap-4 flex-wrap">
                     {fotosPreview.length < 3 && (
                       <label className="w-24 h-24 rounded-2xl border-2 border-dashed border-brand-primary text-brand-primary flex flex-col items-center justify-center hover:bg-brand-primary/10 transition-colors cursor-pointer relative">
                         <Plus className="w-6 h-6" />
@@ -526,7 +541,7 @@ export default function AdminProductos() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div className="lg:col-span-2">
+                  <div className="md:col-span-2 lg:col-span-2">
                     <label className="block text-sm font-bold text-foreground mb-2">Nombre de la Prenda</label>
                     <input type="text" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} placeholder="Ej. Vestido Gala Rojo" className="w-full bg-surface border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none" />
                   </div>
@@ -547,19 +562,22 @@ export default function AdminProductos() {
                   </div>
                   <div className="relative flex flex-col">
                     <label className="block text-sm font-bold text-foreground mb-2">Descuento (%)</label>
-                    <div className="flex gap-2 items-stretch">
-                      <input type="number" min="0" max="100" value={formData.descuento} onChange={e => setFormData({...formData, descuento: e.target.value})} placeholder="Ej. 20" disabled={!formData.enPromocion} className={`flex-1 min-w-[60px] bg-surface border p-3 rounded-xl focus:ring-2 outline-none transition-colors ${formData.enPromocion ? 'border-brand-primary focus:ring-brand-primary' : 'border-surface-border opacity-50 cursor-not-allowed'}`} />
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <input type="number" min="0" max="100" value={formData.descuento} onChange={e => setFormData({...formData, descuento: e.target.value})} placeholder="Ej. 20" disabled={!formData.enPromocion} className={`flex-1 bg-surface border p-3 rounded-xl focus:ring-2 outline-none transition-colors text-center font-bold ${formData.enPromocion ? 'border-brand-primary focus:ring-brand-primary' : 'border-surface-border opacity-50 cursor-not-allowed'}`} />
+                        <span className="text-foreground/50 font-bold text-xs">% OFF</span>
+                      </div>
                       <button 
                         onClick={() => setFormData({...formData, enPromocion: !formData.enPromocion})}
-                        className={`px-3 py-2 rounded-xl font-bold text-xs transition-colors whitespace-nowrap flex flex-col items-center justify-center border shadow-sm ${
+                        className={`w-full py-2.5 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-1.5 border shadow-sm ${
                           formData.enPromocion 
                           ? 'bg-red-500/10 text-red-600 border-red-500/30 hover:bg-red-500 hover:text-white'
                           : 'bg-surface border-surface-border text-foreground/50 hover:bg-surface-border/50'
                         }`}
-                        title="Activar Promoción"
+                        title="Activar Oferta"
                       >
-                        PROMOCIÓN
-                        <span className="text-[9px] uppercase tracking-wider">{formData.enPromocion ? 'ON' : 'OFF'}</span>
+                        <Tag className="w-4 h-4 shrink-0" />
+                        <span>{formData.enPromocion ? 'OFERTA ACTIVA' : 'ACTIVAR OFERTA'}</span>
                       </button>
                     </div>
                     {formData.enPromocion && formData.precioBase && formData.descuento && (
@@ -798,16 +816,16 @@ export default function AdminProductos() {
                             const seleccionado = formData.piezasDetalle?.[prod.id];
                             return (
                               <div key={prod.id} className={`p-3 bg-surface border rounded-lg transition-colors ${seleccionado ? 'border-brand-primary bg-brand-primary/5' : 'border-surface-border'}`}>
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-3">
-                                    <img src={prod.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"} alt={prod.nombre} className="w-10 h-10 rounded object-cover" />
-                                    <div>
-                                      <p className="text-sm font-bold truncate max-w-[200px]">{prod.nombre}</p>
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <img src={prod.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"} alt={prod.nombre} className="w-10 h-10 rounded object-cover shrink-0" />
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-sm font-bold truncate w-full">{prod.nombre}</p>
                                       <p className="text-xs text-foreground/50">Stock suelto: {prod.stockCount}</p>
                                     </div>
                                   </div>
-                                  <div className="flex flex-col items-end gap-1">
-                                    <span className="text-[10px] uppercase font-black tracking-wider text-brand-primary">Unidades por 1 combo</span>
+                                  <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between border-t sm:border-0 pt-2 sm:pt-0 border-brand-primary/10 gap-2 shrink-0">
+                                    <span className="text-[10px] uppercase font-black tracking-wider text-brand-primary">Unds/Combo</span>
                                     <div className="flex items-center gap-2">
                                       <button onClick={() => {
                                         const curr = seleccionado?.cantidad || 0;
@@ -840,7 +858,7 @@ export default function AdminProductos() {
                                 
                                 {/* Opciones Específicas si está seleccionado */}
                                 {seleccionado && (prod.tallas?.length > 0 || prod.colores?.length > 0) && (
-                                  <div className="mt-3 pt-3 border-t border-brand-primary/20 grid grid-cols-2 gap-4">
+                                 <div className="mt-3 pt-3 border-t border-brand-primary/20 grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {prod.tallas?.length > 0 && (
                                       <div>
                                         <label className="text-xs font-bold text-foreground mb-1 block">Talla en el Combo</label>
@@ -924,6 +942,57 @@ export default function AdminProductos() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* MODAL GESTION CATEGORIAS GENERAL */}
+      {isModalCategoriasOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-surface rounded-3xl max-w-md w-full p-6 shadow-2xl relative animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-foreground">Gestionar Categorías</h3>
+              <button onClick={() => setIsModalCategoriasOpen(false)} className="text-foreground/50 hover:bg-surface-border p-2 rounded-full">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex gap-2 mb-4">
+              <input type="text" placeholder="Nueva categoría..." value={nuevaCategoria} onChange={(e) => setNuevaCategoria(e.target.value)} className="flex-1 bg-background border border-surface-border p-3 rounded-xl outline-none" />
+              <button onClick={agregarCategoriaLocal} className="bg-brand-primary text-background px-6 rounded-xl font-bold hover:brightness-110">Añadir</button>
+            </div>
+
+            <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar bg-background p-2 rounded-xl border border-surface-border">
+              {categorias.map(cat => (
+                <div key={cat} className="flex items-center justify-between bg-surface p-3 rounded-lg border border-surface-border shadow-sm">
+                  {categoriaAEditar?.old === cat ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <input 
+                        type="text" 
+                        value={categoriaAEditar.new} 
+                        onChange={(e) => setCategoriaAEditar({...categoriaAEditar, new: e.target.value})} 
+                        className="flex-1 bg-background border border-brand-primary p-2 rounded-lg outline-none font-bold"
+                        autoFocus
+                      />
+                      <button onClick={guardarEdicionCategoriaLocal} className="bg-green-100 text-green-600 rounded-lg font-bold p-2"><Edit className="w-4 h-4" /></button>
+                      <button onClick={() => setCategoriaAEditar(null)} className="bg-gray-100 text-gray-500 rounded-lg font-bold p-2"><X className="w-4 h-4" /></button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="font-bold text-foreground">{cat}</span>
+                      <div className="flex gap-2">
+                        <button onClick={() => setCategoriaAEditar({old: cat, new: cat})} className="p-2 hover:bg-brand-primary/10 text-brand-primary rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
+                        <button onClick={() => eliminarCategoriaLocal(cat)} className="p-2 hover:bg-red-100 text-red-500 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+              {categorias.length === 0 && (
+                <div className="text-center p-4 text-foreground/50">No hay categorías.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
