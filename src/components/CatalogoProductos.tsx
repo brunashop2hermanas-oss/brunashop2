@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, ArrowRight, X, Trash2, Search, Video } from "lucide-react";
+import { ShoppingBag, ArrowRight, X, Trash2, Search, Video, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -374,6 +374,17 @@ function ProductoCard({ producto, index, abrirVistaRapida, agregarAlCarrito, liv
     ? Math.round((1 - producto.precioVenta / producto.precioOriginal) * 100)
     : null;
 
+  const [currentImgIndex, setCurrentImgIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    if (!isHovered || imagenes.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentImgIndex((prev) => (prev + 1) % imagenes.length);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [isHovered, imagenes.length]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -406,19 +417,45 @@ function ProductoCard({ producto, index, abrirVistaRapida, agregarAlCarrito, liv
       </div>
 
       {/* Imagen */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-gray-100 mb-4 rounded-sm" onClick={() => abrirVistaRapida(producto)}>
+      <div 
+        className="relative aspect-[3/4] w-full overflow-hidden bg-gray-100 mb-4 rounded-sm group/gallery" 
+        onClick={() => abrirVistaRapida(producto)}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => { setIsHovered(false); setCurrentImgIndex(0); }}
+      >
         <img 
-          src={imagenes[0]} 
+          src={imagenes[currentImgIndex]} 
           alt={`${producto.nombre}`} 
-          className={`absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 ${producto.stockCount === 0 && !producto.enPreventa ? 'grayscale opacity-60' : ''}`}
+          className={`absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/gallery:scale-105 ${producto.stockCount === 0 && !producto.enPreventa ? 'grayscale opacity-60' : ''}`}
         />
-        {/* Segunda imagen al hacer hover si existe */}
+        
         {imagenes.length > 1 && (
-          <img 
-            src={imagenes[1]} 
-            alt={`${producto.nombre} alternativa`} 
-            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 opacity-0 group-hover:opacity-100"
-          />
+          <>
+            {/* Puntos de paginación (Dots) que funcionan al tocarlos en el celular */}
+            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">
+              {imagenes.map((_: any, idx: number) => (
+                <button 
+                  key={idx}
+                  onClick={(e) => { e.stopPropagation(); setCurrentImgIndex(idx); setIsHovered(false); }}
+                  className={`w-1.5 h-1.5 rounded-full transition-all ${currentImgIndex === idx ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/80'}`}
+                />
+              ))}
+            </div>
+
+            {/* Flechas para escritorio / móvil */}
+            <button 
+              onClick={(e) => { e.stopPropagation(); setCurrentImgIndex((prev) => (prev === 0 ? imagenes.length - 1 : prev - 1)); setIsHovered(false); }}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-white/70 hover:bg-white rounded-full flex items-center justify-center opacity-0 group-hover/gallery:opacity-100 transition-opacity z-10 text-black shadow-sm"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); setCurrentImgIndex((prev) => (prev + 1) % imagenes.length); setIsHovered(false); }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-white/70 hover:bg-white rounded-full flex items-center justify-center opacity-0 group-hover/gallery:opacity-100 transition-opacity z-10 text-black shadow-sm"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </>
         )}
       </div>
 
