@@ -222,7 +222,8 @@ export default function AdminProductos() {
 
   const handleSubirFotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const filesArray = Array.from(e.target.files).slice(0, 3 - fotosPreview.length);
+      const MAX_FOTOS = 10;
+      const filesArray = Array.from(e.target.files).slice(0, MAX_FOTOS - fotosPreview.length);
       
       const uploadedUrls: string[] = [];
       
@@ -246,7 +247,7 @@ export default function AdminProductos() {
         }
       }
       
-      setFotosPreview(prev => [...prev, ...uploadedUrls].slice(0, 3));
+      setFotosPreview(prev => [...prev, ...uploadedUrls].slice(0, MAX_FOTOS));
     }
   };
 
@@ -522,7 +523,7 @@ export default function AdminProductos() {
                   </h3>
                   <span className="text-[10px] text-foreground/50 uppercase tracking-widest bg-surface px-2 py-0.5 rounded-full border border-surface-border">Click para subir foto</span>
                 </div>  <div className="flex gap-4 flex-wrap">
-                    {fotosPreview.length < 3 && (
+                    {fotosPreview.length < 10 && (
                       <label className="w-24 h-24 rounded-2xl border-2 border-dashed border-brand-primary text-brand-primary flex flex-col items-center justify-center hover:bg-brand-primary/10 transition-colors cursor-pointer relative">
                         <Plus className="w-6 h-6" />
                         <span className="text-[10px] font-bold mt-1">Subir</span>
