@@ -146,13 +146,13 @@ export default function AdminConfiguracion() {
         });
 
         // Migración automática del formato viejo al nuevo
-        const loadedDestinos = (resConfig.data.destinosHabilitados as Record<string, unknown>) || {};
+        const loadedDestinos = (resConfig.data.destinosHabilitados as Record<string, any>) || {};
         const parsedDestinos: Record<string, { provincias: string[], municipios: string[] }> = {};
         for (const depto in loadedDestinos) {
           if (Array.isArray(loadedDestinos[depto])) {
             parsedDestinos[depto] = { provincias: loadedDestinos[depto], municipios: [] };
           } else {
-            parsedDestinos[depto] = loadedDestinos[depto];
+            parsedDestinos[depto] = loadedDestinos[depto] as { provincias: string[], municipios: string[] };
           }
         }
         setConfig(prev => ({ ...prev, destinosHabilitados: parsedDestinos }));
