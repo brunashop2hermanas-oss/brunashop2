@@ -138,19 +138,18 @@ export default function AdminConfiguracion() {
           politicaPrivacidad: resConfig.data.politicaPrivacidad || POLITICA_POR_DEFECTO,
           usarControlFinanciero: resConfig.data.usarControlFinanciero ?? true,
           liveActivo: resConfig.data.liveActivo ?? false,
-          liveHorariosRecurrentes: (resConfig.data.liveHorariosRecurrentes as any) || { horarios: [] },
+          liveHorariosRecurrentes: (resConfig.data.liveHorariosRecurrentes as { horarios: {diaSemana: number, hora: string, unSoloUso?: boolean}[], ultimaActivacion?: string }) || { horarios: [] },
           tiempoReservaMinutos: resConfig.data.tiempoReservaMinutos ?? 4,
           tiempoLlenadoDatosMinutos: resConfig.data.tiempoLlenadoDatosMinutos ?? 10,
           destinosHabilitados: {}, // Lo llenamos abajo
           categoriasPrendas: resConfig.data.categoriasPrendas || ["Vestidos", "Conjuntos", "Blusas y Tops", "Pantalones y Jeans", "Chaquetas y Abrigos", "Enterizos", "Ofertas / Sale"]
         });
 
-        // Migración automática del formato viejo al nuevo
-        const loadedDestinos = (resConfig.data.destinosHabilitados as Record<string, any>) || {};
+        const loadedDestinos = (resConfig.data.destinosHabilitados as Record<string, unknown>) || {};
         const parsedDestinos: Record<string, { provincias: string[], municipios: string[] }> = {};
         for (const depto in loadedDestinos) {
           if (Array.isArray(loadedDestinos[depto])) {
-            parsedDestinos[depto] = { provincias: loadedDestinos[depto], municipios: [] };
+            parsedDestinos[depto] = { provincias: loadedDestinos[depto] as string[], municipios: [] };
           } else {
             parsedDestinos[depto] = loadedDestinos[depto] as { provincias: string[], municipios: string[] };
           }
@@ -182,7 +181,7 @@ export default function AdminConfiguracion() {
 
         let toActivate = false;
         let isOneTime = false;
-        let horarioToRemove: any = null;
+        let horarioToRemove: {diaSemana: number, hora: string, unSoloUso?: boolean} | null = null;
 
         for (const h of prevConfig.liveHorariosRecurrentes.horarios) {
           if (h.diaSemana === hoyDia && horaStr >= h.hora) {
@@ -201,7 +200,7 @@ export default function AdminConfiguracion() {
         if (toActivate) {
           let newHorarios = prevConfig.liveHorariosRecurrentes.horarios;
           if (isOneTime && horarioToRemove) {
-            newHorarios = newHorarios.filter((x: any) => x !== horarioToRemove);
+            newHorarios = newHorarios.filter((x: {diaSemana: number, hora: string, unSoloUso?: boolean}) => x !== horarioToRemove);
           }
           return {
             ...prevConfig,
@@ -474,7 +473,7 @@ export default function AdminConfiguracion() {
           <div className="p-4 bg-brand-primary/10 border border-brand-primary/20 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
             <span className="text-xl shrink-0">💡</span>
             <p className="text-sm font-medium text-foreground/80 leading-relaxed">
-              <strong>Tip de uso:</strong> Esta es la sala de máquinas. Los cambios que hagas aquí se reflejarán de inmediato en la tienda pública (el QR que ven tus clientas, políticas y redes sociales). ¡No olvides darle a "Guardar Cambios" en el botón flotante de abajo a la derecha!
+              <strong>Tip de uso:</strong> Esta es la sala de máquinas. Los cambios que hagas aquí se reflejarán de inmediato en la tienda pública (el QR que ven tus clientas, políticas y redes sociales). ¡No olvides darle a &quot;Guardar Cambios&quot; en el botón flotante de abajo a la derecha!
             </p>
           </div>
         </div>
@@ -577,7 +576,7 @@ export default function AdminConfiguracion() {
                         unSoloUso: !isRecurrent 
                       };
 
-                      let newHorarios = [...(config.liveHorariosRecurrentes.horarios || [])];
+                      const newHorarios = [...(config.liveHorariosRecurrentes.horarios || [])];
                       newHorarios.push(newSchedule);
 
                       setConfig({
@@ -697,7 +696,7 @@ export default function AdminConfiguracion() {
                 )}
                 
               </div>
-              <p className="text-xs text-red-500/70 mt-2">El Botón Maestro se activará automáticamente llegado el momento. Los de "Un solo uso" se borrarán automáticamente.</p>
+              <p className="text-xs text-red-500/70 mt-2">El Botón Maestro se activará automáticamente llegado el momento. Los de &quot;Un solo uso&quot; se borrarán automáticamente.</p>
             </div>
           </div>
         </div>
