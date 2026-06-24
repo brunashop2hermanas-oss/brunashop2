@@ -146,7 +146,7 @@ export default function AdminConfiguracion() {
         });
 
         // Migración automática del formato viejo al nuevo
-        const loadedDestinos = (resConfig.data.destinosHabilitados as any) || {};
+        const loadedDestinos = (resConfig.data.destinosHabilitados as Record<string, unknown>) || {};
         const parsedDestinos: Record<string, { provincias: string[], municipios: string[] }> = {};
         for (const depto in loadedDestinos) {
           if (Array.isArray(loadedDestinos[depto])) {
@@ -601,7 +601,7 @@ export default function AdminConfiguracion() {
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
                       Tus programaciones activas:
                     </label>
-                    {config.liveHorariosRecurrentes.horarios.map((h: any, i: number) => {
+                    {config.liveHorariosRecurrentes.horarios.map((h: {diaSemana: number, hora: string, unSoloUso?: boolean}, i: number) => {
                       const dias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
                       return (
                         <div key={i} className="flex flex-col items-start">
