@@ -495,14 +495,29 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
           <X className="w-5 h-5" />
         </button>
 
-        <div 
-          className="w-full md:w-1/2 h-[40vh] md:h-[60vh] bg-gray-100 relative group cursor-pointer"
-          onClick={() => setImagenAmpliada(imagenActual)}
-        >
-          <img src={imagenActual} alt={producto.nombre} className="w-full h-full object-cover transition-opacity group-hover:opacity-90" />
-          <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-            <Search className="w-10 h-10 text-white drop-shadow-md" />
+        <div className="w-full md:w-1/2 h-[50vh] md:h-[60vh] flex flex-col bg-gray-100">
+          <div 
+            className="flex-1 relative group cursor-pointer min-h-0"
+            onClick={() => setImagenAmpliada(imagenActual)}
+          >
+            <img src={imagenActual} alt={producto.nombre} className="absolute inset-0 w-full h-full object-cover transition-opacity group-hover:opacity-90" />
+            <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+              <Search className="w-10 h-10 text-white drop-shadow-md" />
+            </div>
           </div>
+          {imagenes.length > 1 && (
+            <div className="flex gap-2 p-3 overflow-x-auto bg-white border-t border-gray-100 shrink-0 scrollbar-hide">
+              {imagenes.map((img: string, idx: number) => (
+                <button 
+                  key={idx} 
+                  onClick={(e) => { e.stopPropagation(); setImagenActual(img); }}
+                  className={`w-14 h-14 md:w-16 md:h-16 shrink-0 border-2 rounded-sm overflow-hidden transition-all ${imagenActual === img ? 'border-black shadow-md scale-105' : 'border-transparent opacity-60 hover:opacity-100 hover:scale-105'}`}
+                >
+                  <img src={img} alt={`Vista ${idx + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col overflow-y-auto">
