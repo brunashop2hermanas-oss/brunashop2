@@ -100,15 +100,12 @@ export default function AdminConfiguracion() {
 
   // Modal para Destinos
   const [modalDestino, setModalDestino] = useState<{isOpen: boolean, tipo: 'Provincia' | 'Municipio', depto: string}>({isOpen: false, tipo: 'Provincia', depto: ''});
-  const [isGestorDestinosOpen, setIsGestorDestinosOpen] = useState(false);
   const [isConfirmGuardarOpen, setIsConfirmGuardarOpen] = useState(false);
   const [isRecurrent, setIsRecurrent] = useState(true);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editData, setEditData] = useState<{diaSemana: number, hora: string, unSoloUso: boolean} | null>(null);
   const [deleteScheduleIndex, setDeleteScheduleIndex] = useState<number | null>(null);
   const [inputDestino, setInputDestino] = useState("");
-  const [nuevaCategoriaInput, setNuevaCategoriaInput] = useState("");
-
   // Form states
   const [formUsr, setFormUsr] = useState<{nombres:string, apellidos:string, ci:string, telefono:string, username:string, pin:string, role:string, permisos:string[]}>({
     nombres: "", apellidos: "", ci: "", telefono: "", username: "", pin: "", role: "EMPLEADO", permisos: []
@@ -407,17 +404,6 @@ export default function AdminConfiguracion() {
     });
   };
 
-  const handleAddCategoria = () => {
-    const val = nuevaCategoriaInput.trim();
-    if (val && !config.categoriasPrendas.includes(val)) {
-      setConfig(prev => ({ ...prev, categoriasPrendas: [...prev.categoriasPrendas, val] }));
-      setNuevaCategoriaInput("");
-    }
-  };
-
-  const handleRemoveCategoria = (cat: string) => {
-    setConfig(prev => ({ ...prev, categoriasPrendas: prev.categoriasPrendas.filter(c => c !== cat) }));
-  };
 
   const addMunicipio = (depto: string) => {
     setModalDestino({isOpen: true, tipo: 'Municipio', depto});
