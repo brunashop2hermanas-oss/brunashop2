@@ -624,7 +624,7 @@ export default function AdminConfiguracion() {
                                     return;
                                   }
                                   setEditIndex(i);
-                                  setEditData({ diaSemana: h.diaSemana, hora: h.hora, unSoloUso: h.unSoloUso });
+                                  setEditData({ diaSemana: h.diaSemana, hora: h.hora, unSoloUso: h.unSoloUso ?? false });
                                 }}
                                 className={`p-1 rounded-md transition-colors ${editIndex === i ? 'bg-blue-200 text-blue-800' : 'hover:bg-black/5'}`}
                               >
