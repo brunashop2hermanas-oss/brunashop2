@@ -32,6 +32,7 @@ export default function AdminProductos() {
     isConjunto: false,
     piezasDetalle: {} as any,
     stockPorTalla: {} as any,
+    imagenesPorColor: {} as any,
     descripcionLarga: "",
     costoProveedor: ""
   });
@@ -107,7 +108,7 @@ export default function AdminProductos() {
 
   const abrirModalNueva = () => {
     setProductoEditando(null);
-    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: false, piezasDetalle: {}, stockPorTalla: {}, descripcionLarga: "", costoProveedor: "" });
+    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: false, piezasDetalle: {}, stockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "" });
     setCategoriaSeleccionada("");
     setTallasSeleccionadas([]);
     setFotosPreview([]);
@@ -116,7 +117,7 @@ export default function AdminProductos() {
 
   const abrirModalNuevoCombo = () => {
     setProductoEditando(null);
-    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: true, piezasDetalle: {}, stockPorTalla: {}, descripcionLarga: "", costoProveedor: "" });
+    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: true, piezasDetalle: {}, stockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "" });
     setCategoriaSeleccionada("");
     setTallasSeleccionadas([]);
     setFotosPreview([]);
@@ -139,6 +140,7 @@ export default function AdminProductos() {
       isConjunto: producto.isConjunto || false,
       piezasDetalle: producto.piezasDetalle || {},
       stockPorTalla: producto.stockPorTalla || {},
+      imagenesPorColor: producto.imagenesPorColor || {},
       descripcionLarga: producto.descripcionLarga || "",
       costoProveedor: producto.costoProveedor?.toString() || ""
     });
@@ -204,6 +206,7 @@ export default function AdminProductos() {
       piezasDetalle: formData.piezasDetalle,
       descripcionLarga: formData.descripcionLarga,
       imagenes: fotosPreview.length > 0 ? fotosPreview : ["https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"], // Placeholder
+      imagenesPorColor: formData.imagenesPorColor,
       enLive: productoEditando ? productoEditando.enLive : true,
       enPreventa: productoEditando ? productoEditando.enPreventa : false
     };
@@ -704,6 +707,60 @@ export default function AdminProductos() {
                           <input type="text" value={formData.colores} onChange={e => setFormData({...formData, colores: e.target.value})} placeholder="Ej. Rojo, Negro" className="w-full bg-surface border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none" />
                         </div>
                       </div>
+
+                      {formData.colores.trim().length > 0 && fotosPreview.length > 1 && (
+                        <div className="bg-surface border border-surface-border p-4 rounded-xl shadow-sm mb-6">
+                          <label className="block text-sm font-bold text-foreground mb-2">
+                            <ImageIcon className="w-4 h-4 text-brand-primary inline mr-2" />
+                            Asignar foto a cada color (Opcional)
+                          </label>
+                          <p className="text-xs text-foreground/60 mb-4">Selecciona la imagen que corresponde a cada color. Haz click en la lupa para ampliarla en otra pestaña.</p>
+                          <div className="flex flex-col gap-4">
+                            {formData.colores.split(",").map(c => c.trim()).filter(c => c).map((color) => (
+                              <div key={color} className="flex items-center gap-4 border-b border-surface-border/50 pb-3 last:border-0 last:pb-0">
+                                <span className="font-bold uppercase text-xs w-24 shrink-0 text-brand-primary">{color}</span>
+                                <div className="flex gap-2 overflow-x-auto">
+                                  {fotosPreview.map((url, index) => (
+                                    <div 
+                                      key={index} 
+                                      className={`relative w-16 h-16 rounded-lg border-2 cursor-pointer shrink-0 transition-all group ${formData.imagenesPorColor?.[color] === url ? 'border-brand-primary ring-2 ring-brand-primary/20 scale-105' : 'border-transparent hover:border-brand-primary/50'}`}
+                                      onClick={() => setFormData(prev => ({...prev, imagenesPorColor: {...(prev.imagenesPorColor || {}), [color]: url}}))}
+                                    >
+                                      <img src={url} className="w-full h-full object-cover rounded-md" />
+                                      {formData.imagenesPorColor?.[color] === url && (
+                                        <div className="absolute -top-2 -right-2 bg-brand-primary text-white rounded-full p-0.5 shadow-md z-10">
+                                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></svg>
+                                        </div>
+                                      )}
+                                      <div 
+                                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 rounded-md transition-opacity"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          window.open(url, "_blank");
+                                        }}
+                                        title="Ampliar imagen"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-white"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+                                      </div>
+                                    </div>
+                                  ))}
+                                  {formData.imagenesPorColor?.[color] && (
+                                    <button 
+                                      className="text-xs text-red-500 hover:text-red-700 hover:underline px-2"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const next = {...formData.imagenesPorColor};
+                                        delete next[color];
+                                        setFormData(prev => ({...prev, imagenesPorColor: next}));
+                                      }}
+                                    >Quitar</button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {tallasSeleccionadas.length > 0 ? (
                         <div className="bg-background rounded-xl border border-surface-border p-4 overflow-x-auto shadow-sm">

@@ -49,6 +49,7 @@ model Prenda {
   colores         String[]
   material        String?
   imagenes        String[] // URLs de las fotos subidas
+  imagenesPorColor Json?    // Objeto JSON para mapear color a URL de imagen
   stockCount      Int      @default(0)
   enLive          Boolean  @default(false)
   enPreventa      Boolean  @default(false)

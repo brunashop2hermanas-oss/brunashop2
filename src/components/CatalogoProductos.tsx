@@ -611,11 +611,12 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
                     <li key={pieza.id} className="text-sm text-gray-700 flex flex-col mb-3 last:mb-0">
                       <div className="flex items-center gap-3">
                         <div className="relative group cursor-pointer shrink-0" onClick={() => {
-                          const img = prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80";
+                          const specificImg = (pieza.colorEspecifico && prodRef?.imagenesPorColor?.[pieza.colorEspecifico]) ? prodRef.imagenesPorColor[pieza.colorEspecifico] : null;
+                          const img = specificImg || prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80";
                           setImagenAmpliada(img);
                         }}>
                           <img 
-                            src={prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"} 
+                            src={(pieza.colorEspecifico && prodRef?.imagenesPorColor?.[pieza.colorEspecifico]) ? prodRef.imagenesPorColor[pieza.colorEspecifico] : (prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80")} 
                             alt={prodRef?.nombre || "Prenda"} 
                             className="w-10 h-12 object-cover rounded-sm border border-black/10 shadow-sm transition-opacity group-hover:opacity-75" 
                           />
