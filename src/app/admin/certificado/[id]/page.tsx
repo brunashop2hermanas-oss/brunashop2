@@ -144,16 +144,44 @@ Al continuar usando nuestros servicios y finalizar una compra, otorgas tu consen
           <p className="text-xs text-gray-500 mb-4">
             El siguiente texto representa la versión exacta de las políticas vigentes al momento en que el usuario otorgó su consentimiento.
           </p>
-          <div className="bg-gray-50 border border-gray-200 p-6 rounded-lg text-[10px] sm:text-xs text-gray-600 whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto print:max-h-none print:overflow-visible">
+          <div className="bg-gray-50 border border-gray-200 p-6 rounded-lg text-sm text-gray-600 prose max-w-none">
+            {configRes.data?.identidadTienda && (
+              <>
+                <strong className="text-gray-900 uppercase block mb-2 text-sm">Identidad Legal:</strong>
+                <div dangerouslySetInnerHTML={{ __html: configRes.data.identidadTienda }} />
+                <div className="my-6 border-b border-gray-300" />
+              </>
+            )}
             {configRes.data?.terminosCondiciones && (
               <>
                 <strong className="text-gray-900 uppercase block mb-2 text-sm">Términos y Condiciones:</strong>
-                {terminosCondiciones}
+                <div dangerouslySetInnerHTML={{ __html: terminosCondiciones }} />
+                <div className="my-6 border-b border-gray-300" />
+              </>
+            )}
+            {configRes.data?.politicasEnvio && (
+              <>
+                <strong className="text-gray-900 uppercase block mb-2 text-sm">Políticas de Envío:</strong>
+                <div dangerouslySetInnerHTML={{ __html: configRes.data.politicasEnvio }} />
+                <div className="my-6 border-b border-gray-300" />
+              </>
+            )}
+            {configRes.data?.politicaDevoluciones && (
+              <>
+                <strong className="text-gray-900 uppercase block mb-2 text-sm">Políticas de Devoluciones:</strong>
+                <div dangerouslySetInnerHTML={{ __html: configRes.data.politicaDevoluciones }} />
+                <div className="my-6 border-b border-gray-300" />
+              </>
+            )}
+            {configRes.data?.jurisdiccion && (
+              <>
+                <strong className="text-gray-900 uppercase block mb-2 text-sm">Jurisdicción de Disputas:</strong>
+                <div dangerouslySetInnerHTML={{ __html: configRes.data.jurisdiccion }} />
                 <div className="my-6 border-b border-gray-300" />
               </>
             )}
             <strong className="text-gray-900 uppercase block mb-2 text-sm">Política de Privacidad y Tratamiento de Datos:</strong>
-            {politicaPrivacidad}
+            <div dangerouslySetInnerHTML={{ __html: politicaPrivacidad }} />
           </div>
         </div>
 

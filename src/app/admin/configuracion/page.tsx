@@ -12,58 +12,74 @@ import { compressImage } from "@/lib/imageCompression";
 import { Clock, MapPin, CheckSquare, Square, Trash2, Pencil, RefreshCw } from "lucide-react";
 import LimpiezaDB from "./LimpiezaDB";
 import LicenciaPlanes from "./LicenciaPlanes";
+import dynamic from 'next/dynamic';
+import 'react-quill-new/dist/quill.snow.css';
+
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
 const DEPARTAMENTOS = [
   "Beni", "Chuquisaca", "Cochabamba", "La Paz", "Oruro",
   "Pando", "Potosí", "Santa Cruz", "Tarija"
 ];
 
-const POLITICA_POR_DEFECTO = `POLÍTICA DE PRIVACIDAD Y TRATAMIENTO DE DATOS PERSONALES
 
-En BrunaShop2 valoramos tu privacidad y nos comprometemos a proteger tus datos personales, conforme a los principios establecidos en la Constitución Política del Estado Plurinacional de Bolivia (Art. 21.2) y la Ley N° 164 (Ley General de Telecomunicaciones, Tecnologías de Información y Comunicación) referente al comercio electrónico.
 
-1. DATOS QUE RECOPILAMOS
-Para procesar tus pedidos, recopilamos la siguiente información:
-- Nombres y Apellidos.
-- Cédula de Identidad (C.I.).
-- Número de teléfono / celular (WhatsApp).
-- Información de envío (Departamento y Provincia).
-- Imágenes de comprobantes de transferencia bancaria o depósitos (cuando aplique).
-- Dirección IP y marca de tiempo (fecha y hora exacta) al momento de aceptar los términos, con fines de seguridad y validación legal (Firma Electrónica/Clickwrap).
+const TERMINOS_POR_DEFECTO = `<p>Al utilizar el sistema de BrunaShop2 y completar una compra, declaras estar de acuerdo con las siguientes condiciones:</p>
+<ol>
+  <li>Todo pedido realizado a través de la web requiere la carga del comprobante de pago dentro del tiempo de reserva estipulado.</li>
+  <li>Si no se sube el comprobante a tiempo, el sistema liberará automáticamente el stock reservado.</li>
+  <li>El usuario acepta los términos de envíos y políticas de reembolso vigentes al momento de la compra.</li>
+</ol>`;
 
-2. FINALIDAD DEL TRATAMIENTO DE DATOS
-Los datos proporcionados serán utilizados única y exclusivamente para:
-- Procesar, confirmar y enviar tu pedido.
-- Contactarte mediante WhatsApp para actualizar el estado de tu compra.
-- Verificar la autenticidad de los pagos realizados mediante lectura manual o automatizada (OCR / Inteligencia Artificial) de los comprobantes subidos.
-- Fines de contabilidad interna, registro de clientas y resguardo legal ante posibles desconocimientos de compra.
+const ENVIO_POR_DEFECTO = `<ol>
+  <li>Los envíos se realizan únicamente a los departamentos y provincias habilitados en el sistema.</li>
+  <li>El costo del envío será asumido por el cliente al momento de recoger el paquete, a menos que se indique lo contrario en alguna promoción.</li>
+  <li>BrunaShop2 enviará el paquete una vez que se haya validado el pago en nuestro sistema.</li>
+</ol>`;
 
-3. USO DE IMÁGENES Y COMPROBANTES
-Al subir una imagen de un comprobante de pago, aceptas que la misma pueda ser procesada por sistemas automatizados de terceros de manera segura y temporal, con el único fin de extraer la información necesaria (monto, nombre, número de referencia) para validar tu pago con agilidad. No utilizamos estas imágenes para entrenar modelos de Inteligencia Artificial ni las compartimos con terceros para fines publicitarios. Las imágenes se eliminarán periódicamente de nuestros servidores una vez que el pedido haya concluido exitosamente y expirado el plazo de reclamo.
+const DEVOLUCIONES_POR_DEFECTO = `<p>En cumplimiento con la normativa de defensa de los derechos del consumidor del Estado Plurinacional de Bolivia (Ley N° 453), BrunaShop2 establece las siguientes políticas:</p>
+<ol>
+  <li>No se aceptan devoluciones de dinero una vez confirmada la compra y enviado el producto.</li>
+  <li>Únicamente se aceptarán cambios físicos del producto si este presenta defectos evidentes de fábrica demostrables al momento de recibirlo.</li>
+  <li>Para cualquier solicitud de cambio, el cliente deberá comunicarse dentro de las primeras 24 horas tras la recepción del producto, conservando empaques y etiquetas originales.</li>
+</ol>`;
 
-4. USO DE COOKIES
-Nuestro sistema utiliza "Cookies Esenciales" y almacenamiento local (Local Storage) exclusivamente para funciones operativas básicas, como mantener los productos guardados en tu carrito de compras mientras navegas por la tienda y recordar tu sesión si ya eres clienta recurrente. No utilizamos cookies de rastreo invasivas de terceros ni vendemos tu historial de navegación. Al utilizar nuestra tienda, aceptas el uso de estas cookies estrictamente necesarias para el funcionamiento del sistema.
+const IDENTIDAD_POR_DEFECTO = `<p><strong>BrunaShop2</strong><br/>
+Razón Social: BrunaShop<br/>
+Ubicación: La Paz, Estado Plurinacional de Bolivia.<br/>
+Atención al Cliente: (Añadir número/contacto aquí)<br/>
+Actividad Comercial: Venta minorista de artículos por internet.</p>`;
 
-5. SEGURIDAD Y CONFIDENCIALIDAD
-BrunaShop no venderá, alquilará ni compartirá tus datos personales con terceros externos a nuestra logística, salvo obligación legal o requerimiento de autoridad competente en Bolivia. 
+const JURISDICCION_POR_DEFECTO = `<p>Para todos los efectos legales, las partes se someten a la jurisdicción de las leyes del Estado Plurinacional de Bolivia. Cualquier disputa o controversia que surja de las operaciones realizadas en esta tienda virtual será resuelta ante las autoridades administrativas y los tribunales competentes de la ciudad de La Paz, Bolivia.</p>`;
 
-6. TUS DERECHOS
-Como usuario, tienes derecho a solicitar la modificación o eliminación de tus datos personales de nuestra base de datos. Para ejercer este derecho, puedes contactarnos directamente mediante nuestro canal de atención al cliente.
-
-Al continuar usando nuestros servicios y finalizar una compra, otorgas tu consentimiento explícito para el tratamiento de tus datos conforme a esta política.`;
-
-const TERMINOS_POR_DEFECTO = `TÉRMINOS Y CONDICIONES DE COMPRA
-
-Al utilizar el sistema de BrunaShop2 y completar una compra, declaras estar de acuerdo con las siguientes condiciones:
-1. Todo pedido realizado a través de la web requiere la carga del comprobante de pago dentro del tiempo de reserva estipulado.
-2. Si no se sube el comprobante a tiempo, el sistema liberará automáticamente el stock reservado.
-3. El usuario acepta los términos de envíos y políticas de reembolso vigentes al momento de la compra.`;
-
-const ENVIO_POR_DEFECTO = `POLÍTICAS DE ENVÍO
-
-1. Los envíos se realizan únicamente a los departamentos y provincias habilitados en el sistema.
-2. El costo del envío será asumido por el cliente al momento de recoger el paquete, a menos que se indique lo contrario en alguna promoción.
-3. BrunaShop2 enviará el paquete una vez que se haya validado el pago en nuestro sistema.`;
+const POLITICA_POR_DEFECTO = `<p>En BrunaShop2 valoramos tu privacidad y nos comprometemos a proteger tus datos personales, conforme a los principios establecidos en la Constitución Política del Estado Plurinacional de Bolivia (Art. 21.2) y la Ley N° 164 (Ley General de Telecomunicaciones, Tecnologías de Información y Comunicación) referente al comercio electrónico.</p>
+<p><strong>1. DATOS QUE RECOPILAMOS</strong><br/>
+Para procesar tus pedidos, recopilamos la siguiente información:</p>
+<ul>
+  <li>Nombres y Apellidos.</li>
+  <li>Cédula de Identidad (C.I.).</li>
+  <li>Número de teléfono / celular (WhatsApp).</li>
+  <li>Información de envío (Departamento y Provincia).</li>
+  <li>Imágenes de comprobantes de transferencia bancaria o depósitos (cuando aplique).</li>
+  <li>Dirección IP y marca de tiempo (fecha y hora exacta) al momento de aceptar los términos, con fines de seguridad y validación legal (Firma Electrónica/Clickwrap).</li>
+</ul>
+<p><strong>2. FINALIDAD DEL TRATAMIENTO DE DATOS</strong><br/>
+Los datos proporcionados serán utilizados única y exclusivamente para:</p>
+<ul>
+  <li>Procesar, confirmar y enviar tu pedido.</li>
+  <li>Contactarte mediante WhatsApp para actualizar el estado de tu compra.</li>
+  <li>Verificar la autenticidad de los pagos realizados mediante revisión manual de los comprobantes subidos.</li>
+  <li>Fines de contabilidad interna, registro de clientas y resguardo legal ante posibles desconocimientos de compra.</li>
+</ul>
+<p><strong>3. USO DE IMÁGENES Y COMPROBANTES</strong><br/>
+Al subir una imagen de un comprobante de pago, aceptas que la misma será procesada y almacenada de manera segura, con el único fin de extraer la información necesaria (monto, nombre, número de referencia) para validar tu pago con agilidad. Las imágenes se eliminarán periódicamente de nuestros servidores una vez que el pedido haya concluido exitosamente y expirado el plazo de reclamo.</p>
+<p><strong>4. USO DE COOKIES</strong><br/>
+Nuestro sistema utiliza "Cookies Esenciales" y almacenamiento local (Local Storage) exclusivamente para funciones operativas básicas, como mantener los productos guardados en tu carrito de compras mientras navegas por la tienda y recordar tu sesión si ya eres clienta recurrente. No utilizamos cookies de rastreo invasivas de terceros ni vendemos tu historial de navegación. Al utilizar nuestra tienda, aceptas el uso de estas cookies estrictamente necesarias para el funcionamiento del sistema.</p>
+<p><strong>5. SEGURIDAD Y CONFIDENCIALIDAD</strong><br/>
+BrunaShop no venderá, alquilará ni compartirá tus datos personales con terceros externos a nuestra logística, salvo obligación legal o requerimiento de autoridad competente en Bolivia.</p>
+<p><strong>6. TUS DERECHOS</strong><br/>
+Como usuario, tienes derecho a solicitar la modificación o eliminación de tus datos personales de nuestra base de datos. Para ejercer este derecho, puedes contactarnos directamente mediante nuestro canal de atención al cliente.</p>
+<p>Al continuar usando nuestros servicios y finalizar una compra, otorgas tu consentimiento explícito para el tratamiento de tus datos conforme a esta política.</p>`;
 
 export default function AdminConfiguracion() {
   const [config, setConfig] = useState({
@@ -79,6 +95,9 @@ export default function AdminConfiguracion() {
     terminosCondiciones: "",
     politicasEnvio: "",
     politicaPrivacidad: "",
+    politicaDevoluciones: "",
+    identidadTienda: "",
+    jurisdiccion: "",
     usarControlFinanciero: true,
     liveActivo: false,
     liveHorariosRecurrentes: { horarios: [] as { diaSemana: number, hora: string, unSoloUso?: boolean }[], ultimaActivacion: undefined as string | undefined },
@@ -104,6 +123,8 @@ export default function AdminConfiguracion() {
   const [isRecurrent, setIsRecurrent] = useState(true);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editData, setEditData] = useState<{ diaSemana: number, hora: string, unSoloUso: boolean } | null>(null);
+  const [expandedLegalSection, setExpandedLegalSection] = useState(false);
+  const [expandedVistaPrevia, setExpandedVistaPrevia] = useState(false);
   const [deleteScheduleIndex, setDeleteScheduleIndex] = useState<number | null>(null);
   const [inputDestino, setInputDestino] = useState("");
   // Form states
@@ -133,6 +154,9 @@ export default function AdminConfiguracion() {
           terminosCondiciones: resConfig.data.terminosCondiciones || TERMINOS_POR_DEFECTO,
           politicasEnvio: resConfig.data.politicasEnvio || ENVIO_POR_DEFECTO,
           politicaPrivacidad: resConfig.data.politicaPrivacidad || POLITICA_POR_DEFECTO,
+          identidadTienda: resConfig.data.identidadTienda || IDENTIDAD_POR_DEFECTO,
+          politicaDevoluciones: resConfig.data.politicaDevoluciones || DEVOLUCIONES_POR_DEFECTO,
+          jurisdiccion: resConfig.data.jurisdiccion || JURISDICCION_POR_DEFECTO,
           usarControlFinanciero: resConfig.data.usarControlFinanciero ?? true,
           liveActivo: resConfig.data.liveActivo ?? false,
           liveHorariosRecurrentes: (resConfig.data.liveHorariosRecurrentes as { horarios: { diaSemana: number, hora: string, unSoloUso?: boolean }[], ultimaActivacion: string | undefined }) || { horarios: [] },
@@ -441,6 +465,16 @@ export default function AdminConfiguracion() {
       }
       return { ...prev, destinosHabilitados: newDestinos };
     });
+  };
+
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'color': [] }, { 'background': [] }],
+      ['clean']
+    ],
   };
 
   if (loading) return <div className="flex justify-center p-10"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-primary"></div></div>;
@@ -1007,65 +1041,124 @@ export default function AdminConfiguracion() {
             ========================================= */}
           {/* Páginas Legales */}
           <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d space-y-6 lg:col-span-2">
-            <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6 border-b border-surface-border pb-4">
-              <ShieldCheck className="w-6 h-6 text-brand-primary" /> Páginas Legales
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div>
-                <label className="block text-sm font-bold text-foreground mb-2">Términos y Condiciones</label>
-                <textarea
-                  rows={10}
-                  value={config.terminosCondiciones}
-                  onChange={e => setConfig({ ...config, terminosCondiciones: e.target.value })}
-                  placeholder="Ingresa aquí los términos y condiciones de tu tienda..."
-                  className="w-full bg-background border border-surface-border p-4 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium custom-scrollbar"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-foreground mb-2">Políticas de Envío</label>
-                <textarea
-                  rows={10}
-                  value={config.politicasEnvio}
-                  onChange={e => setConfig({ ...config, politicasEnvio: e.target.value })}
-                  placeholder="Explica aquí cómo funcionan los envíos, tiempos de entrega, etc..."
-                  className="w-full bg-background border border-surface-border p-4 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium custom-scrollbar"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-foreground mb-2">Política de Privacidad</label>
-                <textarea
-                  rows={10}
-                  value={config.politicaPrivacidad}
-                  onChange={e => setConfig({ ...config, politicaPrivacidad: e.target.value })}
-                  placeholder="Ingresa aquí tu política de privacidad..."
-                  className="w-full bg-background border border-surface-border p-4 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-foreground font-medium custom-scrollbar"
-                />
-              </div>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-surface-border pb-4">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <ShieldCheck className="w-6 h-6 text-brand-primary" /> Textos Legales
+              </h2>
+              <button
+                onClick={() => setExpandedLegalSection(!expandedLegalSection)}
+                className="bg-brand-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:brightness-110 transition-colors"
+              >
+                {expandedLegalSection ? "Ocultar Editores de Texto" : "Mostrar / Editar Textos Legales"}
+              </button>
             </div>
+
+            {expandedLegalSection && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div>
+                  <label className="block text-sm font-bold text-foreground mb-2">Términos y Condiciones</label>
+                  <ReactQuill 
+                    theme="snow"
+                    value={config.terminosCondiciones || TERMINOS_POR_DEFECTO}
+                    onChange={(value, delta, source) => { if (source === 'user') setConfig({ ...config, terminosCondiciones: value }) }}
+                    modules={quillModules}
+                    className="mb-4 bg-white min-h-[300px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-foreground mb-2">Políticas de Envío</label>
+                  <ReactQuill 
+                    theme="snow"
+                    value={config.politicasEnvio || ENVIO_POR_DEFECTO}
+                    onChange={(value, delta, source) => { if (source === 'user') setConfig({ ...config, politicasEnvio: value }) }}
+                    modules={quillModules}
+                    className="mb-4 bg-white min-h-[300px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-foreground mb-2">Política de Privacidad</label>
+                  <ReactQuill 
+                    theme="snow"
+                    value={config.politicaPrivacidad || POLITICA_POR_DEFECTO}
+                    onChange={(value, delta, source) => { if (source === 'user') setConfig({ ...config, politicaPrivacidad: value }) }}
+                    modules={quillModules}
+                    className="mb-4 bg-white min-h-[300px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-foreground mb-2">Políticas de Devoluciones</label>
+                  <ReactQuill 
+                    theme="snow"
+                    value={config.politicaDevoluciones || DEVOLUCIONES_POR_DEFECTO}
+                    onChange={(value, delta, source) => { if (source === 'user') setConfig({ ...config, politicaDevoluciones: value }) }}
+                    modules={quillModules}
+                    className="mb-4 bg-white min-h-[300px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-foreground mb-2">Identidad Legal (NIT, Razón Social)</label>
+                  <ReactQuill 
+                    theme="snow"
+                    value={config.identidadTienda || IDENTIDAD_POR_DEFECTO}
+                    onChange={(value, delta, source) => { if (source === 'user') setConfig({ ...config, identidadTienda: value }) }}
+                    modules={quillModules}
+                    className="mb-4 bg-white min-h-[300px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-foreground mb-2">Jurisdicción de Disputas</label>
+                  <ReactQuill 
+                    theme="snow"
+                    value={config.jurisdiccion || JURISDICCION_POR_DEFECTO}
+                    onChange={(value, delta, source) => { if (source === 'user') setConfig({ ...config, jurisdiccion: value }) }}
+                    modules={quillModules}
+                    className="mb-4 bg-white min-h-[300px]"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Vista Previa en Tiempo Real */}
             <div className="mt-8 pt-8 border-t border-surface-border">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 border-b border-surface-border pb-4">
                 <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                   <Eye className="w-5 h-5 text-brand-primary" /> Vista Previa del Anexo Legal
                 </h3>
-                <Link href="/privacidad" target="_blank" className="text-sm font-bold bg-brand-primary text-white px-4 py-2 rounded-xl hover:brightness-110 transition-colors shadow-md flex items-center justify-center gap-2">
-                  Ver Página Pública (Clientas) &rarr;
-                </Link>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    onClick={() => setExpandedVistaPrevia(!expandedVistaPrevia)}
+                    className="bg-brand-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:brightness-110 transition-colors"
+                  >
+                    {expandedVistaPrevia ? "Ocultar Vista Previa" : "Mostrar Vista Previa"}
+                  </button>
+                  <Link href="/privacidad" target="_blank" className="text-sm font-bold bg-gray-800 text-white px-4 py-2 rounded-xl hover:bg-gray-900 transition-colors shadow-md flex items-center justify-center gap-2">
+                    Ver Página Pública (Clientas) &rarr;
+                  </Link>
+                </div>
               </div>
               <p className="text-sm text-foreground/70 mb-4">Así es exactamente como se imprimirá el texto legal al final de los certificados de cada clienta. ¡Cualquier cambio que hagas arriba se reflejará aquí al instante!</p>
 
-              <div className="bg-gray-50 border border-gray-200 p-6 rounded-lg text-[10px] sm:text-xs text-gray-600 whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto">
-                {config.terminosCondiciones && (
-                  <>
-                    <strong className="text-gray-900 uppercase block mb-2 text-sm">Términos y Condiciones:</strong>
-                    {config.terminosCondiciones}
-                    <div className="my-6 border-b border-gray-300" />
-                  </>
-                )}
-                <strong className="text-gray-900 uppercase block mb-2 text-sm">Política de Privacidad y Tratamiento de Datos:</strong>
-                {config.politicaPrivacidad}
-              </div>
+              {expandedVistaPrevia && (
+                <div className="bg-gray-50 border border-gray-200 p-6 rounded-lg text-sm text-gray-600 prose max-w-none">
+                  <h3 className="font-bold text-gray-900 mb-2 uppercase text-xs border-b border-gray-200 pb-2">IDENTIDAD LEGAL:</h3>
+                  <div dangerouslySetInnerHTML={{ __html: config.identidadTienda || IDENTIDAD_POR_DEFECTO }} />
+
+                  <h3 className="font-bold text-gray-900 mb-2 uppercase text-xs border-b border-gray-200 pb-2 mt-8">POLÍTICA DE PRIVACIDAD Y TRATAMIENTO DE DATOS:</h3>
+                  <div dangerouslySetInnerHTML={{ __html: config.politicaPrivacidad || POLITICA_POR_DEFECTO }} />
+
+                  <h3 className="font-bold text-gray-900 mb-2 uppercase text-xs border-b border-gray-200 pb-2 mt-8">TÉRMINOS Y CONDICIONES:</h3>
+                  <div dangerouslySetInnerHTML={{ __html: config.terminosCondiciones || TERMINOS_POR_DEFECTO }} />
+                  
+                  <h3 className="font-bold text-gray-900 mb-2 uppercase text-xs border-b border-gray-200 pb-2 mt-8">POLÍTICAS DE ENVÍO:</h3>
+                  <div dangerouslySetInnerHTML={{ __html: config.politicasEnvio || ENVIO_POR_DEFECTO }} />
+
+                  <h3 className="font-bold text-gray-900 mb-2 uppercase text-xs border-b border-gray-200 pb-2 mt-8">POLÍTICAS DE DEVOLUCIONES:</h3>
+                  <div dangerouslySetInnerHTML={{ __html: config.politicaDevoluciones || DEVOLUCIONES_POR_DEFECTO }} />
+                  
+                  <h3 className="font-bold text-gray-900 mb-2 uppercase text-xs border-b border-gray-200 pb-2 mt-8">JURISDICCIÓN DE DISPUTAS:</h3>
+                  <div dangerouslySetInnerHTML={{ __html: config.jurisdiccion || JURISDICCION_POR_DEFECTO }} />
+                </div>
+              )}
             </div>
           </div>
 

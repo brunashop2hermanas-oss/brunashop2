@@ -55,3 +55,17 @@ h1, h2, h3, h4, h5, h6, .font-serif {
               0 10px 20px -5px rgba(212, 154, 154, 0.15),
               inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
+
+@media print {
+  @page {
+    margin: 0 !important;
+  }
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

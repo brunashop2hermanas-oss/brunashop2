@@ -59,7 +59,7 @@ export default function Home() {
       )}
 
       {/* Header Responsivo */}
-      <header className={`w-full fixed top-8 md:top-10 z-40 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-sm py-2" : "bg-transparent py-3"}`}>
+      <header className={`w-full fixed top-0 z-40 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-sm py-1.5" : "bg-transparent py-2"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           
           {/* Menu Mobile Icon */}

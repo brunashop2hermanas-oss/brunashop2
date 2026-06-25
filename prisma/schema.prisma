@@ -134,6 +134,9 @@ model Configuracion {
   terminosCondiciones   String?  @db.Text
   politicasEnvio        String?  @db.Text
   politicaPrivacidad    String?  @db.Text
+  politicaDevoluciones  String?  @db.Text
+  identidadTienda       String?  @db.Text
+  jurisdiccion          String?  @db.Text
   usarControlFinanciero Boolean  @default(true)
   liveActivo            Boolean  @default(false)
   tiempoReservaMinutos  Int      @default(4)

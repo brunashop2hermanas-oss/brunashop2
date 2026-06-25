@@ -91,6 +91,9 @@ export async function updateConfiguracion(data: {
   terminosCondiciones?: string;
   politicasEnvio?: string;
   politicaPrivacidad?: string;
+  politicaDevoluciones?: string;
+  identidadTienda?: string;
+  jurisdiccion?: string;
   usarControlFinanciero?: boolean;
   liveActivo?: boolean;
   tiempoReservaMinutos?: number;

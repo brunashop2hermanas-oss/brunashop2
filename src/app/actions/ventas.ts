@@ -47,7 +47,6 @@ export async function buscarClientaPorCI(ci: string) {
     const clienta = await prisma.clienta.findUnique({
       where: { ci: ci.trim() }
     });
-    revalidatePath('/', 'layout');
     return { success: true, data: clienta };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -60,7 +59,6 @@ export async function getVenta(ventaId: string) {
       where: { id: ventaId },
       include: { items: { include: { prenda: true } }, clienta: true }
     });
-    revalidatePath('/', 'layout');
     return { success: true, data: venta, serverNow: new Date().toISOString() };
   } catch (error: any) {
     return { success: false, error: error.message };
