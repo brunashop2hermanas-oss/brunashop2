@@ -882,8 +882,12 @@ const imprimirVineta = (pedido: any) => {
                         </h4>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs font-bold bg-surface-border/50 px-2 py-0.5 rounded text-foreground/70">Cant: {art.cantidad}</span>
-                          <span className="text-xs font-bold bg-surface-border/50 px-2 py-0.5 rounded text-foreground/70">Talla: {art.talla}</span>
-                          <span className="text-xs font-bold bg-surface-border/50 px-2 py-0.5 rounded text-foreground/70">Color: {art.color}</span>
+                          {!art.isConjunto && (
+                            <>
+                              <span className="text-xs font-bold bg-surface-border/50 px-2 py-0.5 rounded text-foreground/70">Talla: {art.talla}</span>
+                              <span className="text-xs font-bold bg-surface-border/50 px-2 py-0.5 rounded text-foreground/70">Color: {art.color}</span>
+                            </>
+                          )}
                         </div>
                         
                         {/* Detalle de piezas si es conjunto */}
