@@ -208,7 +208,7 @@ export default function AdminProductos() {
       descripcionLarga: formData.descripcionLarga,
       imagenes: fotosPreview.length > 0 ? fotosPreview : ["https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"], // Placeholder
       imagenesPorColor: formData.imagenesPorColor,
-      enLive: productoEditando ? productoEditando.enLive : true,
+      enLive: productoEditando ? productoEditando.enLive : false,
       enPreventa: productoEditando ? productoEditando.enPreventa : false
     };
 
