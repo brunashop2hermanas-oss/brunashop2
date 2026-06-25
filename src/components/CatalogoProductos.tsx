@@ -299,7 +299,7 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
                           }
                         }
                         return img || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80";
-                      })()} alt={item.nombre} className="w-20 h-24 object-cover rounded-sm" />
+                      })()} alt={item.nombre} className="w-20 h-24 object-contain bg-slate-50 rounded-sm" />
                       <div className="flex-1 flex flex-col justify-between">
                         <div>
                           <div className="flex justify-between items-start">
@@ -446,7 +446,7 @@ function ProductoCard({ producto, index, abrirVistaRapida, agregarAlCarrito, liv
         <img 
           src={imagenes[currentImgIndex]} 
           alt={`${producto.nombre}`} 
-          className={`absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/gallery:scale-105 ${producto.stockCount === 0 && !producto.enPreventa ? 'grayscale opacity-60' : ''}`}
+          className={`absolute inset-0 w-full h-full object-contain bg-slate-50 transition-transform duration-700 group-hover/gallery:scale-105 ${producto.stockCount === 0 && !producto.enPreventa ? 'grayscale opacity-60' : ''}`}
         />
         
         {imagenes.length > 1 && (
@@ -636,7 +636,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
             className="flex-1 relative group cursor-pointer min-h-0"
             onClick={() => setImagenAmpliada(imagenActual)}
           >
-            <img src={imagenActual} alt={producto.nombre} className="absolute inset-0 w-full h-full object-cover transition-opacity group-hover:opacity-90" />
+            <img src={imagenActual} alt={producto.nombre} className="absolute inset-0 w-full h-full object-contain bg-slate-50 transition-opacity group-hover:opacity-90" />
             <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
               <Search className="w-10 h-10 text-white drop-shadow-md" />
             </div>
@@ -649,7 +649,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
                   onClick={(e) => { e.stopPropagation(); setImagenActual(img); }}
                   className={`w-14 h-14 md:w-16 md:h-16 shrink-0 border-2 rounded-sm overflow-hidden transition-all ${imagenActual === img ? 'border-black shadow-md scale-105' : 'border-transparent opacity-60 hover:opacity-100 hover:scale-105'}`}
                 >
-                  <img src={img} alt={`Vista ${idx + 1}`} className="w-full h-full object-cover" />
+                  <img src={img} alt={`Vista ${idx + 1}`} className="w-full h-full object-contain bg-slate-50" />
                 </button>
               ))}
             </div>
@@ -714,7 +714,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
                           <img 
                             src={(pieza.colorEspecifico && prodRef?.imagenesPorColor?.[pieza.colorEspecifico]) ? prodRef.imagenesPorColor[pieza.colorEspecifico] : (prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80")} 
                             alt={prodRef?.nombre || "Prenda"} 
-                            className="w-10 h-12 object-cover rounded-sm border border-black/10 shadow-sm transition-opacity group-hover:opacity-75" 
+                            className="w-10 h-12 object-contain bg-slate-50 rounded-sm border border-black/10 shadow-sm transition-opacity group-hover:opacity-75" 
                           />
                           <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
                             <Search className="w-4 h-4 text-white drop-shadow-md" />

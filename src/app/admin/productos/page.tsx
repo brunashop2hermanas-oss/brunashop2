@@ -302,7 +302,7 @@ export default function AdminProductos() {
     >
       {/* Imagen del producto */}
       <div className="relative h-48 w-full bg-gray-200">
-        <img src={producto.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"} alt={producto.nombre} className={`w-full h-full object-cover ${producto.stockCount === 0 ? 'grayscale opacity-50' : ''}`} />
+        <img src={producto.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"} alt={producto.nombre} className={`w-full h-full object-contain bg-slate-50 ${producto.stockCount === 0 ? 'grayscale opacity-50' : ''}`} />
         
         <div className="absolute top-3 left-3 flex gap-2 flex-wrap max-w-[80%]">
           {producto.enLive && (
@@ -536,7 +536,7 @@ export default function AdminProductos() {
                     )}
                     {fotosPreview.map((url, i) => (
                       <div key={i} className="w-24 h-24 rounded-2xl bg-surface border border-surface-border relative overflow-hidden group">
-                        <img src={url} alt={`Preview ${i}`} className="w-full h-full object-cover" />
+                        <img src={url} alt={`Preview ${i}`} className="w-full h-full object-contain bg-slate-50" />
                         <button onClick={() => eliminarFotoPreview(i)} className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <Trash2 className="w-6 h-6" />
                         </button>
@@ -730,7 +730,7 @@ export default function AdminProductos() {
                                       className={`relative w-16 h-16 rounded-lg border-2 cursor-pointer shrink-0 transition-all group ${savedUrl === url ? 'border-brand-primary ring-2 ring-brand-primary/20 scale-105' : 'border-transparent hover:border-brand-primary/50'}`}
                                       onClick={() => setFormData(prev => ({...prev, imagenesPorColor: {...(prev.imagenesPorColor || {}), [color]: url}}))}
                                     >
-                                      <img src={url} className="w-full h-full object-cover rounded-md" />
+                                      <img src={url} className="w-full h-full object-contain bg-slate-50 rounded-md" />
                                       {savedUrl === url && (
                                         <div className="absolute -top-2 -right-2 bg-brand-primary text-white rounded-full p-0.5 shadow-md z-10">
                                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></svg>
@@ -885,7 +885,7 @@ export default function AdminProductos() {
                               <div key={prod.id} className={`p-3 bg-surface border rounded-lg transition-colors ${seleccionado ? 'border-brand-primary bg-brand-primary/5' : 'border-surface-border'}`}>
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                   <div className="flex items-center gap-3 min-w-0">
-                                    <img src={prod.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"} alt={prod.nombre} className="w-10 h-10 rounded object-cover shrink-0" />
+                                    <img src={prod.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"} alt={prod.nombre} className="w-10 h-10 rounded object-contain bg-slate-50 shrink-0" />
                                     <div className="min-w-0 flex-1">
                                       <p className="text-sm font-bold truncate w-full">{prod.nombre}</p>
                                       <p className="text-xs text-foreground/50">Stock suelto: {prod.stockCount}</p>

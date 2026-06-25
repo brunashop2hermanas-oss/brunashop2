@@ -893,7 +893,7 @@ const imprimirVineta = (pedido: any) => {
                           <img 
                             src={resolveImage(art, art.color)} 
                             alt={art.nombre} 
-                            className={`w-full h-full object-cover cursor-zoom-in transition-opacity ${art.empaquetado ? 'opacity-60' : 'hover:opacity-80'}`} 
+                            className={`w-full h-full object-contain bg-slate-50 cursor-zoom-in transition-opacity ${art.empaquetado ? 'opacity-60' : 'hover:opacity-80'}`} 
                             onClick={() => setComprobanteAmpliado(resolveImage(art, art.color))} 
                           />
                         ) : (
@@ -931,7 +931,7 @@ const imprimirVineta = (pedido: any) => {
                                     <img 
                                       src={resolveImage(prodRef, pieza.colorEspecifico)} 
                                       alt={prodRef?.nombre || "Prenda"} 
-                                      className="w-10 h-10 object-cover rounded-md border border-surface-border transition-opacity group-hover:opacity-75" 
+                                      className="w-10 h-10 object-contain bg-slate-50 rounded-md border border-surface-border transition-opacity group-hover:opacity-75" 
                                     />
                                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none rounded-md">
                                       <Search className="w-4 h-4 text-white" />

@@ -794,7 +794,7 @@ function CheckoutContent() {
                     <img 
                       src={resolveImage(item, item.colorSeleccionado)} 
                       alt={item.nombre} 
-                      className="w-16 h-20 object-cover rounded-sm border border-black/10 transition-opacity group-hover:opacity-75" 
+                      className="w-16 h-20 object-contain bg-slate-50 rounded-sm border border-black/10 transition-opacity group-hover:opacity-75" 
                     />
                     <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
                       <Search className="w-5 h-5 text-white" />
@@ -822,7 +822,7 @@ function CheckoutContent() {
                                     <img 
                                       src={resolveImage(prodRef, pieza.colorEspecifico)} 
                                       alt={prodRef?.nombre || "Prenda"} 
-                                      className="w-8 h-10 object-cover rounded-sm border border-black/10 transition-opacity group-hover:opacity-75" 
+                                      className="w-8 h-10 object-contain bg-slate-50 rounded-sm border border-black/10 transition-opacity group-hover:opacity-75" 
                                     />
                                     <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
                                       <Search className="w-3 h-3 text-white" />

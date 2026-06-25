@@ -329,7 +329,7 @@ export default function NuevaVenta() {
               >
                 <div className="bg-surface rounded-xl aspect-square mb-3 flex items-center justify-center relative overflow-hidden">
                   {prod.imagenes && prod.imagenes[0] ? (
-                    <img src={prod.imagenes[0]} alt={prod.nombre} className="w-full h-full object-cover" />
+                    <img src={prod.imagenes[0]} alt={prod.nombre} className="w-full h-full object-contain bg-slate-50" />
                   ) : (
                     <span className="text-4xl">👗</span>
                   )}
@@ -397,7 +397,7 @@ export default function NuevaVenta() {
                           if (keyMatch) img = (raw as any)[keyMatch];
                         }
                       }
-                      return img ? <img src={img} className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" /> : <span className="flex h-full w-full items-center justify-center text-xs">👗</span>;
+                      return img ? <img src={img} className="w-full h-full object-contain bg-slate-50 group-hover:opacity-80 transition-opacity" /> : <span className="flex h-full w-full items-center justify-center text-xs">👗</span>;
                     })()}
                     {prodDb?.imagenes?.[0] && (
                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
@@ -445,7 +445,7 @@ export default function NuevaVenta() {
                                        if (keyMatch) img = (raw as any)[keyMatch];
                                      }
                                    }
-                                   return img ? <img src={img} className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" /> : null;
+                                   return img ? <img src={img} className="w-full h-full object-contain bg-slate-50 group-hover:opacity-80 transition-opacity" /> : null;
                                  })()}
                                  {pRef.imagenes?.[0] && (
                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
@@ -640,7 +640,7 @@ export default function NuevaVenta() {
                       </>
                     ) : (
                       <div className="flex flex-col items-center gap-2">
-                        <img src={comprobanteFile ? URL.createObjectURL(comprobanteFile) : comprobanteUrl!} alt="Comprobante" onClick={() => setImagenAmpliada(comprobanteFile ? URL.createObjectURL(comprobanteFile) : comprobanteUrl!)} className="w-20 h-20 object-cover rounded-lg shadow-md border border-surface-border cursor-pointer hover:opacity-80 transition-opacity" />
+                        <img src={comprobanteFile ? URL.createObjectURL(comprobanteFile) : comprobanteUrl!} alt="Comprobante" onClick={() => setImagenAmpliada(comprobanteFile ? URL.createObjectURL(comprobanteFile) : comprobanteUrl!)} className="w-20 h-20 object-contain bg-slate-50 rounded-lg shadow-md border border-surface-border cursor-pointer hover:opacity-80 transition-opacity" />
                         <div className="flex gap-2 w-full">
                           <button onClick={() => { setComprobanteFile(null); setComprobanteUrl(null); }} className="flex-1 bg-red-500/10 text-red-500 text-xs font-bold py-1.5 rounded-lg">Borrar</button>
                         </div>
@@ -1025,7 +1025,7 @@ function ModalPOSVistaRapida({ producto, productosAll, cerrar, agregar, setImage
                   className="w-24 h-24 rounded-xl overflow-hidden bg-surface border border-surface-border cursor-zoom-in relative group"
                   onClick={() => setImagenAmpliada(imagenActual)}
                 >
-                  <img src={imagenActual} className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" />
+                  <img src={imagenActual} className="w-full h-full object-contain bg-slate-50 group-hover:opacity-80 transition-opacity" />
                   <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                     <Search className="w-6 h-6 text-white" />
                   </div>
@@ -1038,7 +1038,7 @@ function ModalPOSVistaRapida({ producto, productosAll, cerrar, agregar, setImage
                        onClick={(e) => { e.stopPropagation(); setImagenActual(img); }}
                        className={`w-7 h-7 shrink-0 border rounded-md overflow-hidden transition-all ${imagenActual === img ? 'border-brand-primary scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}
                      >
-                       <img src={img} className="w-full h-full object-cover" />
+                       <img src={img} className="w-full h-full object-contain bg-slate-50" />
                      </button>
                    ))}
                  </div>
@@ -1075,7 +1075,7 @@ function ModalPOSVistaRapida({ producto, productosAll, cerrar, agregar, setImage
                         {(() => {
                           const specificImg = (pieza.colorEspecifico && pRef?.imagenesPorColor?.[pieza.colorEspecifico]) ? pRef.imagenesPorColor[pieza.colorEspecifico] : null;
                           const img = specificImg || pRef?.imagenes?.[0];
-                          return img ? <img src={img} className="w-full h-full object-cover group-hover:opacity-80" /> : null;
+                          return img ? <img src={img} className="w-full h-full object-contain bg-slate-50 group-hover:opacity-80" /> : null;
                         })()}
                         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
                           <Search className="w-4 h-4 text-white" />
