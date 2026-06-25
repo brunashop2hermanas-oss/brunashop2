@@ -523,6 +523,66 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
     agregar(producto, tallaSeleccionada, colorSeleccionado);
   };
 
+  const stockPorTallaObj = typeof producto.stockPorTalla === 'string' ? JSON.parse(producto.stockPorTalla) : (producto.stockPorTalla || {});
+  const hasStockPorTalla = Object.keys(stockPorTallaObj).length > 0;
+
+  const isTallaDisabled = (t: string) => {
+    if (!hasStockPorTalla) return false;
+    if (!stockPorTallaObj[t]) return true;
+    
+    if (colorSeleccionado) {
+      if (typeof stockPorTallaObj[t] === 'object' && stockPorTallaObj[t] !== null) {
+        return parseInt(stockPorTallaObj[t][colorSeleccionado] || "0") <= 0;
+      }
+    } else {
+      if (typeof stockPorTallaObj[t] === 'object' && stockPorTallaObj[t] !== null) {
+        const total = Object.values(stockPorTallaObj[t]).reduce((sum: number, val: any) => sum + parseInt(val || "0"), 0);
+        return total <= 0;
+      } else {
+        return parseInt(stockPorTallaObj[t] || "0") <= 0;
+      }
+    }
+    return parseInt(stockPorTallaObj[t] || "0") <= 0;
+  };
+
+  const isColorDisabled = (c: string) => {
+    if (!hasStockPorTalla) return false;
+    
+    if (tallaSeleccionada) {
+      const tStock = stockPorTallaObj[tallaSeleccionada];
+      if (!tStock) return true;
+      if (typeof tStock === 'object' && tStock !== null) {
+        return parseInt(tStock[c] || "0") <= 0;
+      }
+      return false;
+    } else {
+      let hasStock = false;
+      for (const t in stockPorTallaObj) {
+        if (typeof stockPorTallaObj[t] === 'object' && stockPorTallaObj[t] !== null) {
+          if (parseInt(stockPorTallaObj[t][c] || "0") > 0) hasStock = true;
+        }
+      }
+      const hasAnyColorBreakdown = Object.values(stockPorTallaObj).some(val => typeof val === 'object' && val !== null);
+      if (hasAnyColorBreakdown) return !hasStock;
+      return false;
+    }
+  };
+
+  const isAddDisabled = () => {
+    if (!hasStockPorTalla) return false;
+    if (tallaSeleccionada && !colorSeleccionado) return isTallaDisabled(tallaSeleccionada);
+    if (!tallaSeleccionada && colorSeleccionado) return isColorDisabled(colorSeleccionado);
+    if (tallaSeleccionada && colorSeleccionado) {
+      const tStock = stockPorTallaObj[tallaSeleccionada];
+      if (!tStock) return true;
+      if (typeof tStock === 'object' && tStock !== null) {
+        return parseInt(tStock[colorSeleccionado] || "0") <= 0;
+      }
+      return parseInt(tStock || "0") <= 0;
+    }
+    return false;
+  };
+
   return (
     <>
       <motion.div 
@@ -648,15 +708,19 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
             <div className="mb-6">
               <span className="text-xs font-bold uppercase tracking-widest text-black block mb-3">Tallas Disponibles</span>
               <div className="flex gap-2 flex-wrap">
-                {tallas.map((t: string) => (
-                  <button 
-                    key={t}
-                    onClick={() => setTallaSeleccionada(t)}
-                    className={`px-4 py-2 text-xs border rounded-sm transition-colors ${tallaSeleccionada === t ? "border-black bg-black text-white" : "border-gray-300 text-gray-600 hover:border-black"}`}
-                  >
-                    {t}
-                  </button>
-                ))}
+                {tallas.map((t: string) => {
+                  const agotado = isTallaDisabled(t);
+                  return (
+                    <button 
+                      key={t}
+                      onClick={() => !agotado && setTallaSeleccionada(t)}
+                      disabled={agotado}
+                      className={`px-4 py-2 text-xs border rounded-sm transition-colors ${agotado ? "border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed line-through opacity-70" : (tallaSeleccionada === t ? "border-black bg-black text-white" : "border-gray-300 text-gray-600 hover:border-black")}`}
+                    >
+                      {t}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -665,15 +729,19 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
             <div className="mb-6">
               <span className="text-xs font-bold uppercase tracking-widest text-black block mb-3">Colores</span>
               <div className="flex gap-2 flex-wrap">
-                {colores.map((c: string) => (
-                  <button 
-                    key={c}
-                    onClick={() => setColorSeleccionado(c)}
-                    className={`px-4 py-2 text-xs border rounded-sm transition-colors capitalize ${colorSeleccionado === c ? "border-black border-2 font-bold" : "border-gray-300 text-gray-600 hover:border-black"}`}
-                  >
-                    {c}
-                  </button>
-                ))}
+                {colores.map((c: string) => {
+                  const agotado = isColorDisabled(c);
+                  return (
+                    <button 
+                      key={c}
+                      onClick={() => !agotado && setColorSeleccionado(c)}
+                      disabled={agotado}
+                      className={`px-4 py-2 text-xs border rounded-sm transition-colors capitalize ${agotado ? "border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed line-through opacity-70" : (colorSeleccionado === c ? "border-black border-2 font-bold" : "border-gray-300 text-gray-600 hover:border-black")}`}
+                    >
+                      {c}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -682,9 +750,10 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
              {producto.stockCount > 0 || producto.enPreventa ? (
                <button 
                  onClick={handleAgregar}
-                 className="w-full bg-black text-white text-xs uppercase tracking-widest font-bold py-4 rounded-sm hover:bg-gray-800 transition-colors"
+                 disabled={isAddDisabled()}
+                 className={`w-full text-xs uppercase tracking-widest font-bold py-4 rounded-sm transition-colors ${isAddDisabled() ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-black text-white hover:bg-gray-800"}`}
                >
-                 Añadir a la bolsa
+                 {isAddDisabled() ? "Agotado en esta selección" : "Añadir a la bolsa"}
                </button>
              ) : (
                <button disabled className="w-full bg-gray-200 text-gray-500 text-xs uppercase tracking-widest font-bold py-4 rounded-sm cursor-not-allowed">
