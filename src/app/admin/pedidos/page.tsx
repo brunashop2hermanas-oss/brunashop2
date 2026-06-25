@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, Eye, CheckCircle, XCircle, Printer, MessageCircle, Star, PackageCheck, Download, X, Upload, Wallet, Package, Truck, History, Calendar } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getVentas, updateEstadoVenta, toggleEmpaquetado, subirGuiaEnvio } from "@/app/actions/ventas";
+import { getPrendas } from "@/app/actions/productos";
 import { uploadImage } from "@/app/actions/upload";
 import { compressImage } from "@/lib/imageCompression";
 import toast from "react-hot-toast";
@@ -42,6 +43,7 @@ const WhatsappIcon = ({ className }: { className?: string }) => (
 
 export default function AdminDashboard() {
   const [pedidos, setPedidos] = useState<any[]>([]);
+  const [productos, setProductos] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState<any>(null); // Modal de Verificación de Pago
@@ -58,13 +60,21 @@ export default function AdminDashboard() {
   const fetchPedidos = async () => {
     const res = await getVentas();
     if (res.success) {
-      setPedidos(res.data || []);
+      setPedidos(res.data);
     }
     setIsLoading(false);
   };
 
+  const fetchProductos = async () => {
+    const res = await getPrendas();
+    if (res.success) {
+      setProductos(res.data);
+    }
+  };
+
   useEffect(() => {
     fetchPedidos();
+    fetchProductos();
     
     // Polling cada 5 segundos para actualización en tiempo real
     const intervalo = setInterval(fetchPedidos, 5000);
@@ -867,12 +877,45 @@ const imprimirVineta = (pedido: any) => {
                         )}
                       </div>
                       <div>
-                        <h4 className={`font-bold ${art.empaquetado ? 'text-green-700 dark:text-green-400 line-through' : 'text-foreground'}`}>{art.nombre}</h4>
+                        <h4 className={`font-bold ${art.empaquetado ? 'text-green-700 dark:text-green-400 line-through' : 'text-foreground'}`}>
+                          {art.nombre} {art.isConjunto && <span className="text-[10px] ml-1 bg-black text-white px-1.5 py-0.5 rounded-sm">(Conjunto)</span>}
+                        </h4>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs font-bold bg-surface-border/50 px-2 py-0.5 rounded text-foreground/70">Cant: {art.cantidad}</span>
                           <span className="text-xs font-bold bg-surface-border/50 px-2 py-0.5 rounded text-foreground/70">Talla: {art.talla}</span>
                           <span className="text-xs font-bold bg-surface-border/50 px-2 py-0.5 rounded text-foreground/70">Color: {art.color}</span>
                         </div>
+                        
+                        {/* Detalle de piezas si es conjunto */}
+                        {art.isConjunto && art.piezasDetalle && (
+                          <div className="mt-3 space-y-2">
+                            {Object.values(typeof art.piezasDetalle === 'string' ? JSON.parse(art.piezasDetalle) : art.piezasDetalle).map((pieza: any) => {
+                              const prodRef = productos.find(p => p.id === pieza.id);
+                              return (
+                                <div key={pieza.id} className="flex items-center gap-2">
+                                  <div className="relative group cursor-pointer" onClick={(e) => { e.stopPropagation(); setComprobanteAmpliado(prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"); }}>
+                                    <img 
+                                      src={prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"} 
+                                      alt={prodRef?.nombre || "Prenda"} 
+                                      className="w-10 h-10 object-cover rounded-md border border-surface-border transition-opacity group-hover:opacity-75" 
+                                    />
+                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none rounded-md">
+                                      <Search className="w-4 h-4 text-white" />
+                                    </div>
+                                  </div>
+                                  <div className="text-xs text-foreground/80">
+                                    <span className="font-bold">{pieza.cantidad}x</span> {prodRef?.nombre || "Prenda"} 
+                                    {(pieza.tallaEspecifica || pieza.colorEspecifico) && (
+                                      <span className="block text-[10px] text-foreground/60 mt-0.5">
+                                        {pieza.tallaEspecifica || "N/A"} - {pieza.colorEspecifico || "N/A"}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
                     

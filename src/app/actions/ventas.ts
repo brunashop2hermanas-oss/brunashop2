@@ -476,7 +476,9 @@ export async function getVentas() {
         cantidad: item.cantidad,
         talla: item.talla || "N/A",
         color: item.color || "N/A",
-        empaquetado: item.empaquetado
+        empaquetado: item.empaquetado,
+        isConjunto: item.prenda.isConjunto,
+        piezasDetalle: item.prenda.piezasDetalle
       }))
     }));
 
