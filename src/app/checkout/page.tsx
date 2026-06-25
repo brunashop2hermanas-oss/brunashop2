@@ -12,6 +12,21 @@ import { getPrendas } from "@/app/actions/productos";
 import { compressImage } from "@/lib/imageCompression";
 import toast from "react-hot-toast";
 
+const resolveImage = (item: any, colorSeleccionado?: string, fallbackIndex = 0) => {
+  let img = item?.imagenes?.[fallbackIndex];
+  if (colorSeleccionado && item?.imagenesPorColor) {
+    let raw = item.imagenesPorColor;
+    if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch(e){} }
+    if (typeof raw === 'object' && raw !== null) {
+      const keyMatch = Object.keys(raw).find(k => k.toLowerCase() === colorSeleccionado.toLowerCase());
+      if (keyMatch && typeof raw[keyMatch] === 'string') {
+        img = raw[keyMatch];
+      }
+    }
+  }
+  return img || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80";
+};
+
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -99,6 +114,7 @@ function CheckoutContent() {
             precioOriginal: i.prenda?.precioOriginal,
             isConjunto: i.prenda?.isConjunto,
             imagenes: i.prenda?.imagenes,
+            imagenesPorColor: i.prenda?.imagenesPorColor,
             piezasDetalle: i.prenda?.piezasDetalle,
             cantidad: i.cantidad,
             tallaSeleccionada: i.talla,
@@ -774,9 +790,9 @@ function CheckoutContent() {
             <div className="space-y-4">
               {carrito.map((item, idx) => (
                 <div key={idx} className="flex gap-4 border-b border-surface-border pb-4">
-                  <div className="shrink-0 relative group cursor-pointer" onClick={() => setImagenAmpliada(item.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80")}>
+                  <div className="shrink-0 relative group cursor-pointer" onClick={() => setImagenAmpliada(resolveImage(item, item.colorSeleccionado))}>
                     <img 
-                      src={item.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"} 
+                      src={resolveImage(item, item.colorSeleccionado)} 
                       alt={item.nombre} 
                       className="w-16 h-20 object-cover rounded-sm border border-black/10 transition-opacity group-hover:opacity-75" 
                     />
@@ -788,9 +804,12 @@ function CheckoutContent() {
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="font-medium text-foreground text-sm uppercase leading-tight">{item.cantidad || 1}x {item.nombre} {item.isConjunto && <span className="text-[10px] ml-1 bg-black text-white px-1.5 py-0.5 rounded-sm">(Conjunto)</span>}</h3>
+                        {item.prenda?.coleccion && <p className="text-[10px] text-brand-primary uppercase tracking-widest font-bold mt-0.5">Colección {item.prenda.coleccion}</p>}
                         {(item.tallaSeleccionada || item.colorSeleccionado) && (
-                          <p className="text-xs text-foreground/50 mt-1 uppercase">
-                            {item.tallaSeleccionada} {item.colorSeleccionado ? `- ${item.colorSeleccionado}` : ''}
+                          <p className="text-[10px] text-foreground/50 mt-0.5 uppercase font-medium tracking-wide">
+                            {item.tallaSeleccionada && `Talla: ${item.tallaSeleccionada}`}
+                            {item.tallaSeleccionada && item.colorSeleccionado && ' | '}
+                            {item.colorSeleccionado && `Color: ${item.colorSeleccionado}`}
                           </p>
                         )}
                         {item.isConjunto && item.piezasDetalle && (
@@ -799,9 +818,9 @@ function CheckoutContent() {
                               const prodRef = productos.find(p => p.id === pieza.id);
                               return (
                                 <div key={pieza.id} className="flex items-center gap-2">
-                                  <div className="relative group cursor-pointer" onClick={() => setImagenAmpliada(prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80")}>
+                                  <div className="relative group cursor-pointer" onClick={() => setImagenAmpliada(resolveImage(prodRef, pieza.colorEspecifico))}>
                                     <img 
-                                      src={prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"} 
+                                      src={resolveImage(prodRef, pieza.colorEspecifico)} 
                                       alt={prodRef?.nombre || "Prenda"} 
                                       className="w-8 h-10 object-cover rounded-sm border border-black/10 transition-opacity group-hover:opacity-75" 
                                     />
@@ -813,8 +832,8 @@ function CheckoutContent() {
                                     <span className="font-bold">{pieza.cantidad}x</span> {prodRef?.nombre || "Prenda"} 
                                     {(pieza.tallaEspecifica || pieza.colorEspecifico) && (
                                       <span className="block text-[9px] text-foreground/50 mt-0.5">
-                                        {pieza.tallaEspecifica && `T:${pieza.tallaEspecifica} `}
-                                        {pieza.colorEspecifico && `C:${pieza.colorEspecifico}`}
+                                        {pieza.tallaEspecifica && `Talla: ${pieza.tallaEspecifica} `}
+                                        {pieza.colorEspecifico && `| Color: ${pieza.colorEspecifico}`}
                                       </span>
                                     )}
                                   </div>

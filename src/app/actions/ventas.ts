@@ -473,6 +473,7 @@ export async function getVentas() {
         id: item.id,
         nombre: item.prenda.nombre,
         imagen: item.prenda.imagenes && item.prenda.imagenes.length > 0 ? item.prenda.imagenes[0] : null,
+        imagenesPorColor: item.prenda.imagenesPorColor,
         cantidad: item.cantidad,
         talla: item.talla || "N/A",
         color: item.color || "N/A",

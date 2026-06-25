@@ -32,6 +32,8 @@ export default function NuevaVenta() {
   const [config, setConfig] = useState<any>(null);
   const [departamentosHabilitados, setDepartamentosHabilitados] = useState<string[]>([]);
   const [provinciasHabilitadas, setProvinciasHabilitadas] = useState<string[]>([]);
+  const [municipioDestino, setMunicipioDestino] = useState<string>('');
+  const [municipiosHabilitados, setMunicipiosHabilitados] = useState<string[]>([]);
 
   const [isUploading, setIsUploading] = useState(false);
   
@@ -75,11 +77,21 @@ export default function NuevaVenta() {
     const val = e.target.value;
     setDestino(val);
     if (config?.destinosHabilitados && config.destinosHabilitados[val]) {
-      setProvinciasHabilitadas(config.destinosHabilitados[val]);
+      const data = config.destinosHabilitados[val];
+      if (Array.isArray(data)) {
+        setProvinciasHabilitadas(data);
+        setMunicipiosHabilitados([]);
+      } else {
+        setProvinciasHabilitadas(data.provincias || []);
+        setMunicipiosHabilitados(data.municipios || []);
+      }
       setProvinciaDestino('');
+      setMunicipioDestino('');
     } else {
       setProvinciasHabilitadas([]);
+      setMunicipiosHabilitados([]);
       setProvinciaDestino('');
+      setMunicipioDestino('');
     }
   };
 
@@ -232,6 +244,7 @@ export default function NuevaVenta() {
       celular,
       ciudadDestino: tipoEntrega === 'envio' ? destino : 'Tienda Física',
       provinciaDestino: tipoEntrega === 'envio' ? provinciaDestino : undefined,
+      municipioDestino: tipoEntrega === 'envio' ? municipioDestino : undefined,
       items: itemsParaBD,
       total: totalCarrito,
       origen: 'POS',
@@ -359,14 +372,45 @@ export default function NuevaVenta() {
               return (
               <div key={item.itemUnicoId} className="bg-background border border-surface-border rounded-xl p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1">
-                  <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-surface border border-surface-border">
-                    {prodDb?.imagenes?.[0] ? <img src={prodDb.imagenes[0]} className="w-full h-full object-cover" /> : <span className="flex h-full w-full items-center justify-center text-xs">👗</span>}
+                  <div 
+                    className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-surface border border-surface-border cursor-zoom-in relative group"
+                    onClick={() => { 
+                      let img = prodDb?.imagenes?.[0];
+                      if (item.colorSeleccionado && prodDb?.imagenesPorColor) {
+                        let raw = prodDb.imagenesPorColor;
+                        try { while(typeof raw === 'string') raw = JSON.parse(raw as string); } catch(e){}
+                        if (raw && typeof raw === 'object') {
+                          const keyMatch = Object.keys(raw).find(k => k.toLowerCase() === item.colorSeleccionado!.toLowerCase());
+                          if (keyMatch) img = (raw as any)[keyMatch];
+                        }
+                      }
+                      if (img) setImagenAmpliada(img); 
+                    }}
+                  >
+                    {(() => {
+                      let img = prodDb?.imagenes?.[0];
+                      if (item.colorSeleccionado && prodDb?.imagenesPorColor) {
+                        let raw = prodDb.imagenesPorColor;
+                        try { while(typeof raw === 'string') raw = JSON.parse(raw as string); } catch(e){}
+                        if (raw && typeof raw === 'object') {
+                          const keyMatch = Object.keys(raw).find(k => k.toLowerCase() === item.colorSeleccionado!.toLowerCase());
+                          if (keyMatch) img = (raw as any)[keyMatch];
+                        }
+                      }
+                      return img ? <img src={img} className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" /> : <span className="flex h-full w-full items-center justify-center text-xs">👗</span>;
+                    })()}
+                    {prodDb?.imagenes?.[0] && (
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
+                        <Search className="w-4 h-4 text-white" />
+                      </div>
+                    )}
                   </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-sm text-foreground truncate max-w-[150px]">{item.nombre}</h4>
-                    {(item.tallaSeleccionada || item.colorSeleccionado) && (
+                    <div className="flex-1">
+                      <h4 className="font-bold text-sm text-foreground truncate max-w-[150px]">{item.nombre}</h4>
+                      {prodDb?.coleccion && <p className="text-[10px] text-brand-primary uppercase font-bold tracking-widest mt-0.5">Colección {prodDb.coleccion}</p>}
+                      {(item.tallaSeleccionada || item.colorSeleccionado) && (
                       <p className="text-[10px] text-foreground/50 uppercase font-bold mt-0.5">
-                        {item.tallaSeleccionada && `T: ${item.tallaSeleccionada}`} {item.tallaSeleccionada && item.colorSeleccionado && '|'} {item.colorSeleccionado && `C: ${item.colorSeleccionado}`}
+                        {item.tallaSeleccionada && `Talla: ${item.tallaSeleccionada}`} {item.tallaSeleccionada && item.colorSeleccionado && '|'} {item.colorSeleccionado && `Color: ${item.colorSeleccionado}`}
                       </p>
                     )}
                     {prodDb?.isConjunto && prodDb.piezasDetalle && (
@@ -376,14 +420,44 @@ export default function NuevaVenta() {
                            if (!pRef) return null;
                            return (
                              <li key={pieza.id} className="flex gap-2 text-xs items-center">
-                               <div className="w-6 h-6 rounded-md overflow-hidden shrink-0 bg-surface border border-surface-border">
-                                 {pRef.imagenes?.[0] ? <img src={pRef.imagenes[0]} className="w-full h-full object-cover" /> : null}
+                               <div 
+                                 className="w-8 h-8 rounded-md overflow-hidden shrink-0 bg-surface border border-surface-border cursor-zoom-in relative group"
+                                 onClick={() => { 
+                                   let img = pRef.imagenes?.[0];
+                                   if (pieza.colorEspecifico && pRef.imagenesPorColor) {
+                                     let raw = pRef.imagenesPorColor;
+                                     try { while(typeof raw === 'string') raw = JSON.parse(raw as string); } catch(e){}
+                                     if (raw && typeof raw === 'object') {
+                                       const keyMatch = Object.keys(raw).find(k => k.toLowerCase() === pieza.colorEspecifico!.toLowerCase());
+                                       if (keyMatch) img = (raw as any)[keyMatch];
+                                     }
+                                   }
+                                   if (img) setImagenAmpliada(img); 
+                                 }}
+                               >
+                                 {(() => {
+                                   let img = pRef.imagenes?.[0];
+                                   if (pieza.colorEspecifico && pRef.imagenesPorColor) {
+                                     let raw = pRef.imagenesPorColor;
+                                     try { while(typeof raw === 'string') raw = JSON.parse(raw as string); } catch(e){}
+                                     if (raw && typeof raw === 'object') {
+                                       const keyMatch = Object.keys(raw).find(k => k.toLowerCase() === pieza.colorEspecifico!.toLowerCase());
+                                       if (keyMatch) img = (raw as any)[keyMatch];
+                                     }
+                                   }
+                                   return img ? <img src={img} className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" /> : null;
+                                 })()}
+                                 {pRef.imagenes?.[0] && (
+                                   <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
+                                     <Search className="w-3 h-3 text-white" />
+                                   </div>
+                                 )}
                                </div>
                                <div className="flex-1 text-foreground/80">
                                  <span className="font-bold">{pieza.cantidad}x</span> {pRef.nombre}
                                  {(pieza.tallaEspecifica || pieza.colorEspecifico) && (
                                    <span className="text-[10px] uppercase font-bold text-foreground/50 ml-1">
-                                     ({pieza.tallaEspecifica ? `T:${pieza.tallaEspecifica}` : ''} {pieza.colorEspecifico ? `C:${pieza.colorEspecifico}` : ''})
+                                     ({pieza.tallaEspecifica ? `Talla: ${pieza.tallaEspecifica}` : ''} {pieza.tallaEspecifica && pieza.colorEspecifico && '| '} {pieza.colorEspecifico ? `Color: ${pieza.colorEspecifico}` : ''})
                                    </span>
                                  )}
                                </div>
@@ -490,8 +564,18 @@ export default function NuevaVenta() {
                           onChange={(e) => setProvinciaDestino(e.target.value)}
                           className="w-full bg-surface border border-surface-border p-2 rounded-lg outline-none focus:border-brand-primary cursor-pointer appearance-none text-sm"
                         >
-                          <option value="">Selecciona Provincia/Municipio...</option>
+                          <option value="">Selecciona Provincia...</option>
                           {provinciasHabilitadas.map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                      )}
+                      {municipiosHabilitados.length > 0 && (
+                        <select 
+                          value={municipioDestino}
+                          onChange={(e) => setMunicipioDestino(e.target.value)}
+                          className="w-full bg-surface border border-surface-border p-2 rounded-lg outline-none focus:border-brand-primary cursor-pointer appearance-none text-sm"
+                        >
+                          <option value="">Selecciona Municipio (Opcional)...</option>
+                          {municipiosHabilitados.map(m => <option key={m} value={m}>{m}</option>)}
                         </select>
                       )}
                     </div>
@@ -587,6 +671,7 @@ export default function NuevaVenta() {
             productosAll={productos} 
             cerrar={() => setProductoVistaRapida(null)} 
             agregar={agregarAlCarritoDefinitivo} 
+            setImagenAmpliada={setImagenAmpliada}
           />
         )}
       </AnimatePresence>
@@ -829,18 +914,101 @@ export default function NuevaVenta() {
 }
 
 
-function ModalPOSVistaRapida({ producto, productosAll, cerrar, agregar }: { producto: any, productosAll: any[], cerrar: () => void, agregar: (p:any, t:string, c:string) => void }) {
+function ModalPOSVistaRapida({ producto, productosAll, cerrar, agregar, setImagenAmpliada }: { producto: any, productosAll: any[], cerrar: () => void, agregar: (p:any, t:string, c:string) => void, setImagenAmpliada: (img: string) => void }) {
   const [talla, setTalla] = useState("");
   const [color, setColor] = useState("");
+  
+  const imagenes = producto.imagenes?.length > 0 ? producto.imagenes : ["https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"];
+  const [imagenActual, setImagenActual] = useState(imagenes[0]);
+
   const tallas = producto.tallas || [];
   const colores = producto.colores || [];
 
   const handleAgregar = () => {
-    if (!producto.isConjunto) {
+    if (!producto.isConjunto && !producto.enPreventa) {
       if (tallas.length > 0 && !talla) { toast.error("Elige una talla"); return; }
       if (colores.length > 0 && !color) { toast.error("Elige un color"); return; }
     }
     agregar(producto, talla, color);
+  };
+
+  const stockPorTallaObj = typeof producto.stockPorTalla === 'string' ? JSON.parse(producto.stockPorTalla) : (producto.stockPorTalla || {});
+  const hasStockPorTalla = Object.keys(stockPorTallaObj).length > 0;
+
+  useEffect(() => {
+    if (color && producto.imagenesPorColor) {
+      let obj = producto.imagenesPorColor;
+      if (typeof obj === 'string') {
+        try { obj = JSON.parse(obj); } catch(e) {}
+      }
+      
+      const savedUrl = obj[color] || 
+                       Object.entries(obj).find(([k]) => k.toLowerCase() === color.toLowerCase())?.[1];
+                       
+      if (savedUrl && typeof savedUrl === 'string') {
+        setImagenActual(savedUrl);
+      }
+    }
+  }, [color, producto.imagenesPorColor]);
+
+  const isTallaDisabled = (t: string) => {
+    if (producto.enPreventa) return false;
+    if (!hasStockPorTalla) return false;
+    if (!stockPorTallaObj[t]) return true;
+    
+    if (color) {
+      if (typeof stockPorTallaObj[t] === 'object' && stockPorTallaObj[t] !== null) {
+        return parseInt(stockPorTallaObj[t][color] || "0") <= 0;
+      }
+    } else {
+      if (typeof stockPorTallaObj[t] === 'object' && stockPorTallaObj[t] !== null) {
+        const total = Object.values(stockPorTallaObj[t]).reduce((sum: number, val: any) => sum + parseInt(val || "0"), 0);
+        return total <= 0;
+      } else {
+        return parseInt(stockPorTallaObj[t] || "0") <= 0;
+      }
+    }
+    return parseInt(stockPorTallaObj[t] || "0") <= 0;
+  };
+
+  const isColorDisabled = (c: string) => {
+    if (producto.enPreventa) return false;
+    if (!hasStockPorTalla) return false;
+    
+    if (talla) {
+      const tStock = stockPorTallaObj[talla];
+      if (!tStock) return true;
+      if (typeof tStock === 'object' && tStock !== null) {
+        return parseInt(tStock[c] || "0") <= 0;
+      }
+      return false;
+    } else {
+      let hasStock = false;
+      for (const t in stockPorTallaObj) {
+        if (typeof stockPorTallaObj[t] === 'object' && stockPorTallaObj[t] !== null) {
+          if (parseInt(stockPorTallaObj[t][c] || "0") > 0) hasStock = true;
+        }
+      }
+      const hasAnyColorBreakdown = Object.values(stockPorTallaObj).some(val => typeof val === 'object' && val !== null);
+      if (hasAnyColorBreakdown) return !hasStock;
+      return false;
+    }
+  };
+
+  const isAddDisabled = () => {
+    if (producto.enPreventa) return false;
+    if (!hasStockPorTalla) return false;
+    if (talla && !color) return isTallaDisabled(talla);
+    if (!talla && color) return isColorDisabled(color);
+    if (talla && color) {
+      const tStock = stockPorTallaObj[talla];
+      if (!tStock) return true;
+      if (typeof tStock === 'object' && tStock !== null) {
+        return parseInt(tStock[color] || "0") <= 0;
+      }
+      return parseInt(tStock || "0") <= 0;
+    }
+    return false;
   };
 
   return (
@@ -852,13 +1020,39 @@ function ModalPOSVistaRapida({ producto, productosAll, cerrar, agregar }: { prod
         </div>
         <div className="p-6 overflow-y-auto flex-1">
           <div className="flex gap-4 mb-4">
-             <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-surface border border-surface-border">
-                {producto.imagenes?.[0] ? <img src={producto.imagenes[0]} className="w-full h-full object-cover" /> : null}
+             <div className="flex flex-col gap-2 shrink-0">
+               <div 
+                  className="w-24 h-24 rounded-xl overflow-hidden bg-surface border border-surface-border cursor-zoom-in relative group"
+                  onClick={() => setImagenAmpliada(imagenActual)}
+                >
+                  <img src={imagenActual} className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" />
+                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                    <Search className="w-6 h-6 text-white" />
+                  </div>
+               </div>
+               {imagenes.length > 1 && (
+                 <div className="flex gap-1 overflow-x-auto w-24 scrollbar-hide pb-1">
+                   {imagenes.map((img: string, idx: number) => (
+                     <button 
+                       key={idx} 
+                       onClick={(e) => { e.stopPropagation(); setImagenActual(img); }}
+                       className={`w-7 h-7 shrink-0 border rounded-md overflow-hidden transition-all ${imagenActual === img ? 'border-brand-primary scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                     >
+                       <img src={img} className="w-full h-full object-cover" />
+                     </button>
+                   ))}
+                 </div>
+               )}
              </div>
-             <div>
+             <div className="flex-1">
                 <span className="text-3xl font-black text-brand-primary block mt-2">Bs. {producto.precioVenta}</span>
                 {producto.precioOriginal && producto.precioOriginal > producto.precioVenta && (
                   <span className="text-sm line-through text-foreground/40 block">Bs. {producto.precioOriginal}</span>
+                )}
+                {producto.enPreventa && (
+                  <span className="inline-block mt-1 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">
+                    Preventa Activa
+                  </span>
                 )}
              </div>
           </div>
@@ -871,15 +1065,28 @@ function ModalPOSVistaRapida({ producto, productosAll, cerrar, agregar }: { prod
                   const pRef = productosAll.find(p => p.id === pieza.id);
                   return (
                     <li key={pieza.id} className="flex gap-3 text-sm items-center">
-                      <div className="w-12 h-12 rounded-md overflow-hidden shrink-0 bg-surface border border-surface-border">
-                        {pRef?.imagenes?.[0] ? <img src={pRef.imagenes[0]} className="w-full h-full object-cover" /> : null}
+                      <div 
+                        className="w-12 h-12 rounded-md overflow-hidden shrink-0 bg-background border border-surface-border cursor-zoom-in relative group"
+                        onClick={() => {
+                          const specificImg = (pieza.colorEspecifico && pRef?.imagenesPorColor?.[pieza.colorEspecifico]) ? pRef.imagenesPorColor[pieza.colorEspecifico] : null;
+                          setImagenAmpliada(specificImg || pRef?.imagenes?.[0] || imagenActual);
+                        }}
+                      >
+                        {(() => {
+                          const specificImg = (pieza.colorEspecifico && pRef?.imagenesPorColor?.[pieza.colorEspecifico]) ? pRef.imagenesPorColor[pieza.colorEspecifico] : null;
+                          const img = specificImg || pRef?.imagenes?.[0];
+                          return img ? <img src={img} className="w-full h-full object-cover group-hover:opacity-80" /> : null;
+                        })()}
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
+                          <Search className="w-4 h-4 text-white" />
+                        </div>
                       </div>
                       <div className="flex-1">
                         <span className="font-bold">{pieza.cantidad}x</span> {pRef?.nombre || "Prenda"}
                         {(pieza.tallaEspecifica || pieza.colorEspecifico) && (
                           <div className="text-[10px] text-foreground/50 uppercase font-bold mt-1">
-                            {pieza.tallaEspecifica && `T: ${pieza.tallaEspecifica} `}
-                            {pieza.colorEspecifico && `| C: ${pieza.colorEspecifico}`}
+                            {pieza.tallaEspecifica && `Talla: ${pieza.tallaEspecifica} `}
+                            {pieza.colorEspecifico && `| Color: ${pieza.colorEspecifico}`}
                           </div>
                         )}
                       </div>
@@ -894,9 +1101,20 @@ function ModalPOSVistaRapida({ producto, productosAll, cerrar, agregar }: { prod
             <div className="mb-6">
               <span className="text-xs font-bold uppercase tracking-widest block mb-2">Tallas Disponibles</span>
               <div className="flex gap-2 flex-wrap">
-                {tallas.map((t: string) => (
-                  <button key={t} onClick={() => setTalla(t)} className={`px-4 py-2 text-sm rounded-lg border transition-all ${talla === t ? 'border-brand-primary bg-brand-primary text-white font-bold' : 'border-surface-border bg-surface text-foreground'}`}>{t}</button>
-                ))}
+                {tallas.map((t: string) => {
+                  const agotado = isTallaDisabled(t);
+                  return (
+                    <button 
+                      key={t} 
+                      disabled={agotado}
+                      onClick={() => setTalla(t)} 
+                      className={`px-4 py-2 text-sm rounded-lg border transition-all ${
+                        agotado ? 'opacity-30 border-surface-border bg-surface text-foreground line-through cursor-not-allowed' :
+                        talla === t ? 'border-brand-primary bg-brand-primary text-white font-bold' : 'border-surface-border bg-surface text-foreground hover:border-brand-primary/50'
+                      }`}
+                    >{t}</button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -905,15 +1123,32 @@ function ModalPOSVistaRapida({ producto, productosAll, cerrar, agregar }: { prod
             <div className="mb-6">
               <span className="text-xs font-bold uppercase tracking-widest block mb-2">Colores</span>
               <div className="flex gap-2 flex-wrap">
-                {colores.map((c: string) => (
-                  <button key={c} onClick={() => setColor(c)} className={`px-4 py-2 text-sm rounded-lg border transition-all capitalize ${color === c ? 'border-brand-primary bg-brand-primary text-white font-bold' : 'border-surface-border bg-surface text-foreground'}`}>{c}</button>
-                ))}
+                {colores.map((c: string) => {
+                  const agotado = isColorDisabled(c);
+                  return (
+                    <button 
+                      key={c} 
+                      disabled={agotado}
+                      onClick={() => setColor(c)} 
+                      className={`px-4 py-2 text-sm rounded-lg border transition-all capitalize ${
+                        agotado ? 'opacity-30 border-surface-border bg-surface text-foreground line-through cursor-not-allowed' :
+                        color === c ? 'border-brand-primary bg-brand-primary text-white font-bold' : 'border-surface-border bg-surface text-foreground hover:border-brand-primary/50'
+                      }`}
+                    >{c}</button>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          <button onClick={handleAgregar} className="w-full bg-brand-primary text-white font-bold py-4 rounded-xl mt-4 shadow-lg flex items-center justify-center gap-2 hover:brightness-110">
-            Confirmar y Añadir <Plus className="w-5 h-5" />
+          <button 
+            onClick={handleAgregar} 
+            disabled={isAddDisabled()}
+            className="w-full disabled:bg-surface disabled:text-foreground/40 disabled:border-surface-border border bg-brand-primary text-white font-bold py-4 rounded-xl mt-4 shadow-lg flex items-center justify-center gap-2 hover:brightness-110 transition-all"
+          >
+            {isAddDisabled() ? "Agotado en esta selección" : (
+              <>Confirmar y Añadir <Plus className="w-5 h-5" /></>
+            )}
           </button>
         </div>
       </motion.div>

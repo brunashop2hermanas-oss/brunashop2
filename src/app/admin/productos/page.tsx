@@ -720,15 +720,18 @@ export default function AdminProductos() {
                             {formData.colores.split(",").map(c => c.trim()).filter(c => c).map((color) => (
                               <div key={color} className="flex items-center gap-4 border-b border-surface-border/50 pb-3 last:border-0 last:pb-0">
                                 <span className="font-bold uppercase text-xs w-24 shrink-0 text-brand-primary">{color}</span>
-                                <div className="flex gap-2 overflow-x-auto">
-                                  {fotosPreview.map((url, index) => (
+                                <div className="flex gap-2 overflow-x-auto pb-2">
+                                  {fotosPreview.map((url, index) => {
+                                    const keyMatch = formData.imagenesPorColor ? Object.keys(formData.imagenesPorColor).find(k => k.toLowerCase() === color.toLowerCase()) : undefined;
+                                    const savedUrl = keyMatch && typeof formData.imagenesPorColor[keyMatch] === 'string' ? formData.imagenesPorColor[keyMatch].trim() : undefined;
+                                    return (
                                     <div 
                                       key={index} 
-                                      className={`relative w-16 h-16 rounded-lg border-2 cursor-pointer shrink-0 transition-all group ${formData.imagenesPorColor?.[color] === url ? 'border-brand-primary ring-2 ring-brand-primary/20 scale-105' : 'border-transparent hover:border-brand-primary/50'}`}
+                                      className={`relative w-16 h-16 rounded-lg border-2 cursor-pointer shrink-0 transition-all group ${savedUrl === url ? 'border-brand-primary ring-2 ring-brand-primary/20 scale-105' : 'border-transparent hover:border-brand-primary/50'}`}
                                       onClick={() => setFormData(prev => ({...prev, imagenesPorColor: {...(prev.imagenesPorColor || {}), [color]: url}}))}
                                     >
                                       <img src={url} className="w-full h-full object-cover rounded-md" />
-                                      {formData.imagenesPorColor?.[color] === url && (
+                                      {savedUrl === url && (
                                         <div className="absolute -top-2 -right-2 bg-brand-primary text-white rounded-full p-0.5 shadow-md z-10">
                                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></svg>
                                         </div>
@@ -745,8 +748,11 @@ export default function AdminProductos() {
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-white"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
                                       </button>
                                     </div>
-                                  ))}
-                                  {formData.imagenesPorColor?.[color] && (
+                                  )})}
+                                  {(() => {
+                                    const keyMatch = formData.imagenesPorColor ? Object.keys(formData.imagenesPorColor).find(k => k.toLowerCase() === color.toLowerCase()) : undefined;
+                                    const savedUrl = keyMatch && typeof formData.imagenesPorColor[keyMatch] === 'string' ? formData.imagenesPorColor[keyMatch].trim() : undefined;
+                                    return savedUrl && (
                                     <button 
                                       className="text-xs text-red-500 hover:text-red-700 hover:underline px-2"
                                       onClick={(e) => {
@@ -756,7 +762,8 @@ export default function AdminProductos() {
                                         setFormData(prev => ({...prev, imagenesPorColor: next}));
                                       }}
                                     >Quitar</button>
-                                  )}
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             ))}

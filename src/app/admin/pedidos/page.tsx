@@ -9,6 +9,21 @@ import { uploadImage } from "@/app/actions/upload";
 import { compressImage } from "@/lib/imageCompression";
 import toast from "react-hot-toast";
 
+const resolveImage = (item: any, colorSeleccionado?: string, fallbackIndex = 0) => {
+  let img = item?.imagenes?.[fallbackIndex] || item?.imagen; // For art.imagen mapping
+  if (colorSeleccionado && item?.imagenesPorColor) {
+    let raw = item.imagenesPorColor;
+    if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch(e){} }
+    if (typeof raw === 'object' && raw !== null) {
+      const keyMatch = Object.keys(raw).find(k => k.toLowerCase() === colorSeleccionado.toLowerCase());
+      if (keyMatch && typeof raw[keyMatch] === 'string') {
+        img = raw[keyMatch];
+      }
+    }
+  }
+  return img || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80";
+};
+
 // Función para forzar descarga directa de imágenes en lugar de abrir pestaña
 const forceDownload = async (url: string, filename: string) => {
   try {
@@ -868,18 +883,33 @@ const imprimirVineta = (pedido: any) => {
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-3">
-                {(pedidoEmpaquetando.articulos || []).map((art: any) => (
+                {(pedidoEmpaquetando.articulos || []).map((art: any) => {
+                  const prodRefMain = productos.find((p: any) => p.id === art.id);
+                  return (
                   <div key={art.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-colors ${art.empaquetado ? 'bg-green-500/10 border-green-500/30' : 'bg-background border-surface-border'}`}>
                     <div className="flex items-center gap-4">
-                      <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-xl shadow-sm overflow-hidden shrink-0 ${art.empaquetado ? 'bg-green-500 text-white' : 'bg-surface border border-surface-border'}`}>
-                        {art.empaquetado ? <CheckCircle className="w-8 h-8" /> : (
-                          art.imagen ? <img src={art.imagen} alt={art.nombre} className="w-full h-full object-cover cursor-zoom-in hover:opacity-80 transition-opacity" onClick={() => setComprobanteAmpliado(art.imagen)} /> : '👗'
+                      <div className={`relative w-14 h-14 rounded-xl flex items-center justify-center text-xl shadow-sm overflow-hidden shrink-0 bg-surface border ${art.empaquetado ? 'border-green-500' : 'border-surface-border'}`}>
+                        {resolveImage(art, art.color) ? (
+                          <img 
+                            src={resolveImage(art, art.color)} 
+                            alt={art.nombre} 
+                            className={`w-full h-full object-cover cursor-zoom-in transition-opacity ${art.empaquetado ? 'opacity-60' : 'hover:opacity-80'}`} 
+                            onClick={() => setComprobanteAmpliado(resolveImage(art, art.color))} 
+                          />
+                        ) : (
+                          <span className={art.empaquetado ? 'opacity-50' : ''}>👗</span>
+                        )}
+                        {art.empaquetado && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-green-500/10">
+                            <CheckCircle className="w-6 h-6 text-green-600 drop-shadow-md" />
+                          </div>
                         )}
                       </div>
                       <div>
                         <h4 className={`font-bold ${art.empaquetado ? 'text-green-700 dark:text-green-400 line-through' : 'text-foreground'}`}>
                           {art.nombre} {art.isConjunto && <span className="text-[10px] ml-1 bg-black text-white px-1.5 py-0.5 rounded-sm">(Conjunto)</span>}
                         </h4>
+                        {prodRefMain?.coleccion && <p className="text-[10px] text-brand-primary uppercase tracking-widest font-bold my-0.5">Colección {prodRefMain.coleccion}</p>}
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs font-bold bg-surface-border/50 px-2 py-0.5 rounded text-foreground/70">Cant: {art.cantidad}</span>
                           {!art.isConjunto && (
@@ -897,9 +927,9 @@ const imprimirVineta = (pedido: any) => {
                               const prodRef = productos.find(p => p.id === pieza.id);
                               return (
                                 <div key={pieza.id} className="flex items-center gap-2">
-                                  <div className="relative group cursor-pointer" onClick={(e) => { e.stopPropagation(); setComprobanteAmpliado(prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"); }}>
+                                  <div className="relative group cursor-pointer" onClick={(e) => { e.stopPropagation(); setComprobanteAmpliado(resolveImage(prodRef, pieza.colorEspecifico)); }}>
                                     <img 
-                                      src={prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"} 
+                                      src={resolveImage(prodRef, pieza.colorEspecifico)} 
                                       alt={prodRef?.nombre || "Prenda"} 
                                       className="w-10 h-10 object-cover rounded-md border border-surface-border transition-opacity group-hover:opacity-75" 
                                     />
@@ -910,8 +940,8 @@ const imprimirVineta = (pedido: any) => {
                                   <div className="text-xs text-foreground/80">
                                     <span className="font-bold">{pieza.cantidad}x</span> {prodRef?.nombre || "Prenda"} 
                                     {(pieza.tallaEspecifica || pieza.colorEspecifico) && (
-                                      <span className="block text-[10px] text-foreground/60 mt-0.5">
-                                        {pieza.tallaEspecifica || "N/A"} - {pieza.colorEspecifico || "N/A"}
+                                      <span className="block text-[10px] text-foreground/60 mt-0.5 uppercase">
+                                        {pieza.tallaEspecifica && `Talla: ${pieza.tallaEspecifica}`} {pieza.tallaEspecifica && pieza.colorEspecifico && ' | '} {pieza.colorEspecifico && `Color: ${pieza.colorEspecifico}`}
                                       </span>
                                     )}
                                   </div>
@@ -938,7 +968,8 @@ const imprimirVineta = (pedido: any) => {
                       )}
                     </button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="p-6 border-t border-surface-border shrink-0">

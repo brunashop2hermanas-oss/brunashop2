@@ -286,7 +286,20 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
                 ) : (
                   carrito.map((item) => (
                     <div key={item.itemUnicoId} className="flex gap-4 bg-[#fcfcfc] p-3 rounded-sm border border-gray-100">
-                      <img src={item.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"} alt={item.nombre} className="w-20 h-24 object-cover rounded-sm" />
+                      <img src={(() => {
+                        let img = item.imagenes?.[0];
+                        if (item.colorSeleccionado && item.imagenesPorColor) {
+                          let raw = item.imagenesPorColor;
+                          if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch(e){} }
+                          if (typeof raw === 'object' && raw !== null) {
+                            const keyMatch = Object.keys(raw).find(k => k.toLowerCase() === item.colorSeleccionado!.toLowerCase());
+                            if (keyMatch && typeof raw[keyMatch] === 'string') {
+                              img = raw[keyMatch];
+                            }
+                          }
+                        }
+                        return img || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80";
+                      })()} alt={item.nombre} className="w-20 h-24 object-cover rounded-sm" />
                       <div className="flex-1 flex flex-col justify-between">
                         <div>
                           <div className="flex justify-between items-start">
@@ -298,7 +311,8 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
                           {(item.tallaSeleccionada || item.colorSeleccionado) && (
                             <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">
                               {item.tallaSeleccionada && `Talla: ${item.tallaSeleccionada}`}
-                              {item.colorSeleccionado && ` | Color: ${item.colorSeleccionado}`}
+                              {item.tallaSeleccionada && item.colorSeleccionado && ' | '}
+                              {item.colorSeleccionado && `Color: ${item.colorSeleccionado}`}
                             </p>
                           )}
                         </div>
@@ -468,10 +482,13 @@ function ProductoCard({ producto, index, abrirVistaRapida, agregarAlCarrito, liv
       {/* Info y Acción Rápida */}
       <div className="flex flex-col flex-1 px-1">
         <div className="flex justify-between items-start gap-2">
-          <div className="flex-1" onClick={() => abrirVistaRapida(producto)}>
-            <h3 className="font-medium text-sm text-gray-900 line-clamp-1">{producto.nombre}</h3>
-            <p className="text-[10px] text-gray-500 mb-2 capitalize">{producto.categoria}</p>
-          </div>
+            <div className="flex-1" onClick={() => abrirVistaRapida(producto)}>
+              <h3 className="font-medium text-sm text-gray-900 line-clamp-1">{producto.nombre}</h3>
+              <p className="text-[10px] text-gray-500 mb-2 capitalize">
+                {producto.categoria}
+                {producto.coleccion && <span className="font-bold text-brand-primary ml-1 uppercase opacity-80 tracking-widest">· Colección {producto.coleccion}</span>}
+              </p>
+            </div>
           
           {/* Botón directo de agregar */}
           {(producto.stockCount > 0 || producto.enPreventa) ? (
@@ -522,6 +539,22 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
     }
     agregar(producto, tallaSeleccionada, colorSeleccionado);
   };
+
+  useEffect(() => {
+    if (colorSeleccionado && producto.imagenesPorColor) {
+      let obj = producto.imagenesPorColor;
+      if (typeof obj === 'string') {
+        try { obj = JSON.parse(obj); } catch(e) {}
+      }
+      
+      const savedUrl = obj[colorSeleccionado] || 
+                       Object.entries(obj).find(([k]) => k.toLowerCase() === colorSeleccionado.toLowerCase())?.[1];
+                       
+      if (savedUrl && typeof savedUrl === 'string') {
+        setImagenActual(savedUrl);
+      }
+    }
+  }, [colorSeleccionado, producto.imagenesPorColor]);
 
   const stockPorTallaObj = typeof producto.stockPorTalla === 'string' ? JSON.parse(producto.stockPorTalla) : (producto.stockPorTalla || {});
   const hasStockPorTalla = Object.keys(stockPorTallaObj).length > 0;
@@ -624,8 +657,11 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
         </div>
 
         <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col overflow-y-auto">
-          <h2 className="text-2xl font-serif text-black mb-2">{producto.nombre}</h2>
-          <div className="flex flex-wrap items-center gap-3 mb-6">
+          <h2 className="text-2xl font-serif text-black">{producto.nombre}</h2>
+          {producto.coleccion && (
+            <p className="text-xs uppercase tracking-widest text-brand-primary font-bold mb-2">Colección {producto.coleccion}</p>
+          )}
+          <div className="flex flex-wrap items-center gap-3 mb-6 mt-2">
             <span className="text-xl font-bold text-black">Bs. {producto.precioVenta?.toFixed(2)}</span>
             {producto.precioOriginal && producto.precioOriginal > producto.precioVenta && (
               <>
@@ -691,8 +727,9 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
                           </div>
                           {(pieza.tallaEspecifica || pieza.colorEspecifico) && (
                             <span className="text-[9px] text-gray-500 uppercase tracking-widest mt-1 font-bold">
-                              {pieza.tallaEspecifica && `Talla: ${pieza.tallaEspecifica} `}
-                              {pieza.colorEspecifico && `| Color: ${pieza.colorEspecifico}`}
+                              {pieza.tallaEspecifica && `Talla: ${pieza.tallaEspecifica}`}
+                              {pieza.tallaEspecifica && pieza.colorEspecifico && ' | '}
+                              {pieza.colorEspecifico && `Color: ${pieza.colorEspecifico}`}
                             </span>
                           )}
                         </div>
