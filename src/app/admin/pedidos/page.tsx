@@ -60,7 +60,7 @@ export default function AdminDashboard() {
   const fetchPedidos = async () => {
     const res = await getVentas();
     if (res.success) {
-      setPedidos(res.data);
+      setPedidos(res.data || []);
     }
     setIsLoading(false);
   };
@@ -68,7 +68,7 @@ export default function AdminDashboard() {
   const fetchProductos = async () => {
     const res = await getPrendas();
     if (res.success) {
-      setProductos(res.data);
+      setProductos(res.data || []);
     }
   };
 
