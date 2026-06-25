@@ -422,13 +422,13 @@ function CheckoutContent() {
                   <div className="bg-surface border border-black/10 p-8 rounded-xl space-y-6 mb-8 shadow-sm">
                     <h3 className="text-xl font-bold">¿Ya tienes cuenta?</h3>
                     <p className="text-sm text-foreground/70">Ingresa tu Carnet de Identidad para buscar tus datos y acelerar tu compra.</p>
-                    <div className="flex gap-4">
+                    <div className="flex flex-col sm:flex-row gap-4">
                       <input 
                         type="text" value={ci} onChange={e=>setCi(e.target.value)} 
                         placeholder="Ej: 1234567" 
                         className="flex-1 bg-background border border-black/20 p-3 outline-none focus:border-black"
                       />
-                      <button onClick={handleBuscarClienta} disabled={buscandoCi} className="bg-black text-white px-6 font-bold uppercase tracking-wider hover:bg-brand-primary disabled:opacity-50 flex items-center gap-2">
+                      <button onClick={handleBuscarClienta} disabled={buscandoCi} className="bg-black text-white p-3 font-bold uppercase tracking-wider hover:bg-brand-primary disabled:opacity-50 flex items-center justify-center gap-2 sm:px-6">
                         {buscandoCi ? "Buscando..." : <><Search className="w-4 h-4"/> Buscar</>}
                       </button>
                     </div>

@@ -1,0 +1,28 @@
+=========================================
+CREDENCIALES Y DIRECCIONES DEL PROYECTO
+=========================================
+
+--- SUPABASE ---
+URL del API: https://jcrqmrgsomwsadvfeade.supabase.co
+Anon Key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnFtcmdzb213c2FkdmZlYWRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0Nzg4MzEsImV4cCI6MjA5NzA1NDgzMX0.pYHVeDNL4sWevCqAPQ8kVMIr9bu5vzxlgPOSI5-qDkQ
+
+[Base de Datos PostgreSQL]
+Host / Pooler: aws-1-sa-east-1.pooler.supabase.com
+Usuario: postgres.jcrqmrgsomwsadvfeade
+Contraseña: brunashop2hermanas
+Puerto PGBouncer (Conexión por defecto): 6543
+Puerto Directo: 5432
+Base de datos: postgres
+
+DATABASE_URL="postgresql://postgres.jcrqmrgsomwsadvfeade:brunashop2hermanas@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
+DIRECT_URL="postgresql://postgres.jcrqmrgsomwsadvfeade:brunashop2hermanas@aws-1-sa-east-1.pooler.supabase.com:5432/postgres"
+
+--- RENDER ---
+(Nota: No encontré variables de entorno guardadas en el código para Render. Puedes agregar tu URL de despliegue de Render o del dashboard aquí abajo para tenerlas siempre a la mano).
+
+URL del Dashboard de Render: https://dashboard.render.com
+URL del Proyecto Desplegado: https://brunashop.onrender.com
+Usuario / Email:
+Contraseña:
+
+=========================================

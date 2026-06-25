@@ -1,0 +1,85 @@
+Created At: 2026-06-17T05:48:40Z
+Completed At: 2026-06-17T05:48:40Z
+File Path: `file:///c:/Users/abrah/Desktop/sistema_BrunaShop2/src/app/admin/productos/page.tsx`
+Total Lines: 638
+Total Bytes: 35991
+Showing lines 1 to 100
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: "use client";
+2: 
+3: import { useState, useEffect } from "react";
+4: import { Plus, Video, EyeOff, Edit, Trash2, X, Palette, Scaling } from "lucide-react";
+5: import { motion, AnimatePresence } from "framer-motion";
+6: import { getPrendas, createPrenda, updatePrenda, deletePrenda } from "@/app/actions/productos";
+7: import { uploadImage } from "@/app/actions/upload";
+8: import { compressImage } from "@/lib/imageCompression";
+9: 
+10: export default function AdminProductos() {
+11:   const [productos, setProductos] = useState<any[]>([]);
+12:   const [isModalOpen, setIsModalOpen] = useState(false);
+13:   const [productoEditando, setProductoEditando] = useState<any>(null);
+14:   const [productoABorrar, setProductoABorrar] = useState<string | null>(null);
+15:   const [notificacion, setNotificacion] = useState<string | null>(null);
+16:   const [isLoading, setIsLoading] = useState(true);
+17:   
+18:   // Calculadora Auxiliar (Solo para la dueña)
+19:   const [calcBase, setCalcBase] = useState("");
+20:   const [calcPorcentaje, setCalcPorcentaje] = useState("");
+21:   
+22:   // Estados del Formulario
+23:   const [formData, setFormData] = useState({
+24:     nombre: "",
+25:     costoProveedor: "",
+26:     precioVenta: "",
+27:     precioOriginal: "",
+28:     categoria: "",
+29:     coleccion: "",
+30:     colores: "",
+31:     stockCount: "",
+32:     material: "",
+33:     isConjunto: false,
+34:     piezasId: [] as string[],
+35:     descuentoPorcentaje: ""
+36:   });
+37: 
+38:   const [categorias, setCategorias] = useState(["Vestidos", "Conjuntos", "Blusas y Tops", "Pantalo
+<truncated 1062 bytes>
+precioOriginal: "", categoria: "", coleccion: "", colores: "", stockCount: "", material: "", isConjunto: false, piezasId: [], descuentoPorcentaje: "" });
+64:     setCategoriaSeleccionada("");
+65:     setTallasSeleccionadas([]);
+66:     setFotosPreview([]);
+67:     setIsModalOpen(true);
+68:   };
+69: 
+70:   const abrirModalEditar = (producto: any) => {
+71:     setProductoEditando(producto);
+72:     setFormData({
+73:       nombre: producto.nombre || "",
+74:       costoProveedor: producto.costoProveedor?.toString() || "",
+75:       precioVenta: producto.precioVenta?.toString() || "",
+76:       precioOriginal: producto.precioOriginal?.toString() || "",
+77:       categoria: producto.categoria || "",
+78:       coleccion: producto.coleccion || "",
+79:       colores: producto.colores?.join(", ") || "",
+80:       stockCount: producto.stockCount?.toString() || "",
+81:       material: producto.material || "",
+82:       isConjunto: producto.isConjunto || false,
+83:       piezasId: producto.piezasId || [],
+84:       descuentoPorcentaje: producto.precioOriginal && producto.precioOriginal > producto.precioVenta 
+85:         ? Math.round(((producto.precioOriginal - producto.precioVenta) / producto.precioOriginal) * 100).toString() 
+86:         : ""
+87:     });
+88:     setCategoriaSeleccionada(categorias.includes(producto.categoria) ? producto.categoria : (producto.categoria ? "nueva" : ""));
+89:     if (producto.categoria && !categorias.includes(producto.categoria)) {
+90:       setCategorias([...categorias, producto.categoria]);
+91:       setCategoriaSeleccionada(producto.categoria);
+92:     }
+93:     setTallasSeleccionadas(producto.tallas || []);
+94:     setFotosPreview(producto.imagenes || []);
+95:     setIsModalOpen(true);
+96:   };
+97: 
+98:   const manejarGuardar = async () => {
+99:     const dataAEnviar = {
+100:       nombre: formData.nombre,
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

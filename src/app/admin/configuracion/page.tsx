@@ -1313,7 +1313,7 @@ export default function AdminConfiguracion() {
       </div>
 
       {/* Botón Flotante para Guardar */}
-      <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-40 flex flex-col items-end gap-2">
+      <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-40 flex flex-col items-end gap-2">
         <div className={`
           px-4 py-2 rounded-full text-xs font-bold shadow-lg transition-all duration-300 transform
           ${mensajeConfig

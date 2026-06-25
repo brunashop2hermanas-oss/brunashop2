@@ -1,0 +1,33 @@
+Created At: 2026-06-17T09:21:10Z
+Completed At: 2026-06-17T09:21:10Z
+File Path: `file:///c:/Users/abrah/Desktop/sistema_BrunaShop2/src/app/admin/productos/page.tsx`
+Total Lines: 828
+Total Bytes: 52894
+Showing lines 1 to 25
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: "use client";
+2: 
+3: import { useState, useEffect } from "react";
+4: import { Plus, Video, EyeOff, Edit, Trash2, X, Palette, Scaling } from "lucide-react";
+5: import { motion, AnimatePresence } from "framer-motion";
+6: import { getPrendas, createPrenda, updatePrenda, deletePrenda, procesarTransferenciasCombo } from "@/app/actions/productos";
+7: import { uploadImage } from "@/app/actions/upload";
+8: import { compressImage } from "@/lib/imageCompression";
+9: import { getConfiguracion } from "@/app/actions/config";
+10: 
+11: export default function AdminProductos() {
+12:   const [productos, setProductos] = useState<any[]>([]);
+13:   const [isModalOpen, setIsModalOpen] = useState(false);
+14:   const [productoEditando, setProductoEditando] = useState<any>(null);
+15:   const [productoABorrar, setProductoABorrar] = useState<string | null>(null);
+16:   const [notificacion, setNotificacion] = useState<string | null>(null);
+17:   const [isLoading, setIsLoading] = useState(true);
+18:   const [usarFinanzas, setUsarFinanzas] = useState(true);
+19:   
+20:   // Calculadora Auxiliar (Solo para la dueña)
+21:   const [calcBase, setCalcBase] = useState("");
+22:   const [calcPorcentaje, setCalcPorcentaje] = useState("");
+23:   
+24:   // Transferencia de Stock para Combos
+25:   const [transferencias, setTransferencias] = useState<Record<string, { cantidad: number, talla: string, color: string }>>({});
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

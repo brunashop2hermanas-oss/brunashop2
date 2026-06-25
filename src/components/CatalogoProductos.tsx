@@ -325,7 +325,7 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
               </div>
 
               {carrito.length > 0 && (
-                <div className="p-6 border-t border-gray-100 bg-[#fcfcfc]">
+                <div className="p-6 border-t border-gray-100 bg-[#fcfcfc] pb-10 md:pb-6">
                   {ahorroTotal > 0 && (
                     <div className="flex justify-between items-center mb-2 text-gray-400">
                       <span className="text-xs uppercase tracking-widest">Subtotal sin descuento</span>
@@ -354,6 +354,12 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
                     className="w-full bg-black text-white text-xs uppercase tracking-widest font-bold py-4 rounded-sm hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 shadow-xl disabled:bg-gray-400"
                   >
                     {isSubmittingCheckout ? "Reservando..." : "Completar Compra"} <ArrowRight className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => setIsCartOpen(false)}
+                    className="w-full mt-4 text-xs uppercase tracking-widest font-bold text-gray-500 hover:text-black transition-colors py-2"
+                  >
+                    Seguir comprando
                   </button>
                 </div>
               )}
@@ -671,7 +677,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
             </div>
           )}
 
-          <div className="mt-auto pt-6 border-t border-gray-100">
+          <div className="mt-auto pt-6 border-t border-gray-100 pb-8 md:pb-0">
              {producto.stockCount > 0 || producto.enPreventa ? (
                <button 
                  onClick={handleAgregar}

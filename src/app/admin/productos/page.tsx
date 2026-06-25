@@ -937,7 +937,7 @@ export default function AdminProductos() {
 
       <AnimatePresence>
         {notificacion && (
-          <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} className="fixed bottom-6 right-6 bg-surface border border-brand-primary shadow-2xl rounded-xl p-4 flex items-center gap-3 z-[70] max-w-md">
+          <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} className="fixed bottom-24 md:bottom-6 right-6 bg-surface border border-brand-primary shadow-2xl rounded-xl p-4 flex items-center gap-3 z-[70] max-w-md">
             <div className="bg-brand-primary/20 p-2 rounded-full"><span className="text-brand-primary font-black">!</span></div>
             <p className="text-sm font-bold text-foreground">{notificacion}</p>
           </motion.div>
