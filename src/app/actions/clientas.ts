@@ -1,4 +1,5 @@
 "use server";
+import { revalidatePath } from "next/cache";
 
 import prisma from "@/lib/prisma";
 import { unstable_noStore as noStore } from "next/cache";
@@ -49,6 +50,7 @@ export async function getClientas() {
       };
     });
 
+    revalidatePath('/', 'layout');
     return { success: true, data: clientasFormateadas };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -62,7 +64,8 @@ export async function getClientaByCI(ci: string) {
     });
     
     if (clienta) {
-      return { success: true, data: clienta };
+      revalidatePath('/', 'layout');
+    return { success: true, data: clienta };
     } else {
       return { success: false, error: "Clienta no encontrada" };
     }
@@ -76,6 +79,7 @@ export async function resetPuntosClientas() {
     await prisma.clienta.updateMany({
       data: { puntos: 0 }
     });
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

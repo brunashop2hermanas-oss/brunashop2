@@ -1,4 +1,5 @@
 "use server";
+import { revalidatePath } from "next/cache";
 
 import prisma from "@/lib/prisma";
 import { unstable_noStore as noStore } from "next/cache";
@@ -131,6 +132,7 @@ export async function getDashboardStats(rangoMas: string = "Mes", rangoMenos: st
       .filter(p => p.stock <= 3 || p.tallasBajas.length > 0)
       .slice(0, 5);
 
+    revalidatePath('/', 'layout');
     return {
       success: true,
       data: {
@@ -290,6 +292,7 @@ export async function getReportesFinancieros(rango: string) {
       .sort((a, b) => b.cantidad - a.cantidad)
       .slice(0, 5); // Top 5
 
+    revalidatePath('/', 'layout');
     return {
       success: true,
       data: {

@@ -1,4 +1,5 @@
 "use server";
+import { revalidatePath } from "next/cache";
 
 import prisma from "@/lib/prisma";
 import { unstable_noStore as noStore } from "next/cache";
@@ -70,6 +71,7 @@ export async function getConfiguracion() {
       }
     }
 
+    revalidatePath('/', 'layout');
     return { success: true, data: config };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -108,6 +110,7 @@ export async function updateConfiguracion(data: {
       data
     });
 
+    revalidatePath('/', 'layout');
     return { success: true, message: "Destinos habilitados actualizados correctamente." };
   } catch (error: any) {
     console.error("Error al guardar destinos:", error);
@@ -122,6 +125,7 @@ export async function actualizarPlanSupabase(plan: string) {
       update: { planSupabase: plan },
       create: { id: 1, planSupabase: plan }
     });
+    revalidatePath('/', 'layout');
     return { success: true, data: conf };
   } catch (error: any) {
     console.error("Error al actualizar plan Supabase:", error);

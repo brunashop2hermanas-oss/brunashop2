@@ -47,6 +47,7 @@ export async function buscarClientaPorCI(ci: string) {
     const clienta = await prisma.clienta.findUnique({
       where: { ci: ci.trim() }
     });
+    revalidatePath('/', 'layout');
     return { success: true, data: clienta };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -59,6 +60,7 @@ export async function getVenta(ventaId: string) {
       where: { id: ventaId },
       include: { items: { include: { prenda: true } }, clienta: true }
     });
+    revalidatePath('/', 'layout');
     return { success: true, data: venta, serverNow: new Date().toISOString() };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -104,6 +106,8 @@ export async function crearReservaAnonima(data: {
       return venta;
     });
 
+    revalidatePath("/admin/productos");
+    revalidatePath('/', 'layout');
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -201,6 +205,7 @@ export async function vincularClientaReserva(ventaId: string, data: {
       return ventaActualizada;
     });
 
+    revalidatePath('/', 'layout');
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -246,7 +251,7 @@ export async function confirmarPagoCheckout(ventaId: string, data: {
       return ventaActualizada;
     });
 
-    revalidatePath("/admin/pedidos");
+    revalidatePath('/', 'layout');
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -256,7 +261,8 @@ export async function confirmarPagoCheckout(ventaId: string, data: {
 export async function cancelarVentaExpirada(ventaId: string) {
   try {
     const venta = await prisma.venta.findUnique({ where: { id: ventaId }, include: { items: true } });
-    if (!venta || venta.estado !== "ESPERANDO_PAGO") return { success: true, message: "No requiere acción" };
+    if (!venta || venta.estado !== "ESPERANDO_PAGO") revalidatePath('/', 'layout');
+    return { success: true, message: "No requiere acción" };
 
     await prisma.$transaction(async (tx) => {
       // 1. Restaurar stock
@@ -271,6 +277,8 @@ export async function cancelarVentaExpirada(ventaId: string) {
       });
     });
 
+    revalidatePath("/admin/productos");
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -396,7 +404,7 @@ export async function createVenta(data: {
 
     revalidatePath("/admin/clientas");
     revalidatePath("/admin/productos");
-    revalidatePath("/admin/pedidos");
+    revalidatePath('/', 'layout');
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -470,6 +478,7 @@ export async function getVentas() {
       }))
     }));
 
+    revalidatePath('/', 'layout');
     return { success: true, data: dataFormateada };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -487,7 +496,7 @@ export async function updateEstadoVenta(ventaId: string, nuevoEstado: string) {
       where: { id: ventaId },
       data: { estado: estadoDB }
     });
-    revalidatePath("/admin/pedidos");
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -500,7 +509,7 @@ export async function toggleEmpaquetado(ventaItemId: string, estadoActual: boole
       where: { id: ventaItemId },
       data: { empaquetado: !estadoActual }
     });
-    revalidatePath("/admin/pedidos");
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -513,7 +522,7 @@ export async function subirGuiaEnvio(ventaId: string, guiaUrl: string) {
       where: { id: ventaId },
       data: { guiaEnvioUrl: guiaUrl, estado: "ENTREGADO" }
     });
-    revalidatePath("/admin/pedidos");
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

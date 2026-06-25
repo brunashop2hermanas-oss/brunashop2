@@ -1,4 +1,5 @@
 "use server";
+import { revalidatePath } from "next/cache";
 
 import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
@@ -34,6 +35,7 @@ export async function loginUser(usuario: string, pin: string) {
     cookieStore.set("bruna_user_id", user.id, { path: "/", maxAge: ONE_YEAR });
     cookieStore.set("bruna_user_permissions", JSON.stringify(user.permisos || []), { path: "/", maxAge: ONE_YEAR });
 
+    revalidatePath('/', 'layout');
     return { success: true, user: { name: user.nombres, role: user.role } };
   } catch (error: any) {
     if (error.message?.includes("DATABASE_URL") || error.message?.includes("Environment variable not found")) {
@@ -50,7 +52,8 @@ export async function logoutUser() {
   cookieStore.delete("bruna_user_name");
   cookieStore.delete("bruna_user_id");
   cookieStore.delete("bruna_user_permissions");
-  return { success: true };
+  revalidatePath('/', 'layout');
+    return { success: true };
 }
 
 export async function resetPassword(username: string, ci: string, newPin: string) {
@@ -68,6 +71,7 @@ export async function resetPassword(username: string, ci: string, newPin: string
       data: { pin: newPin }
     });
 
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: "Error al cambiar la contraseña." };

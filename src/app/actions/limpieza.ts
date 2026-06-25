@@ -1,4 +1,5 @@
 "use server";
+import { revalidatePath } from "next/cache";
 
 import prisma from "@/lib/prisma";
 import { createClient } from "@supabase/supabase-js";
@@ -41,6 +42,7 @@ export async function getEspacioUtilizado() {
       storageSizeBytes = data.reduce((acc, file) => acc + (file.metadata?.size || 0), 0);
     }
 
+    revalidatePath('/', 'layout');
     return {
       success: true,
       data: {
@@ -79,7 +81,8 @@ export async function limpiarBaseDeDatos(desde: Date, hasta: Date, borrarComprob
     });
 
     if (ventas.length === 0) {
-      return { success: true, message: "No se encontraron registros en estas fechas." };
+      revalidatePath('/', 'layout');
+    return { success: true, message: "No se encontraron registros en estas fechas." };
     }
 
     const archivosAborrar: string[] = [];
@@ -136,6 +139,7 @@ export async function limpiarBaseDeDatos(desde: Date, hasta: Date, borrarComprob
       }
     });
 
+    revalidatePath('/', 'layout');
     return { 
       success: true, 
       message: `Limpieza completada. Se liberaron ${deletedFilesCount} imágenes del servidor y se limpiaron los registros. Las ventas de texto siguen intactas.` 

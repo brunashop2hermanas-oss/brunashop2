@@ -26,6 +26,7 @@ export async function getPrendas() {
       return p;
     });
 
+    revalidatePath('/', 'layout');
     return { success: true, data: prendasMapeadas };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -119,7 +120,7 @@ export async function createPrenda(data: any) {
     });
 
     revalidatePath("/admin/productos");
-    revalidatePath("/");
+    revalidatePath('/', 'layout');
     return { success: true, data: prenda };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -170,7 +171,7 @@ export async function updatePrenda(id: string, data: any) {
     });
 
     revalidatePath("/admin/productos");
-    revalidatePath("/");
+    revalidatePath('/', 'layout');
     return { success: true, data: prenda };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -193,7 +194,7 @@ export async function deletePrenda(id: string) {
     });
 
     revalidatePath("/admin/productos");
-    revalidatePath("/");
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

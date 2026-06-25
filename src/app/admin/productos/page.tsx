@@ -428,7 +428,7 @@ export default function AdminProductos() {
           <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-3">
             <Video className="w-8 h-8 text-red-500" /> Catálogo y Live
           </h1>
-          <p className="text-foreground/70 mb-4">Gestiona tu inventario real en Supabase.</p>
+          <p className="text-foreground/70 mb-4">Gestiona tu inventario real.</p>
           
           <div className="p-4 bg-brand-primary/10 border border-brand-primary/20 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
             <span className="text-xl shrink-0">💡</span>

@@ -1,4 +1,5 @@
 "use server";
+import { revalidatePath } from "next/cache";
 
 import { createClient } from "@supabase/supabase-js";
 import { v4 as uuidv4 } from "uuid";
@@ -39,6 +40,7 @@ export async function uploadImage(formData: FormData) {
       .from('brunashop2')
       .getPublicUrl(filename);
 
+    revalidatePath('/', 'layout');
     return { 
       success: true, 
       url: publicUrlData.publicUrl

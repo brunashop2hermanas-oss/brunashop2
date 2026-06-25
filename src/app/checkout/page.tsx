@@ -700,6 +700,15 @@ function CheckoutContent() {
                             <span className="block font-bold text-sm uppercase drop-shadow-md">¡Comprobante Listo!</span>
                             <span className="text-xs bg-black/50 px-3 py-1 rounded-full backdrop-blur-md">Toca para cambiar imagen</span>
                           </div>
+                          {/* Botón para ampliar */}
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewAmpliada(true); }}
+                            className="absolute top-2 right-2 z-30 bg-black/70 text-white p-2 rounded-full hover:bg-black transition-colors backdrop-blur-md"
+                            title="Ampliar imagen"
+                          >
+                            <Search className="w-5 h-5" />
+                          </button>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-3">
@@ -853,6 +862,29 @@ function CheckoutContent() {
               alt="Ampliada" 
               className="max-w-full max-h-full object-contain cursor-zoom-out" 
               onClick={(e) => { e.stopPropagation(); setImagenAmpliada(null); }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {previewAmpliada && comprobante && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/90 p-4"
+            onClick={() => setPreviewAmpliada(false)}
+          >
+            <button 
+              className="absolute top-6 right-6 text-white hover:text-gray-300 p-2"
+              onClick={() => setPreviewAmpliada(false)}
+            >
+              <X className="w-8 h-8" />
+            </button>
+            <img 
+              src={URL.createObjectURL(comprobante)} 
+              alt="Comprobante Ampliado" 
+              className="max-w-full max-h-full object-contain cursor-zoom-out" 
+              onClick={(e) => { e.stopPropagation(); setPreviewAmpliada(false); }}
             />
           </motion.div>
         )}

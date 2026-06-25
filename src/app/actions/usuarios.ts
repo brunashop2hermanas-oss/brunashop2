@@ -1,4 +1,5 @@
 "use server";
+import { revalidatePath } from "next/cache";
 
 import prisma from "@/lib/prisma";
 import { unstable_noStore as noStore } from "next/cache";
@@ -10,6 +11,7 @@ export async function getUsuarios() {
       where: { username: { not: "bruna" } },
       orderBy: { createdAt: "asc" }
     });
+    revalidatePath('/', 'layout');
     return { success: true, data: usuarios };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -30,6 +32,7 @@ export async function createUsuario(data: {
     const nuevo = await prisma.user.create({
       data
     });
+    revalidatePath('/', 'layout');
     return { success: true, data: nuevo };
   } catch (error: any) {
     if (error.code === 'P2002') {
@@ -53,6 +56,7 @@ export async function updateUsuario(id: string, data: {
       where: { id },
       data
     });
+    revalidatePath('/', 'layout');
     return { success: true, data: updated };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -68,6 +72,7 @@ export async function deleteUsuario(id: string) {
     await prisma.user.delete({
       where: { id }
     });
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
