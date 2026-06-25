@@ -261,8 +261,10 @@ export async function confirmarPagoCheckout(ventaId: string, data: {
 export async function cancelarVentaExpirada(ventaId: string) {
   try {
     const venta = await prisma.venta.findUnique({ where: { id: ventaId }, include: { items: true } });
-    if (!venta || venta.estado !== "ESPERANDO_PAGO") revalidatePath('/', 'layout');
-    return { success: true, message: "No requiere acción" };
+    if (!venta || venta.estado !== "ESPERANDO_PAGO") {
+      revalidatePath('/', 'layout');
+      return { success: true, message: "No requiere acción" };
+    }
 
     await prisma.$transaction(async (tx) => {
       // 1. Restaurar stock
