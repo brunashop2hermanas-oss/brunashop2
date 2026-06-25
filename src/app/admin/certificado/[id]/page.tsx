@@ -51,8 +51,8 @@ Al continuar usando nuestros servicios y finalizar una compra, otorgas tu consen
   const clienta = venta.clienta;
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center py-10 print:py-0 print:bg-white text-black">
-      <div className="w-full max-w-3xl bg-white p-12 shadow-2xl print:shadow-none print:p-0 mb-8 border border-gray-200">
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center py-10 print:py-8 print:bg-white text-black">
+      <div className="w-full max-w-3xl bg-white p-12 shadow-2xl print:shadow-none print:p-8 mb-8 border border-gray-200">
         
         {/* Encabezado */}
         <div className="flex justify-between items-start border-b-4 border-gray-900 pb-6 mb-8">
@@ -130,8 +130,10 @@ Al continuar usando nuestros servicios y finalizar una compra, otorgas tu consen
         {venta.comprobante && (
           <div className="mb-10 break-inside-avoid">
             <h3 className="font-bold text-gray-900 mb-3 border-b border-gray-200 pb-1">Comprobante Bancario Asociado</h3>
-            <div className="border border-gray-200 p-2 bg-gray-50 inline-block rounded-md">
-              <img src={venta.comprobante} alt="Comprobante de Pago" className="max-w-full h-auto max-h-80 print:max-h-52 object-contain" />
+            <div className="text-center">
+              <div className="border border-gray-200 p-2 bg-gray-50 inline-block rounded-md mx-auto">
+                <img src={venta.comprobante} alt="Comprobante de Pago" className="max-w-full h-auto max-h-80 print:max-h-52 object-contain mx-auto" />
+              </div>
             </div>
           </div>
         )}
