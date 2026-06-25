@@ -128,7 +128,7 @@ Al continuar usando nuestros servicios y finalizar una compra, otorgas tu consen
 
         {/* Comprobante Adjunto (si existe) */}
         {venta.comprobante && (
-          <div className="mb-10 page-break-inside-avoid">
+          <div className="mb-10 break-inside-avoid">
             <h3 className="font-bold text-gray-900 mb-3 border-b border-gray-200 pb-1">Comprobante Bancario Asociado</h3>
             <div className="border border-gray-200 p-2 bg-gray-50 inline-block rounded-md">
               <img src={venta.comprobante} alt="Comprobante de Pago" className="max-w-full h-auto max-h-80 object-contain" />
@@ -137,7 +137,7 @@ Al continuar usando nuestros servicios y finalizar una compra, otorgas tu consen
         )}
 
         {/* Anexo de Textos Legales Aceptados */}
-        <div className="mb-10 page-break-before">
+        <div className="mb-10 break-before-page">
           <h3 className="text-lg font-black uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-gray-200 pb-2">
             <ScrollText className="w-5 h-5 text-gray-700" /> Anexo: Textos Legales Aceptados
           </h3>
