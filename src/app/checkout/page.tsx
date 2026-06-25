@@ -240,67 +240,76 @@ function CheckoutContent() {
     
     let ventaActualId = ventaEnCurso?.id;
 
-    if (!ventaActualId) {
-      if (carrito.length === 0) return toast.error("¡Ups! Tu carrito está vacío.");
-      setIsSubmitting(true);
-      const resTemp = await crearReservaAnonima({
-        items: carrito.map(item => ({
-          prendaId: item.id,
-          cantidad: item.cantidad || 1,
-          precioUnitario: item.precioVenta,
-          talla: item.tallaSeleccionada || undefined,
-          color: item.colorSeleccionado || undefined
-        })),
-        total: totalAPagar
-      });
-      
-      if (!resTemp.success || !resTemp.data) {
-        setIsSubmitting(false);
-        return toast.error("Error al reservar el stock. Por favor intenta de nuevo.");
-      }
-      ventaActualId = resTemp.data.id;
-    }
-
     setIsSubmitting(true);
 
-    let clientIp = "";
     try {
-      const ipRes = await fetch("https://api.ipify.org?format=json");
-      const ipData = await ipRes.json();
-      clientIp = ipData.ip;
-    } catch(e) {
-      clientIp = "IP local/Desconocida";
-    }
-    const dataToSend = {
-      nombres: (formData.get("nombres") as string) || clientaEncontrada?.nombres,
-      apellidoPaterno: (formData.get("apellidoPaterno") as string) || clientaEncontrada?.apellidos,
-      apellidoMaterno: (formData.get("apellidoMaterno") as string) || "",
-      celular: (formData.get("celular") as string) || clientaEncontrada?.celular,
-      ci: ci || (formData.get("ci") as string),
-      ciudadDestino: ciudadDestino,
-      provinciaDestino: provinciaDestino || "",
-      municipioDestino: municipioDestino || "",
-      receptorDiferente: receptorDiferente,
-      receptorNombres: receptorDiferente ? (formData.get("receptorNombres") as string) : "",
-      receptorApPaterno: receptorDiferente ? (formData.get("receptorApPaterno") as string) : "",
-      receptorApMaterno: receptorDiferente ? (formData.get("receptorApMaterno") as string) : "",
-      receptorCi: receptorDiferente ? (formData.get("receptorCi") as string) : "",
-      receptorCelular: receptorDiferente ? (formData.get("receptorCelular") as string) : "",
-      empresaBusesPreferida: empresaBus,
-      tiempoReservaMinutos: config?.tiempoReservaMinutos || 4,
-      clientIp: clientIp
-    };
+      if (!ventaActualId) {
+        if (carrito.length === 0) {
+          setIsSubmitting(false);
+          return toast.error("¡Ups! Tu carrito está vacío.");
+        }
+        
+        const resTemp = await crearReservaAnonima({
+          items: carrito.map(item => ({
+            prendaId: item.id,
+            cantidad: item.cantidad || 1,
+            precioUnitario: item.precioVenta,
+            talla: typeof item.tallaSeleccionada === 'object' ? JSON.stringify(item.tallaSeleccionada) : (item.tallaSeleccionada || undefined),
+            color: typeof item.colorSeleccionado === 'object' ? JSON.stringify(item.colorSeleccionado) : (item.colorSeleccionado || undefined)
+          })),
+          total: totalAPagar
+        });
+        
+        if (!resTemp.success || !resTemp.data) {
+          setIsSubmitting(false);
+          return toast.error(resTemp.error || "Error al reservar el stock. Por favor intenta de nuevo.");
+        }
+        ventaActualId = resTemp.data.id;
+      }
 
-    const res = await vincularClientaReserva(ventaActualId, dataToSend);
-    setIsSubmitting(false);
+      let clientIp = "";
+      try {
+        const ipRes = await fetch("https://api.ipify.org?format=json");
+        const ipData = await ipRes.json();
+        clientIp = ipData.ip;
+      } catch(e) {
+        clientIp = "IP local/Desconocida";
+      }
+      const dataToSend = {
+        nombres: (formData.get("nombres") as string) || clientaEncontrada?.nombres,
+        apellidoPaterno: (formData.get("apellidoPaterno") as string) || clientaEncontrada?.apellidos,
+        apellidoMaterno: (formData.get("apellidoMaterno") as string) || "",
+        celular: (formData.get("celular") as string) || clientaEncontrada?.celular,
+        ci: ci || (formData.get("ci") as string),
+        ciudadDestino: ciudadDestino,
+        provinciaDestino: provinciaDestino || "",
+        municipioDestino: municipioDestino || "",
+        receptorDiferente: receptorDiferente,
+        receptorNombres: receptorDiferente ? (formData.get("receptorNombres") as string) : "",
+        receptorApPaterno: receptorDiferente ? (formData.get("receptorApPaterno") as string) : "",
+        receptorApMaterno: receptorDiferente ? (formData.get("receptorApMaterno") as string) : "",
+        receptorCi: receptorDiferente ? (formData.get("receptorCi") as string) : "",
+        receptorCelular: receptorDiferente ? (formData.get("receptorCelular") as string) : "",
+        empresaBusesPreferida: empresaBus,
+        tiempoReservaMinutos: config?.tiempoReservaMinutos || 4,
+        clientIp: clientIp
+      };
 
-    if (res.success && res.data) {
-      setVentaEnCurso(res.data);
-      router.replace(`/checkout?id=${res.data.id}`);
-      setPaso(2);
-      localStorage.removeItem("bruna_carrito");
-    } else {
-      toast.error("¡Uy! Tuvimos un problemita al preparar tu reserva. Por favor, intenta de nuevo.");
+      const res = await vincularClientaReserva(ventaActualId, dataToSend);
+      setIsSubmitting(false);
+
+      if (res.success && res.data) {
+        setVentaEnCurso(res.data);
+        router.replace(`/checkout?id=${res.data.id}`);
+        setPaso(2);
+        localStorage.removeItem("bruna_carrito");
+      } else {
+        toast.error("¡Uy! Tuvimos un problemita al preparar tu reserva. Por favor, intenta de nuevo.");
+      }
+    } catch (err) {
+      console.error(err);
+      setIsSubmitting(false);
+      toast.error("Ocurrió un error inesperado al procesar tu solicitud.");
     }
   };
 
