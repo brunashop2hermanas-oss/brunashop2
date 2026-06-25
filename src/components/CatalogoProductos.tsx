@@ -630,8 +630,8 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
                           </div>
                           {(pieza.tallaEspecifica || pieza.colorEspecifico) && (
                             <span className="text-[9px] text-gray-500 uppercase tracking-widest mt-1 font-bold">
-                              {pieza.tallaEspecifica && `T: ${pieza.tallaEspecifica} `}
-                              {pieza.colorEspecifico && `| C: ${pieza.colorEspecifico}`}
+                              {pieza.tallaEspecifica && `Talla: ${pieza.tallaEspecifica} `}
+                              {pieza.colorEspecifico && `| Color: ${pieza.colorEspecifico}`}
                             </span>
                           )}
                         </div>
