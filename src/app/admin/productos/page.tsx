@@ -16,6 +16,7 @@ export default function AdminProductos() {
   const [productoABorrar, setProductoABorrar] = useState<string | null>(null);
   const [notificacion, setNotificacion] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [imagenAmpliada, setImagenAmpliada] = useState<string | null>(null);
   
   // Estados del Formulario
   const [formData, setFormData] = useState({
@@ -736,7 +737,7 @@ export default function AdminProductos() {
                                         className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 rounded-md transition-opacity"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          window.open(url, "_blank");
+                                          setImagenAmpliada(url);
                                         }}
                                         title="Ampliar imagen"
                                       >
@@ -1050,6 +1051,38 @@ export default function AdminProductos() {
           </div>
         </div>
       )}
+      {/* MODAL IMAGEN AMPLIADA */}
+      <AnimatePresence>
+        {imagenAmpliada && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm cursor-zoom-out"
+            onClick={() => setImagenAmpliada(null)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-5xl max-h-[90vh] flex items-center justify-center cursor-default"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button 
+                onClick={() => setImagenAmpliada(null)}
+                className="absolute -top-12 right-0 text-white hover:text-brand-primary bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <img 
+                src={imagenAmpliada} 
+                alt="Imagen ampliada" 
+                className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl ring-1 ring-white/20"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );
