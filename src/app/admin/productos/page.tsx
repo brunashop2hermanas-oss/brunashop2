@@ -702,6 +702,38 @@ export default function AdminProductos() {
                               </label>
                             ))}
                           </div>
+                          <div className="flex gap-2 mb-3">
+                            <input 
+                              type="text" 
+                              value={nuevaTalla} 
+                              onChange={e => setNuevaTalla(e.target.value)} 
+                              placeholder="Nueva talla (Ej. S/M)" 
+                              className="bg-surface border border-surface-border p-2 rounded-lg focus:ring-2 focus:ring-brand-primary outline-none flex-1 text-sm"
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (nuevaTalla.trim() && !tallasDisponibles.includes(nuevaTalla.trim().toUpperCase())) {
+                                    setTallasDisponibles([...tallasDisponibles, nuevaTalla.trim().toUpperCase()]);
+                                    setTallasSeleccionadas([...tallasSeleccionadas, nuevaTalla.trim().toUpperCase()]);
+                                    setNuevaTalla("");
+                                  }
+                                }
+                              }}
+                            />
+                            <button 
+                              type="button" 
+                              onClick={() => {
+                                if (nuevaTalla.trim() && !tallasDisponibles.includes(nuevaTalla.trim().toUpperCase())) {
+                                  setTallasDisponibles([...tallasDisponibles, nuevaTalla.trim().toUpperCase()]);
+                                  setTallasSeleccionadas([...tallasSeleccionadas, nuevaTalla.trim().toUpperCase()]);
+                                  setNuevaTalla("");
+                                }
+                              }}
+                              className="bg-brand-primary text-white px-3 py-2 rounded-lg font-bold text-sm hover:bg-brand-primary/90 flex items-center justify-center"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                         <div>
                           <label className="block text-sm font-bold text-foreground mb-2">Colores (Separar con coma)</label>
