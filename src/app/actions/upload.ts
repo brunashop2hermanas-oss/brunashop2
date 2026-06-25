@@ -1,6 +1,14 @@
 "use server";
 import { revalidatePath } from "next/cache";
 
+import { createClient } from "@supabase/supabase-js";
+import { v4 as uuidv4 } from "uuid";
+
+// Initialize Supabase Client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 export async function uploadImage(formData: FormData) {
   try {
     const file = formData.get("file") as File;
@@ -8,33 +16,34 @@ export async function uploadImage(formData: FormData) {
       return { success: false, error: "No se proporcionó ningún archivo" };
     }
 
-    const imgbbKey = process.env.IMGBB_API_KEY;
-    if (!imgbbKey) {
-      console.warn("IMGBB_API_KEY no encontrada. Simulando subida.");
-      return { 
-        success: true, 
-        url: "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80" 
-      };
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    // Generar un nombre único
+    const ext = file.name.split('.').pop() || 'jpg';
+    const filename = `${uuidv4()}.${ext}`;
+
+    // Subir a Supabase Storage (Bucket: brunashop2)
+    const { data, error } = await supabase.storage
+      .from('brunashop2')
+      .upload(filename, buffer, {
+        contentType: file.type,
+        upsert: false
+      });
+
+    if (error) {
+      throw new Error(`Error subiendo a Supabase: ${error.message}`);
     }
 
-    const imgbbFormData = new FormData();
-    imgbbFormData.append("image", file);
-
-    const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`, {
-      method: "POST",
-      body: imgbbFormData
-    });
-
-    const data = await res.json();
-
-    if (!res.ok || !data.success) {
-      throw new Error(data.error?.message || "Error al subir la imagen a ImgBB");
-    }
+    // Obtener la URL pública de la imagen
+    const { data: publicUrlData } = supabase.storage
+      .from('brunashop2')
+      .getPublicUrl(filename);
 
     revalidatePath('/', 'layout');
     return { 
       success: true, 
-      url: data.data.url
+      url: publicUrlData.publicUrl
     };
   } catch (error: any) {
     console.error("Upload error:", error);
