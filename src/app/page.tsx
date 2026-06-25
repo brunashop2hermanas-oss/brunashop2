@@ -6,11 +6,14 @@ import CatalogoProductos from "@/components/CatalogoProductos";
 import Footer from "@/components/Footer";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { getPrendas } from "@/app/actions/productos";
 
 export default function Home() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [liveActivoBanner, setLiveActivoBanner] = useState(false);
+  const [colecciones, setColecciones] = useState<string[]>([]);
+  const [coleccionActiva, setColeccionActiva] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,6 +21,15 @@ export default function Home() {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    getPrendas().then((res) => {
+      if (res.success && res.data) {
+        const cols = Array.from(new Set(res.data.map((p: any) => p.coleccion).filter(Boolean))) as string[];
+        setColecciones(cols);
+      }
+    }).catch(e => console.error(e));
   }, []);
 
   const scrollToSection = (id: string) => {
@@ -47,7 +59,7 @@ export default function Home() {
       )}
 
       {/* Header Responsivo */}
-      <header className={`w-full fixed top-8 md:top-10 z-40 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-sm py-4" : "bg-transparent py-6"}`}>
+      <header className={`w-full fixed top-8 md:top-10 z-40 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-sm py-2" : "bg-transparent py-3"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           
           {/* Menu Mobile Icon */}
@@ -61,7 +73,7 @@ export default function Home() {
               <img 
                 src="/logo.png" 
                 alt="BrunaShop Logo" 
-                className="w-10 h-10 md:w-12 md:h-12 object-cover rounded-full shadow-sm"
+                className="w-10 h-10 md:w-12 md:h-12 object-contain rounded-full shadow-sm"
               />
             </div>
             <h1 className={`hidden sm:block text-2xl font-extrabold tracking-tighter ${isScrolled ? "text-black" : "text-white drop-shadow-md"}`}>
@@ -105,9 +117,12 @@ export default function Home() {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            <nav className="flex flex-col gap-6 text-lg font-medium tracking-widest uppercase">
-              <button onClick={() => scrollToSection('catalogo')} className="text-left py-4 border-b border-gray-100 flex justify-between items-center">Colección Nueva <ArrowRight className="w-5 h-5 text-gray-300"/></button>
-              <button onClick={() => scrollToSection('catalogo')} className="text-left py-4 border-b border-gray-100 text-red-600 flex justify-between items-center">Ofertas / Sale <ArrowRight className="w-5 h-5 text-red-300"/></button>
+            <nav className="flex flex-col gap-6 text-lg font-medium tracking-widest uppercase overflow-y-auto">
+              <button onClick={() => { setColeccionActiva(null); scrollToSection('catalogo'); }} className="text-left py-4 border-b border-gray-100 flex justify-between items-center text-sm">TODAS LAS COLECCIONES <ArrowRight className="w-5 h-5 text-gray-300"/></button>
+              {colecciones.map((col) => (
+                <button key={col} onClick={() => { setColeccionActiva(col); scrollToSection('catalogo'); }} className="text-left py-4 border-b border-gray-100 flex justify-between items-center text-sm">{col} <ArrowRight className="w-5 h-5 text-gray-300"/></button>
+              ))}
+              <button onClick={() => { setColeccionActiva(null); scrollToSection('catalogo'); }} className="text-left py-4 border-b border-gray-100 text-red-600 flex justify-between items-center text-sm">Ofertas / Sale <ArrowRight className="w-5 h-5 text-red-300"/></button>
             </nav>
             <div className="mt-auto mb-8 text-xs text-center text-gray-400 tracking-widest uppercase">
               Descubre lo último en tendencia
@@ -160,7 +175,7 @@ export default function Home() {
 
       {/* Catálogo de Productos */}
       <div id="catalogo">
-        <CatalogoProductos liveActivoBanner={liveActivoBanner} setLiveActivoBanner={setLiveActivoBanner} />
+        <CatalogoProductos liveActivoBanner={liveActivoBanner} setLiveActivoBanner={setLiveActivoBanner} coleccionFiltro={coleccionActiva} setColeccionFiltro={setColeccionActiva} />
       </div>
       
       {/* Footer */}

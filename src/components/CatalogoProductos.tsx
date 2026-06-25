@@ -10,7 +10,7 @@ import { getConfiguracion } from "@/app/actions/config";
 import { crearReservaAnonima } from "@/app/actions/ventas";
 import hotToast from "react-hot-toast";
 
-export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanner }: { liveActivoBanner?: boolean, setLiveActivoBanner?: (v: boolean) => void }) {
+export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanner, coleccionFiltro, setColeccionFiltro }: { liveActivoBanner?: boolean, setLiveActivoBanner?: (v: boolean) => void, coleccionFiltro?: string | null, setColeccionFiltro?: (v: string | null) => void }) {
   const [productos, setProductos] = useState<any[]>([]);
   const [categorias, setCategorias] = useState<string[]>(["Todas"]);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,8 +56,13 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
     return () => clearInterval(intervalo);
   }, []);
 
-  const productosLive = liveActivo ? productos.filter(p => p.enLive && p.stockCount > 0) : [];
-  const productosFiltrados = productos.filter(p => (!p.enLive || !liveActivo) && (filtroCategoria === "Todas" || p.categoria === filtroCategoria) && p.stockCount > 0);
+  const productosLive = liveActivo ? productos.filter(p => p.enLive && (p.stockCount > 0 || p.enPreventa)) : [];
+  const productosFiltrados = productos.filter(p => {
+    if (p.enLive && liveActivo) return false;
+    if (filtroCategoria !== "Todas" && p.categoria !== filtroCategoria) return false;
+    if (coleccionFiltro && p.coleccion !== coleccionFiltro) return false;
+    return true; // we show all, even out of stock, they show as Agotado.
+  });
 
   const mostrarToast = (mensaje: string) => {
     setToast(mensaje);
@@ -225,7 +230,19 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
         {/* Grid de Productos Normales */}
         {productosFiltrados.length > 0 ? (
           <div>
-            <h3 className="text-sm font-bold tracking-widest uppercase text-gray-500 mb-6">Catálogo General</h3>
+            <div className="mb-6">
+              <h3 className="text-sm font-bold tracking-widest uppercase text-gray-500">
+                {coleccionFiltro ? `Colección: ${coleccionFiltro}` : "Catálogo General"}
+              </h3>
+              {coleccionFiltro && (
+                <button 
+                  onClick={() => setColeccionFiltro?.(null)} 
+                  className="text-[10px] uppercase tracking-widest text-red-500 mt-2 hover:text-red-700 flex items-center gap-1"
+                >
+                  <X className="w-3 h-3" /> Quitar Filtro de Colección
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-8 md:gap-y-16">
               {productosFiltrados.map((producto, index) => (
                 <ProductoCard key={producto.id} producto={producto} index={index} abrirVistaRapida={abrirVistaRapida} agregarAlCarrito={agregarAlCarritoRapido} liveActivo={liveActivo} />
