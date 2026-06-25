@@ -734,7 +734,7 @@ export default function AdminProductos() {
                                         </div>
                                       )}
                                       <button 
-                                        className="absolute bottom-1 right-1 flex items-center justify-center w-6 h-6 opacity-0 group-hover:opacity-100 bg-black/60 rounded-full transition-opacity hover:bg-black/80"
+                                        className="absolute bottom-1 right-1 flex items-center justify-center w-6 h-6 bg-black/50 hover:bg-black/80 rounded-full transition-colors z-20"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           setImagenAmpliada(url);
