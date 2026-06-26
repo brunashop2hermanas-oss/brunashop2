@@ -76,8 +76,8 @@ export default function LicenciaPlanes() {
           <CreditCard className="w-8 h-8" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Almacenamiento en Supabase</h2>
-          <p className="text-foreground/60 text-sm">Aumenta la capacidad de tu base de datos y de las imágenes alojadas en los servidores de Supabase.</p>
+          <h2 className="text-2xl font-bold text-foreground">Planes de Supabase y Render</h2>
+          <p className="text-foreground/60 text-sm">Gestiona el pago de tus servicios en la nube: base de datos, imágenes (Supabase) y servidor (Render).</p>
         </div>
       </div>
 
@@ -87,7 +87,7 @@ export default function LicenciaPlanes() {
           <div className={`p-6 rounded-2xl border ${alertaVencimiento ? 'bg-red-500/10 border-red-500/30' : 'bg-background border-surface-border'} flex flex-col justify-center`}>
             <div className="flex items-center gap-3 mb-2">
               <Calendar className={`w-6 h-6 ${alertaVencimiento ? 'text-red-500' : 'text-foreground/70'}`} />
-              <h3 className="font-bold uppercase tracking-widest text-xs text-foreground/70">Próximo Pago (Supabase)</h3>
+              <h3 className="font-bold uppercase tracking-widest text-xs text-foreground/70">Próximo Pago (Supabase y Render)</h3>
             </div>
             <p className={`text-2xl font-black ${alertaVencimiento ? 'text-red-600' : 'text-foreground'}`}>
               {fechaVencimiento.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
