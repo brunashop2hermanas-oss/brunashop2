@@ -10,9 +10,13 @@ import { getPrendas } from "@/app/actions/productos";
 
 const HERO_IMAGES = [
   "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1485230895905-31d011713626?q=80&w=2070&auto=format&fit=crop",
   "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop",
   "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=2070&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=2070&auto=format&fit=crop"
+  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=2070&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1445205170230-053b83016050?q=80&w=2070&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1539008835657-9e8e9680c956?q=80&w=2070&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1509319117193-57bab727e09d?q=80&w=2070&auto=format&fit=crop"
 ];
 
 export default function Home() {
@@ -178,8 +182,8 @@ export default function Home() {
               transition={{ duration: 1.8, ease: "easeInOut" }}
             />
           </AnimatePresence>
-          {/* Overlay base para oscurecer y dar el tono cálido */}
-          <div className="absolute inset-0 bg-[#2a1712]/70 mix-blend-multiply"></div>
+          {/* Overlay base para oscurecer suavemente y mantener nitidez */}
+          <div className="absolute inset-0 bg-[#3e2723]/30"></div>
           
           {/* Marca de agua del logo (integrada orgánicamente) */}
           <div className="absolute inset-0 w-full h-full flex items-center justify-center opacity-60 pointer-events-none">
@@ -195,7 +199,7 @@ export default function Home() {
           </div>
 
           {/* Gradiente final para legibilidad del texto */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#1a0f0a] via-transparent to-[#1a0f0a]/60"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
         </div>
 
         <div className="relative z-10 text-center px-4 max-w-4xl flex flex-col items-center mt-20 md:mt-0">
