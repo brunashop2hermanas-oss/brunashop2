@@ -121,147 +121,12 @@ export default function AdminProductos() {
     setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: true, piezasDetalle: {}, stockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "" });
     setCategoriaSeleccionada("");
     setTallasSeleccionadas([]);
-"use client";
-
-import { useState, useEffect } from "react";
-import { Plus, Video, EyeOff, Edit, Trash2, X, Palette, Scaling, Tag, Package, Image as ImageIcon } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { getPrendas, createPrenda, updatePrenda, deletePrenda } from "@/app/actions/productos";
-import { uploadImage } from "@/app/actions/upload";
-import { getConfiguracion, updateConfiguracion } from "@/app/actions/config";
-import { compressImage } from "@/lib/imageCompression";
-
-export default function AdminProductos() {
-  const [productos, setProductos] = useState<any[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isModalCategoriasOpen, setIsModalCategoriasOpen] = useState(false);
-  const [productoEditando, setProductoEditando] = useState<any>(null);
-  const [productoABorrar, setProductoABorrar] = useState<string | null>(null);
-  const [notificacion, setNotificacion] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [imagenAmpliada, setImagenAmpliada] = useState<string | null>(null);
-  
-  // Estados del Formulario
-  const [formData, setFormData] = useState({
-    nombre: "",
-    precioBase: "",
-    descuento: "",
-    enPromocion: false,
-    categoria: "",
-    coleccion: "",
-    colores: "",
-    stockCount: "",
-    material: "",
-    marca: "",
-    isConjunto: false,
-    piezasDetalle: {} as any,
-    stockPorTalla: {} as any,
-    imagenesPorColor: {} as any,
-    descripcionLarga: "",
-    costoProveedor: ""
-  });
-
-  const [usarControlFinanciero, setUsarControlFinanciero] = useState(false);
-
-  const [categorias, setCategorias] = useState(["Vestidos", "Conjuntos", "Blusas y Tops", "Pantalones y Jeans", "Chaquetas y Abrigos", "Enterizos", "Ofertas / Sale"]);
-  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("");
-  const [isGestionandoCategorias, setIsGestionandoCategorias] = useState(false);
-  const [nuevaCategoria, setNuevaCategoria] = useState("");
-  const [categoriaAEditar, setCategoriaAEditar] = useState<{old: string, new: string} | null>(null);
-
-  const [tallasDisponibles, setTallasDisponibles] = useState(['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Talla Única']);
-  const [tallasSeleccionadas, setTallasSeleccionadas] = useState<string[]>([]);
-  const [nuevaTalla, setNuevaTalla] = useState("");
-
-  const [fotosPreview, setFotosPreview] = useState<string[]>([]);
-
-  const guardarCategoriasEnBD = async (nuevasCategorias: string[]) => {
-    try {
-      await updateConfiguracion({ categoriasPrendas: nuevasCategorias });
-    } catch (e) {
-      console.error("Error al guardar categorías", e);
-    }
-  };
-
-  const agregarCategoriaLocal = () => {
-    const cat = nuevaCategoria.trim();
-    if (!cat || categorias.includes(cat)) return;
-    const actualizadas = [...categorias, cat];
-    setCategorias(actualizadas);
-    setNuevaCategoria("");
-    guardarCategoriasEnBD(actualizadas);
-  };
-
-  const eliminarCategoriaLocal = (cat: string) => {
-    const actualizadas = categorias.filter(c => c !== cat);
-    setCategorias(actualizadas);
-    if (categoriaSeleccionada === cat) setCategoriaSeleccionada("");
-    guardarCategoriasEnBD(actualizadas);
-  };
-
-  const guardarEdicionCategoriaLocal = () => {
-    if (!categoriaAEditar) return;
-    const catNuevo = categoriaAEditar.new.trim();
-    if (!catNuevo) return;
-    const actualizadas = categorias.map(c => c === categoriaAEditar.old ? catNuevo : c);
-    setCategorias(actualizadas);
-    if (categoriaSeleccionada === categoriaAEditar.old) setCategoriaSeleccionada(catNuevo);
-    setCategoriaAEditar(null);
-    guardarCategoriasEnBD(actualizadas);
-  };
-
-  useEffect(() => {
-    cargarProductos();
-  }, []);
-
-  const cargarProductos = async () => {
-    setIsLoading(true);
-    const [resProd, resConf] = await Promise.all([getPrendas(), getConfiguracion()]);
-    
-    if (resProd.success) {
-      setProductos((resProd.data || []).map((p: any) => ({ ...p, originalStock: p.stockCount })));
-    }
-    
-    if (resConf.success && resConf.data && resConf.data.categoriasPrendas) {
-      setCategorias(resConf.data.categoriasPrendas);
-      setUsarControlFinanciero(resConf.data.usarControlFinanciero ?? true);
-    }
-    
-    setIsLoading(false);
-  };
-
-  const abrirModalNueva = () => {
-    setProductoEditando(null);
-    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: false, piezasDetalle: {}, stockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "" });
-    setCategoriaSeleccionada("");
-    setTallasSeleccionadas([]);
-    setFotosPreview([]);
-    setIsModalOpen(true);
-  };
-
-  const abrirModalNuevoCombo = () => {
-    setProductoEditando(null);
-    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: true, piezasDetalle: {}, stockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "" });
-    setCategoriaSeleccionada("");
-    setTallasSeleccionadas([]);
     setFotosPreview([]);
     setIsModalOpen(true);
   };
 
   const abrirModalEditar = (producto: any) => {
     setProductoEditando(producto);
-    let stockNormalizado: any = {};
-    if (producto.stockPorTalla) {
-      // Normalize old format {'S/M': '5'} to new format {'S/M': {'Unico': '5'}}
-      Object.keys(producto.stockPorTalla).forEach(talla => {
-        if (typeof producto.stockPorTalla[talla] === 'object' && producto.stockPorTalla[talla] !== null) {
-          stockNormalizado[talla] = { ...producto.stockPorTalla[talla] };
-        } else {
-          stockNormalizado[talla] = { 'Unico': String(producto.stockPorTalla[talla]) };
-        }
-      });
-    }
-
     setFormData({
       nombre: producto.nombre || "",
       precioBase: producto.precioOriginal ? producto.precioOriginal.toString() : (producto.precioVenta?.toString() || ""),
@@ -275,7 +140,20 @@ export default function AdminProductos() {
       marca: producto.marca || "",
       isConjunto: producto.isConjunto || false,
       piezasDetalle: producto.piezasDetalle || {},
-      stockPorTalla: stockNormalizado,
+      stockPorTalla: (() => {
+        let s: Record<string, any> = {};
+        if (producto.stockPorTalla) {
+          const stock = producto.stockPorTalla as Record<string, any>;
+          Object.keys(stock).forEach(talla => {
+            if (typeof stock[talla] === 'object' && stock[talla] !== null) {
+              s[talla] = { ...stock[talla] };
+            } else {
+              s[talla] = { 'Unico': String(stock[talla]) };
+            }
+          });
+        }
+        return s;
+      })(),
       imagenesPorColor: producto.imagenesPorColor || {},
       descripcionLarga: producto.descripcionLarga || "",
       costoProveedor: producto.costoProveedor?.toString() || ""
@@ -868,6 +746,150 @@ export default function AdminProductos() {
                             >
                               <Plus className="w-4 h-4" />
                             </button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-foreground mb-2">Colores (Separar con coma)</label>
+                          <input type="text" value={formData.colores} onChange={e => setFormData({...formData, colores: e.target.value})} placeholder="Ej. Rojo, Negro" className="w-full bg-surface border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-brand-primary outline-none" />
+                        </div>
+                      </div>
+
+                      {formData.colores.trim().length > 0 && fotosPreview.length > 1 && (
+                        <div className="bg-surface border border-surface-border p-4 rounded-xl shadow-sm mb-6">
+                          <label className="block text-sm font-bold text-foreground mb-2">
+                            <ImageIcon className="w-4 h-4 text-brand-primary inline mr-2" />
+                            Asignar foto a cada color (Opcional)
+                          </label>
+                          <p className="text-xs text-foreground/60 mb-4">Selecciona la imagen que corresponde a cada color. Haz click en la lupa para ampliarla en otra pestaña.</p>
+                          <div className="flex flex-col gap-4">
+                            {formData.colores.split(",").map(c => c.trim()).filter(c => c).map((color) => (
+                              <div key={color} className="flex items-center gap-4 border-b border-surface-border/50 pb-3 last:border-0 last:pb-0">
+                                <span className="font-bold uppercase text-xs w-24 shrink-0 text-brand-primary">{color}</span>
+                                <div className="flex gap-2 overflow-x-auto pb-2">
+                                  {fotosPreview.map((url, index) => {
+                                    const keyMatch = formData.imagenesPorColor ? Object.keys(formData.imagenesPorColor).find(k => k.toLowerCase() === color.toLowerCase()) : undefined;
+                                    const savedUrl = keyMatch && typeof formData.imagenesPorColor[keyMatch] === 'string' ? formData.imagenesPorColor[keyMatch].trim() : undefined;
+                                    return (
+                                    <div 
+                                      key={index} 
+                                      className={`relative w-16 h-16 rounded-lg border-2 cursor-pointer shrink-0 transition-all group ${savedUrl === url ? 'border-brand-primary ring-2 ring-brand-primary/20 scale-105' : 'border-transparent hover:border-brand-primary/50'}`}
+                                      onClick={() => setFormData(prev => ({...prev, imagenesPorColor: {...(prev.imagenesPorColor || {}), [color]: url}}))}
+                                    >
+                                      <img src={url} className="w-full h-full object-contain bg-slate-50 rounded-md" />
+                                      {savedUrl === url && (
+                                        <div className="absolute -top-2 -right-2 bg-brand-primary text-white rounded-full p-0.5 shadow-md z-10">
+                                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></svg>
+                                        </div>
+                                      )}
+                                      <button 
+                                        className="absolute bottom-1 right-1 flex items-center justify-center w-6 h-6 bg-black/50 hover:bg-black/80 rounded-full transition-colors z-20"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setImagenAmpliada(url);
+                                        }}
+                                        title="Ampliar imagen"
+                                        type="button"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-white"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+                                      </button>
+                                    </div>
+                                  )})}
+                                  {(() => {
+                                    const keyMatch = formData.imagenesPorColor ? Object.keys(formData.imagenesPorColor).find(k => k.toLowerCase() === color.toLowerCase()) : undefined;
+                                    const savedUrl = keyMatch && typeof formData.imagenesPorColor[keyMatch] === 'string' ? formData.imagenesPorColor[keyMatch].trim() : undefined;
+                                    return savedUrl && (
+                                    <button 
+                                      className="text-xs text-red-500 hover:text-red-700 hover:underline px-2"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const next = {...formData.imagenesPorColor};
+                                        delete next[color];
+                                        setFormData(prev => ({...prev, imagenesPorColor: next}));
+                                      }}
+                                    >Quitar</button>
+                                    );
+                                  })()}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {tallasSeleccionadas.length > 0 ? (
+                        <div className="bg-background rounded-xl border border-surface-border p-4 overflow-x-auto shadow-sm">
+                          <label className="block text-sm font-bold text-foreground mb-4">
+                            {formData.colores.split(",").filter(c => c.trim()).length > 0 
+                              ? "Inventario Exacto por Talla y Color" 
+                              : "Inventario Exacto por Talla (Color Opcional)"}
+                          </label>
+                          <table className="w-full text-left text-sm">
+                            <thead>
+                              <tr>
+                                <th className="pb-2 border-b border-surface-border font-black text-brand-primary">Talla</th>
+                                {formData.colores.split(",").filter(c => c.trim()).length > 0 ? (
+                                  formData.colores.split(",").map(c => c.trim()).filter(c => c).map(color => (
+                                    <th key={color} className="pb-2 border-b border-surface-border font-bold uppercase text-xs tracking-wider">{color}</th>
+                                  ))
+                                ) : (
+                                  <th className="pb-2 border-b border-surface-border font-bold uppercase text-xs tracking-wider">Cantidad</th>
+                                )}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {tallasSeleccionadas.map(talla => (
+                                <tr key={talla}>
+                                  <td className="py-3 font-bold border-b border-surface-border/50">{talla}</td>
+                                  {formData.colores.split(",").filter(c => c.trim()).length > 0 ? (
+                                    formData.colores.split(",").map(c => c.trim()).filter(c => c).map(color => (
+                                      <td key={color} className="py-2 pr-2 border-b border-surface-border/50">
+                                        <input 
+                                          type="number" min="0" 
+                                          value={formData.stockPorTalla?.[talla]?.[color] || ""}
+                                          onChange={(e) => {
+                                            const val = Math.max(0, Number(e.target.value));
+                                            setFormData({
+                                              ...formData,
+                                              stockPorTalla: {
+                                                ...formData.stockPorTalla,
+                                                [talla]: {
+                                                  ...(formData.stockPorTalla[talla] || {}),
+                                                  [color]: val.toString()
+                                                }
+                                              }
+                                            });
+                                          }}
+                                          className="w-full bg-surface border border-surface-border p-2 rounded-lg outline-none focus:ring-2 focus:ring-brand-primary font-mono text-center" 
+                                          placeholder="0"
+                                        />
+                                      </td>
+                                    ))
+                                  ) : (
+                                    <td className="py-2 pr-2 border-b border-surface-border/50">
+                                      <input 
+                                        type="number" min="0" 
+                                        value={formData.stockPorTalla?.[talla]?.['Unico'] || ""}
+                                        onChange={(e) => {
+                                          const val = Math.max(0, Number(e.target.value));
+                                          setFormData({
+                                            ...formData,
+                                            stockPorTalla: {
+                                              ...formData.stockPorTalla,
+                                              [talla]: {
+                                                ...(formData.stockPorTalla[talla] || {}),
+                                                ['Unico']: val.toString()
+                                              }
+                                            }
+                                          });
+                                        }}
+                                        className="w-full bg-surface border border-surface-border p-2 rounded-lg outline-none focus:ring-2 focus:ring-brand-primary font-mono text-center" 
+                                        placeholder="0"
+                                      />
+                                    </td>
+                                  )}
+                                </tr>
+                              ))}
+                            </tbody>
                           </table>
                         </div>
                       ) : (
