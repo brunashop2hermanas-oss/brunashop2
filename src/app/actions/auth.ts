@@ -30,10 +30,10 @@ export async function loginUser(usuario: string, pin: string) {
     });
 
     // Añadir maxAge a todas las cookies para que no sean "Cookies de Sesión"
-    cookieStore.set("bruna_user_role", user.role, { path: "/", maxAge: ONE_YEAR });
-    cookieStore.set("bruna_user_name", `${user.nombres} ${user.apellidos}`, { path: "/", maxAge: ONE_YEAR });
-    cookieStore.set("bruna_user_id", user.id, { path: "/", maxAge: ONE_YEAR });
-    cookieStore.set("bruna_user_permissions", JSON.stringify(user.permisos || []), { path: "/", maxAge: ONE_YEAR });
+    cookieStore.set("bruna_user_role", user.role, { path: "/", maxAge: ONE_YEAR, httpOnly: false });
+    cookieStore.set("bruna_user_name", `${user.nombres} ${user.apellidos}`, { path: "/", maxAge: ONE_YEAR, httpOnly: false });
+    cookieStore.set("bruna_user_id", user.id, { path: "/", maxAge: ONE_YEAR, httpOnly: false });
+    cookieStore.set("bruna_user_permissions", JSON.stringify(user.permisos || []), { path: "/", maxAge: ONE_YEAR, httpOnly: false });
 
     revalidatePath('/', 'layout');
     return { success: true, user: { name: user.nombres, role: user.role } };
@@ -54,6 +54,22 @@ export async function logoutUser() {
   cookieStore.delete("bruna_user_permissions");
   revalidatePath('/', 'layout');
     return { success: true };
+}
+
+export async function getUserRole() {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("bruna_user_id")?.value;
+  if (!userId) return "";
+  
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true }
+    });
+    return user?.role || "";
+  } catch (e) {
+    return "";
+  }
 }
 
 export async function resetPassword(username: string, ci: string, newPin: string) {

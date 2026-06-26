@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Star, Gift, Search, Phone, IdCard, FileText, Calendar } from "lucide-react";
+import { Star, Gift, Search, Phone, IdCard, FileText, Calendar, Trash } from "lucide-react";
 import { useState } from "react";
 
 import { getClientas, resetPuntosClientas } from "@/app/actions/clientas";
@@ -13,6 +13,10 @@ const WhatsappIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+import { deleteVenta } from "@/app/actions/ventas";
+import { getUserRole } from "@/app/actions/auth";
+import toast from "react-hot-toast";
+
 export default function AdminClientas() {
   const [busqueda, setBusqueda] = useState("");
   const [clientas, setClientas] = useState<any[]>([]);
@@ -22,24 +26,45 @@ export default function AdminClientas() {
   const [filtroFecha, setFiltroFecha] = useState<'hoy' | 'semana' | 'mes' | 'año' | 'todo' | 'especifica'>('todo');
   const [fechaEspecifica, setFechaEspecifica] = useState("");
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [userRole, setUserRole] = useState('');
+  
+  // Estados para el Modal de Clienta
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'historial' | 'editar'>('historial');
+  const [editData, setEditData] = useState({ nombres: '', apellidos: '', ci: '', celular: '' });
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Estado para modal de confirmación de eliminación
+  const [ventaAEliminar, setVentaAEliminar] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [clientaAEliminar, setClientaAEliminar] = useState<string | null>(null);
+  const [isDeletingClienta, setIsDeletingClienta] = useState(false);
 
   useEffect(() => {
-    const fetchClientas = async () => {
+    const initData = async () => {
+      const role = await getUserRole();
+      if (role) setUserRole(role);
+      
       const res = await getClientas();
       if (res.success) {
         setClientas(res.data || []);
       }
       setIsLoading(false);
     };
-    fetchClientas();
+    initData();
   }, []);
 
-  const handleImprimirClienta = (clienta: any) => {
+  const handleVerClienta = (clienta: any) => {
     setClientaSeleccionada(clienta);
-    setTimeout(() => {
-      window.print();
-      // Opcional: resetear después de un rato, pero no hace daño dejarlo ahí oculto.
-    }, 100);
+    const [nombres, ...apellidosArr] = clienta.nombre.split(" ");
+    setEditData({
+      nombres: nombres || '',
+      apellidos: apellidosArr.join(" ") || '',
+      ci: clienta.ci || '',
+      celular: clienta.celular || ''
+    });
+    setActiveTab('historial');
+    setIsClientModalOpen(true);
   };
 
   const clientasFiltradas = clientas.filter(c => {
@@ -246,12 +271,23 @@ export default function AdminClientas() {
                       </div>
                     </td>
                     <td className="p-5 text-center no-print">
-                      <button 
-                        onClick={() => handleImprimirClienta(clienta)}
-                        className="bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white px-4 py-2 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 mx-auto"
-                      >
-                        <FileText className="w-4 h-4" /> PDF
-                      </button>
+                      <div className="flex items-center justify-center gap-2">
+                        <button 
+                          onClick={() => handleVerClienta(clienta)}
+                          className="bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white px-4 py-2 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                        >
+                          <FileText className="w-4 h-4" /> Perfil
+                        </button>
+                        {userRole === 'ADMINISTRADOR' && (
+                          <button
+                            onClick={() => setClientaAEliminar(clienta.id)}
+                            className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white p-2 rounded-xl font-bold transition-colors flex items-center justify-center"
+                            title="Eliminar Clienta"
+                          >
+                            <Trash className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -314,12 +350,22 @@ export default function AdminClientas() {
                   </div>
                 </div>
                 
-                <button 
-                  onClick={() => handleImprimirClienta(clienta)}
-                  className="bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white px-4 py-2 mt-1 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 w-full"
-                >
-                  <FileText className="w-4 h-4" /> Ver / Imprimir PDF
-                </button>
+                <div className="flex gap-2 mt-1 w-full">
+                  <button 
+                    onClick={() => handleVerClienta(clienta)}
+                    className="bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white px-4 py-2 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 flex-1"
+                  >
+                    <FileText className="w-4 h-4" /> Ver Perfil
+                  </button>
+                  {userRole === 'ADMINISTRADOR' && (
+                    <button
+                      onClick={() => setClientaAEliminar(clienta.id)}
+                      className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white p-2 rounded-xl font-bold transition-colors flex items-center justify-center"
+                    >
+                      <Trash className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
               </div>
             ))
           ) : (
@@ -454,6 +500,292 @@ export default function AdminClientas() {
           .print-ficha { display: block !important; }
         }
       `}} />
+
+      {/* Modal del Directorio (Perfil de Clienta) */}
+      {isClientModalOpen && clientaSeleccionada && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-surface border border-surface-border rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl relative"
+          >
+            {/* Header */}
+            <div className="p-6 border-b border-surface-border flex justify-between items-center bg-background/50">
+              <div>
+                <h2 className="text-2xl font-black text-foreground">{clientaSeleccionada.nombre}</h2>
+                <p className="text-foreground/70 font-medium text-sm flex items-center gap-2 mt-1">
+                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                  {clientaSeleccionada.prendasCompradas} Puntos • Bs. {clientaSeleccionada.dineroGastado.toFixed(2)} Gastado
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsClientModalOpen(false)}
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-border/50 hover:bg-surface-border transition-colors text-foreground"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {/* Tabs */}
+            <div className="flex border-b border-surface-border">
+              <button 
+                onClick={() => setActiveTab('historial')}
+                className={`flex-1 p-4 font-bold text-center transition-colors border-b-2 ${activeTab === 'historial' ? 'border-brand-primary text-brand-primary bg-brand-primary/5' : 'border-transparent text-foreground/70 hover:bg-surface-border/50'}`}
+              >
+                Historial de Pedidos
+              </button>
+              <button 
+                onClick={() => setActiveTab('editar')}
+                className={`flex-1 p-4 font-bold text-center transition-colors border-b-2 ${activeTab === 'editar' ? 'border-brand-primary text-brand-primary bg-brand-primary/5' : 'border-transparent text-foreground/70 hover:bg-surface-border/50'}`}
+              >
+                Editar Datos
+              </button>
+            </div>
+            
+            {/* Contenido */}
+            <div className="p-6 overflow-y-auto flex-1 bg-surface">
+              {activeTab === 'historial' ? (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-foreground text-lg">Pedidos Registrados</h3>
+                    <button 
+                      onClick={() => {
+                        setTimeout(() => { window.print(); }, 100);
+                      }}
+                      className="bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white px-4 py-2 rounded-xl font-bold transition-colors flex items-center gap-2 text-sm"
+                    >
+                      <FileText className="w-4 h-4" /> Imprimir Ficha
+                    </button>
+                  </div>
+                  
+                  {clientaSeleccionada.compras && clientaSeleccionada.compras.length > 0 ? (
+                    <div className="border border-surface-border rounded-xl overflow-hidden">
+                      <table className="w-full text-left">
+                        <thead className="bg-background/50 border-b border-surface-border">
+                          <tr>
+                            <th className="p-4 text-xs font-bold uppercase text-foreground/50">Fecha</th>
+                            <th className="p-4 text-xs font-bold uppercase text-foreground/50">Detalle</th>
+                            <th className="p-4 text-xs font-bold uppercase text-foreground/50">Monto</th>
+                            {userRole === 'ADMINISTRADOR' && (
+                              <th className="p-4 text-xs font-bold uppercase text-foreground/50 text-right">Acción</th>
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-surface-border">
+                          {clientaSeleccionada.compras.map((compra: any, idx: number) => (
+                            <tr key={idx} className="hover:bg-brand-primary/5 transition-colors">
+                              <td className="p-4">
+                                <span className="font-bold text-foreground">{compra.fecha}</span><br/>
+                                <span className="text-xs text-foreground/50">{compra.hora}</span>
+                              </td>
+                              <td className="p-4 font-bold text-foreground">{compra.prenda}</td>
+                              <td className="p-4 font-black text-foreground">Bs. {compra.monto.toFixed(2)}</td>
+                              {userRole === 'ADMINISTRADOR' && (
+                                <td className="p-4 text-right">
+                                  <button 
+                                    onClick={() => setVentaAEliminar(compra.ventaId)}
+                                    className="text-red-500 hover:text-white bg-red-500/10 hover:bg-red-500 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                                  >
+                                    Eliminar
+                                  </button>
+                                </td>
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="p-10 text-center bg-background/50 rounded-xl border border-surface-border">
+                      <p className="text-foreground/50 font-medium">No hay pedidos registrados.</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="max-w-xl mx-auto space-y-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-bold text-foreground/70 mb-1">Nombres</label>
+                      <input 
+                        type="text"
+                        value={editData.nombres}
+                        onChange={(e) => setEditData({...editData, nombres: e.target.value})}
+                        className="w-full bg-background border border-surface-border p-3 rounded-xl outline-none focus:border-brand-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-foreground/70 mb-1">Apellidos</label>
+                      <input 
+                        type="text"
+                        value={editData.apellidos}
+                        onChange={(e) => setEditData({...editData, apellidos: e.target.value})}
+                        className="w-full bg-background border border-surface-border p-3 rounded-xl outline-none focus:border-brand-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-foreground/70 mb-1">Carnet de Identidad (CI)</label>
+                      <input 
+                        type="text"
+                        value={editData.ci}
+                        onChange={(e) => setEditData({...editData, ci: e.target.value})}
+                        className="w-full bg-background border border-surface-border p-3 rounded-xl outline-none focus:border-brand-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-foreground/70 mb-1">Celular</label>
+                      <input 
+                        type="text"
+                        value={editData.celular}
+                        onChange={(e) => setEditData({...editData, celular: e.target.value})}
+                        className="w-full bg-background border border-surface-border p-3 rounded-xl outline-none focus:border-brand-primary"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 border-t border-surface-border flex justify-between items-center">
+                    {userRole === 'ADMINISTRADOR' ? (
+                      <button 
+                        onClick={() => setClientaAEliminar(clientaSeleccionada.id)}
+                        className="text-red-500 font-bold hover:underline text-sm"
+                      >
+                        Eliminar Clienta por Completo
+                      </button>
+                    ) : <div></div>}
+                    <button 
+                      onClick={async () => {
+                        setIsSaving(true);
+                        const { updateClienta } = await import('@/app/actions/clientas');
+                        const res = await updateClienta(clientaSeleccionada.id, editData);
+                        if (res.success) {
+                          toast.success("Datos guardados exitosamente");
+                          const resClientas = await getClientas();
+                          if (resClientas.success) {
+                            setClientas(resClientas.data || []);
+                            const updatedClienta = resClientas.data?.find(c => c.id === clientaSeleccionada.id);
+                            if (updatedClienta) setClientaSeleccionada(updatedClienta);
+                          }
+                        } else {
+                          toast.error(res.error || "Error al guardar");
+                        }
+                        setIsSaving(false);
+                      }}
+                      disabled={isSaving}
+                      className="bg-brand-primary text-white font-bold px-6 py-3 rounded-xl hover:bg-brand-primary/90 transition-colors disabled:opacity-50"
+                    >
+                      {isSaving ? "Guardando..." : "Guardar Cambios"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Modal Confirmar Eliminación */}
+      {ventaAEliminar && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-surface border border-surface-border p-8 rounded-3xl max-w-md w-full shadow-2xl relative"
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-6">
+                <Star className="w-10 h-10" />
+              </div>
+              <h2 className="text-2xl font-black text-foreground mb-4">¿Eliminar Pedido?</h2>
+              <p className="text-foreground/70 mb-8 leading-relaxed">
+                Esta acción eliminará el registro de la venta, restará los puntos y devolverá el stock al catálogo. 
+                <strong className="text-red-500 block mt-2">Esta acción no se puede deshacer.</strong>
+              </p>
+              <div className="flex gap-4 w-full">
+                <button 
+                  onClick={() => setVentaAEliminar(null)}
+                  className="flex-1 px-4 py-3 rounded-xl font-bold text-foreground/70 bg-surface border border-surface-border hover:bg-surface-border transition-colors outline-none focus:ring-2 focus:ring-brand-primary"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={async () => {
+                    setIsDeleting(true);
+                    const res = await deleteVenta(ventaAEliminar);
+                    if (res.success) {
+                      toast.success("Pedido eliminado exitosamente");
+                      const resClientas = await getClientas();
+                      if (resClientas.success) {
+                        setClientas(resClientas.data || []);
+                        const updatedClienta = resClientas.data?.find(c => c.id === clientaSeleccionada.id);
+                        if (updatedClienta) setClientaSeleccionada(updatedClienta);
+                      }
+                    } else {
+                      toast.error(res.error || "Error al eliminar pedido");
+                    }
+                    setIsDeleting(false);
+                    setVentaAEliminar(null);
+                  }}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30 outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+                >
+                  {isDeleting ? "Borrando..." : "Sí, Eliminar"}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Modal Confirmar Eliminación Clienta */}
+      {clientaAEliminar && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-surface border border-surface-border p-8 rounded-3xl max-w-md w-full shadow-2xl relative"
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-6">
+                <Star className="w-10 h-10" />
+              </div>
+              <h2 className="text-2xl font-black text-foreground mb-4">¿Eliminar Clienta?</h2>
+              <p className="text-foreground/70 mb-8 leading-relaxed">
+                Esta acción borrará <strong className="text-foreground">COMPLETAMENTE</strong> el perfil de la clienta.
+                A diferencia de los pedidos, esta eliminación no devuelve stock. 
+                <strong className="text-red-500 block mt-2">Esta acción es irreversible.</strong>
+              </p>
+              <div className="flex gap-4 w-full">
+                <button 
+                  onClick={() => setClientaAEliminar(null)}
+                  className="flex-1 px-4 py-3 rounded-xl font-bold text-foreground/70 bg-surface border border-surface-border hover:bg-surface-border transition-colors outline-none focus:ring-2 focus:ring-brand-primary"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={async () => {
+                    setIsDeletingClienta(true);
+                    const { deleteClienta } = await import('@/app/actions/clientas');
+                    const res = await deleteClienta(clientaAEliminar);
+                    if (res.success) {
+                      toast.success("Clienta eliminada exitosamente");
+                      const resClientas = await getClientas();
+                      if (resClientas.success) setClientas(resClientas.data || []);
+                      setIsClientModalOpen(false);
+                    } else {
+                      toast.error(res.error || "Error al eliminar clienta");
+                    }
+                    setIsDeletingClienta(false);
+                    setClientaAEliminar(null);
+                  }}
+                  disabled={isDeletingClienta}
+                  className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30 outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+                >
+                  {isDeletingClienta ? "Borrando..." : "Sí, Eliminar Clienta"}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Modal de Confirmación de Reseteo */}
       {isResetModalOpen && (

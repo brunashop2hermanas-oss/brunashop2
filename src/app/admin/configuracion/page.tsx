@@ -3,7 +3,7 @@
 import toast from "react-hot-toast";
 import Link from "next/link";
 
-import { Settings, QrCode, Building, ShieldCheck, Upload, Save, Eye, EyeOff, BarChart3, X } from "lucide-react";
+import { Settings, QrCode, Building, ShieldCheck, Upload, Save, Eye, EyeOff, BarChart3, X, MessageCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getConfiguracion, updateConfiguracion } from "@/app/actions/config";
 import { getUsuarios, createUsuario, updateUsuario, deleteUsuario } from "@/app/actions/usuarios";
@@ -104,7 +104,13 @@ export default function AdminConfiguracion() {
     tiempoReservaMinutos: 4,
     tiempoLlenadoDatosMinutos: 10,
     destinosHabilitados: {} as Record<string, { provincias: string[], municipios: string[] }>,
-    categoriasPrendas: [] as string[]
+    categoriasPrendas: [] as string[],
+    msgAprobadoLocal: null as string | null,
+    msgAprobadoNacional: null as string | null,
+    msgRechazadoLocal: null as string | null,
+    msgRechazadoNacional: null as string | null,
+    msgGuiaLocal: null as string | null,
+    msgGuiaNacional: null as string | null
   });
   const [qrFile, setQrFile] = useState<File | null>(null);
 
@@ -163,7 +169,13 @@ export default function AdminConfiguracion() {
           tiempoReservaMinutos: resConfig.data.tiempoReservaMinutos ?? 4,
           tiempoLlenadoDatosMinutos: resConfig.data.tiempoLlenadoDatosMinutos ?? 10,
           destinosHabilitados: {}, // Lo llenamos abajo
-          categoriasPrendas: resConfig.data.categoriasPrendas || ["Vestidos", "Conjuntos", "Blusas y Tops", "Pantalones y Jeans", "Chaquetas y Abrigos", "Enterizos", "Ofertas / Sale"]
+          categoriasPrendas: resConfig.data.categoriasPrendas || ["Vestidos", "Conjuntos", "Blusas y Tops", "Pantalones y Jeans", "Chaquetas y Abrigos", "Enterizos", "Ofertas / Sale"],
+          msgAprobadoLocal: resConfig.data.msgAprobadoLocal || "¡Hola {cliente}! 🌸 Tu pago por {total} Bs ha sido recibido con éxito y tu pedido está confirmado ✅.",
+          msgAprobadoNacional: resConfig.data.msgAprobadoNacional || "Estamos preparando tu envío hacia {destino}. Te avisaremos en cuanto esté en camino. ¡Gracias por elegir Bruna Shop! 💖🛍️",
+          msgRechazadoLocal: resConfig.data.msgRechazadoLocal || "Hola {cliente}. Te informamos que hemos tenido un inconveniente al verificar tu pago por {total} Bs. ❌",
+          msgRechazadoNacional: resConfig.data.msgRechazadoNacional || "Hola {cliente}. Te informamos que hemos tenido un inconveniente al verificar tu pago por {total} Bs. ❌",
+          msgGuiaLocal: resConfig.data.msgGuiaLocal || "¡Hola {cliente}! 🌸 Tu paquete ya está listo y completado.\n\nPuedes hacer seguimiento o ver el detalle aquí:\n{urlGuia}",
+          msgGuiaNacional: resConfig.data.msgGuiaNacional || "¡Hola {cliente}! 🌸 Tu paquete ya está en camino hacia {destino}. 🚚\n\nPuedes hacer seguimiento de tu guía aquí:\n{urlGuia}"
         });
 
         const loadedDestinos = (resConfig.data.destinosHabilitados as Record<string, unknown>) || {};
@@ -296,7 +308,13 @@ export default function AdminConfiguracion() {
         tiempoReservaMinutos: config.tiempoReservaMinutos,
         tiempoLlenadoDatosMinutos: config.tiempoLlenadoDatosMinutos,
         destinosHabilitados: config.destinosHabilitados,
-        categoriasPrendas: config.categoriasPrendas
+        categoriasPrendas: config.categoriasPrendas,
+        msgAprobadoLocal: config.msgAprobadoLocal,
+        msgAprobadoNacional: config.msgAprobadoNacional,
+        msgRechazadoLocal: config.msgRechazadoLocal,
+        msgRechazadoNacional: config.msgRechazadoNacional,
+        msgGuiaLocal: config.msgGuiaLocal,
+        msgGuiaNacional: config.msgGuiaNacional
       };
 
       const res = await updateConfiguracion(dataToSend);
@@ -857,6 +875,100 @@ export default function AdminConfiguracion() {
           </div>
 
 
+
+          {/* =========================================
+            PRIORIDAD 3.5: MENSAJES WHATSAPP
+            ========================================= */}
+          <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d space-y-6 lg:col-span-2">
+            <div className="flex items-center gap-4 border-b border-gray-100 pb-4">
+              <div className="p-3 bg-green-100 text-green-600 rounded-xl">
+                <MessageCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">Plantillas de WhatsApp</h3>
+                <p className="text-sm text-gray-500">Configura los mensajes automáticos que se envían desde la sección Pedidos. Variables: {'{cliente}'}, {'{total}'}, {'{destino}'}, {'{urlGuia}'}.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Pagos Aprobados */}
+              <div className="space-y-4">
+                <h4 className="font-bold text-gray-700 bg-gray-50 p-2 rounded-lg text-sm text-center">✅ PAGOS APROBADOS</h4>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1">Local (La Paz)</label>
+                  <textarea
+                    rows={4}
+                    value={config.msgAprobadoLocal || ""}
+                    onChange={e => setConfig({ ...config, msgAprobadoLocal: e.target.value })}
+                    placeholder="Ej: ¡Hola {cliente}! Tu pago de {total} Bs está confirmado..."
+                    className="w-full bg-white border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-green-400 outline-none text-sm resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1">Nacional (Resto de Bolivia)</label>
+                  <textarea
+                    rows={4}
+                    value={config.msgAprobadoNacional || ""}
+                    onChange={e => setConfig({ ...config, msgAprobadoNacional: e.target.value })}
+                    placeholder="Ej: ¡Hola {cliente}! Preparando envío a {destino}..."
+                    className="w-full bg-white border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-green-400 outline-none text-sm resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Pagos Rechazados */}
+              <div className="space-y-4">
+                <h4 className="font-bold text-gray-700 bg-gray-50 p-2 rounded-lg text-sm text-center">❌ PAGOS RECHAZADOS</h4>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1">Local (La Paz)</label>
+                  <textarea
+                    rows={4}
+                    value={config.msgRechazadoLocal || ""}
+                    onChange={e => setConfig({ ...config, msgRechazadoLocal: e.target.value })}
+                    placeholder="Ej: Hola {cliente}. Tuvimos un inconveniente..."
+                    className="w-full bg-white border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-400 outline-none text-sm resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1">Nacional (Resto de Bolivia)</label>
+                  <textarea
+                    rows={4}
+                    value={config.msgRechazadoNacional || ""}
+                    onChange={e => setConfig({ ...config, msgRechazadoNacional: e.target.value })}
+                    placeholder="Ej: Hola {cliente}. Tuvimos un inconveniente..."
+                    className="w-full bg-white border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-400 outline-none text-sm resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Guías de Envío */}
+              <div className="space-y-4 md:col-span-2 max-w-3xl mx-auto w-full">
+                <h4 className="font-bold text-gray-700 bg-gray-50 p-2 rounded-lg text-sm text-center">🚚 GUÍAS / PAQUETES LISTOS</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">Local (La Paz)</label>
+                    <textarea
+                      rows={4}
+                      value={config.msgGuiaLocal || ""}
+                      onChange={e => setConfig({ ...config, msgGuiaLocal: e.target.value })}
+                      placeholder="Ej: Tu paquete está listo. Ver aquí: {urlGuia}"
+                      className="w-full bg-white border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-400 outline-none text-sm resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">Nacional (Resto de Bolivia)</label>
+                    <textarea
+                      rows={4}
+                      value={config.msgGuiaNacional || ""}
+                      onChange={e => setConfig({ ...config, msgGuiaNacional: e.target.value })}
+                      placeholder="Ej: Paquete en camino a {destino}. Ver guía: {urlGuia}"
+                      className="w-full bg-white border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-400 outline-none text-sm resize-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* =========================================
             PRIORIDAD 4: LOGÍSTICA Y ENVÍOS

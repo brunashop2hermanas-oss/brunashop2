@@ -7,16 +7,13 @@ import Footer from "@/components/Footer";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getPrendas } from "@/app/actions/productos";
+import Image from "next/image";
 
 const HERO_IMAGES = [
-  "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1485230895905-31d011713626?q=80&w=2070&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=2070&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=2070&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1445205170230-053b83016050?q=80&w=2070&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1539008835657-9e8e9680c956?q=80&w=2070&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1509319117193-57bab727e09d?q=80&w=2070&auto=format&fit=crop"
+  "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=2070&ixlib=rb-4.0.3",
+  "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=2070&ixlib=rb-4.0.3",
+  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=2070&ixlib=rb-4.0.3",
+  "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=80&w=2070&ixlib=rb-4.0.3"
 ];
 
 export default function Home() {
@@ -30,7 +27,7 @@ export default function Home() {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentHeroImage((prev) => (prev + 1) % HERO_IMAGES.length);
-    }, 7000);
+    }, 2500);
     return () => clearInterval(interval);
   }, []);
 
@@ -178,16 +175,23 @@ export default function Home() {
         {/* Carrusel de Imágenes de fondo principal */}
         <div className="absolute inset-0 w-full h-full bg-[#1a0f0a]">
           <AnimatePresence>
-            <motion.img 
+            <motion.div 
               key={currentHeroImage}
-              src={HERO_IMAGES[currentHeroImage]}
-              alt="Moda Femenina Elegante" 
-              className="absolute inset-0 w-full h-full object-cover object-center"
+              className="absolute inset-0 w-full h-full"
               initial={{ opacity: 0, scale: 1.05 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 1.8, ease: "easeInOut" }}
-            />
+              transition={{ duration: 0.8, ease: "easeInOut" }}
+            >
+              <Image 
+                src={HERO_IMAGES[currentHeroImage]}
+                alt="Moda Femenina Elegante"
+                fill
+                priority={currentHeroImage === 0}
+                className="object-cover object-center"
+                sizes="100vw"
+              />
+            </motion.div>
           </AnimatePresence>
           {/* Overlay base para oscurecer suavemente y mantener nitidez */}
           <div className="absolute inset-0 bg-[#3e2723]/30"></div>

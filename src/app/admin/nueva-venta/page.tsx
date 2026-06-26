@@ -34,6 +34,7 @@ export default function NuevaVenta() {
   const [provinciasHabilitadas, setProvinciasHabilitadas] = useState<string[]>([]);
   const [municipioDestino, setMunicipioDestino] = useState<string>('');
   const [municipiosHabilitados, setMunicipiosHabilitados] = useState<string[]>([]);
+  const [empresaBusesPreferida, setEmpresaBusesPreferida] = useState<string>('');
 
   const [isUploading, setIsUploading] = useState(false);
   
@@ -251,7 +252,8 @@ export default function NuevaVenta() {
       estado: tipoEntrega === 'envio' ? 'PREPARANDO' : 'ENTREGADO',
       metodoPago: metodoPago === 'qr' ? 'TRANSFERENCIA_QR' : 'EFECTIVO',
       tipoEntrega: tipoEntrega === 'envio' ? 'ENVIO' : 'TIENDA',
-      comprobanteUrl: finalComprobanteUrl || undefined
+      comprobanteUrl: finalComprobanteUrl || undefined,
+      empresaBusesPreferida: tipoEntrega === 'envio' ? empresaBusesPreferida : undefined
     };
 
     const res = await createVenta(data);
@@ -578,6 +580,13 @@ export default function NuevaVenta() {
                           {municipiosHabilitados.map(m => <option key={m} value={m}>{m}</option>)}
                         </select>
                       )}
+                      <input 
+                        type="text"
+                        placeholder="Empresa de Bus (Ej: Trans Copacabana)"
+                        value={empresaBusesPreferida}
+                        onChange={(e) => setEmpresaBusesPreferida(e.target.value)}
+                        className="w-full bg-surface border border-surface-border p-2 rounded-lg outline-none focus:border-brand-primary text-sm"
+                      />
                     </div>
   
                   </motion.div>

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Check, Upload, MapPin, CreditCard, X, Search, Clock, Download, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useRef, Suspense } from "react";
+import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { confirmarPagoCheckout, buscarClientaPorCI, getVenta, cancelarVentaExpirada, vincularClientaReserva, crearReservaAnonima } from "@/app/actions/ventas";
 import { getConfiguracion } from "@/app/actions/config";
@@ -639,7 +640,7 @@ function CheckoutContent() {
                   <div className="w-56 h-56 bg-white p-2 border shadow-lg mb-6 relative group">
                     {config?.qrImagen ? (
                       <>
-                        <img src={config.qrImagen} alt="QR" className="w-full h-full object-contain" />
+                        <Image fill sizes="(max-width: 768px) 100vw, 50vw" src={config.qrImagen} alt="QR" className="w-full h-full object-contain" />
                         <a href={config.qrImagen} download="QR_BrunaShop.jpg" className="absolute inset-0 bg-black/60 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
                           <div className="flex flex-col items-center gap-2"><Download className="w-8 h-8"/> <span className="text-xs uppercase font-bold tracking-widest">Descargar QR</span></div>
                         </a>
@@ -715,7 +716,7 @@ function CheckoutContent() {
                     <div className={`p-8 text-center transition-all ${comprobante ? 'bg-black text-white p-0' : 'bg-transparent text-black hover:bg-black/5'}`}>
                       {comprobante ? (
                         <div className="relative w-full h-48 bg-black flex flex-col items-center justify-center">
-                          <img 
+                          <Image fill sizes="(max-width: 768px) 100vw, 50vw" 
                             src={URL.createObjectURL(comprobante)} 
                             alt="Vista previa" 
                             className="absolute inset-0 w-full h-full object-contain opacity-60"
@@ -791,7 +792,7 @@ function CheckoutContent() {
               {carrito.map((item, idx) => (
                 <div key={idx} className="flex gap-4 border-b border-surface-border pb-4">
                   <div className="shrink-0 relative group cursor-pointer" onClick={() => setImagenAmpliada(resolveImage(item, item.colorSeleccionado))}>
-                    <img 
+                    <Image fill sizes="(max-width: 768px) 100vw, 50vw" 
                       src={resolveImage(item, item.colorSeleccionado)} 
                       alt={item.nombre} 
                       className="w-16 h-20 object-contain bg-slate-50 rounded-sm border border-black/10 transition-opacity group-hover:opacity-75" 
@@ -819,7 +820,7 @@ function CheckoutContent() {
                               return (
                                 <div key={pieza.id} className="flex items-center gap-2">
                                   <div className="relative group cursor-pointer" onClick={() => setImagenAmpliada(resolveImage(prodRef, pieza.colorEspecifico))}>
-                                    <img 
+                                    <Image fill sizes="(max-width: 768px) 100vw, 50vw" 
                                       src={resolveImage(prodRef, pieza.colorEspecifico)} 
                                       alt={prodRef?.nombre || "Prenda"} 
                                       className="w-8 h-10 object-contain bg-slate-50 rounded-sm border border-black/10 transition-opacity group-hover:opacity-75" 
@@ -885,7 +886,7 @@ function CheckoutContent() {
             >
               <X className="w-8 h-8" />
             </button>
-            <img 
+            <Image fill sizes="(max-width: 768px) 100vw, 50vw" 
               src={imagenAmpliada} 
               alt="Ampliada" 
               className="max-w-full max-h-full object-contain cursor-zoom-out" 
@@ -908,7 +909,7 @@ function CheckoutContent() {
             >
               <X className="w-8 h-8" />
             </button>
-            <img 
+            <Image fill sizes="(max-width: 768px) 100vw, 50vw" 
               src={URL.createObjectURL(comprobante)} 
               alt="Comprobante Ampliado" 
               className="max-w-full max-h-full object-contain cursor-zoom-out" 

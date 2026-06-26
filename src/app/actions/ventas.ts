@@ -19,10 +19,11 @@ async function ajustarStock(tx: any, prendaId: string, cantidad: number, operaci
     if (talla && pInfo.stockPorTalla) {
       const stockObj = pInfo.stockPorTalla;
       if (stockObj[talla]) {
-        if (typeof stockObj[talla] === 'object' && color) {
-          const currentStock = parseInt(stockObj[talla][color] || "0");
+        if (typeof stockObj[talla] === 'object') {
+          const colorKey = color || 'Unico';
+          const currentStock = parseInt(stockObj[talla][colorKey] || "0");
           const newStock = operacion === 'decrement' ? Math.max(0, currentStock - cantidad) : currentStock + cantidad;
-          stockObj[talla][color] = newStock.toString();
+          stockObj[talla][colorKey] = newStock.toString();
         } else {
           const currentStock = parseInt(stockObj[talla] || "0");
           const newStock = operacion === 'decrement' ? Math.max(0, currentStock - cantidad) : currentStock + cantidad;
@@ -315,6 +316,7 @@ export async function createVenta(data: {
   tipoEntrega?: string;
   metodoPago?: string;
   comprobanteUrl?: string;
+  empresaBusesPreferida?: string;
   items: { prendaId: string; cantidad: number; precioUnitario: number; talla?: string; color?: string }[];
   total: number;
   origen?: string;
@@ -382,6 +384,7 @@ export async function createVenta(data: {
           provinciaDestino: data.provinciaDestino || null,
           origen: data.origen || "WEB",
           tipoEntrega: data.tipoEntrega || "ENVIO",
+          empresaBusesPreferida: data.empresaBusesPreferida || null,
           items: {
             create: data.items.map(item => ({
               prendaId: item.prendaId,
@@ -535,10 +538,54 @@ export async function subirGuiaEnvio(ventaId: string, guiaUrl: string) {
 
 export async function deleteVenta(id: string) {
   try {
-    await prisma.venta.delete({
-      where: { id }
+    const { getUserRole } = await import('@/app/actions/auth');
+    const role = await getUserRole();
+    if (role !== "ADMINISTRADOR") {
+      throw new Error("No tienes permisos de Administrador para eliminar ventas.");
+    }
+
+    const venta = await prisma.venta.findUnique({
+      where: { id },
+      include: { items: true }
     });
+
+    if (!venta) {
+      throw new Error("Venta no encontrada.");
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Si no estaba cancelada/expirada, devolver stock al inventario
+      if (venta.estado !== "CANCELADO" && venta.estado !== "CANCELADO_POR_TIEMPO") {
+        for (const item of venta.items) {
+          await ajustarStock(tx, item.prendaId, item.cantidad, 'increment', item.talla, item.color);
+        }
+      }
+
+      // 2. Si la clienta ganó puntos por esto, restárselos
+      // Los puntos se ganan en PENDIENTE_VERIFICACION, PREPARANDO, ENVIADO, ENTREGADO. 
+      // Las que están en ESPERANDO_PAGO no sumaron puntos todavía, y las CANCELADAS tampoco.
+      if (venta.clientaId && !["ESPERANDO_PAGO", "CANCELADO", "CANCELADO_POR_TIEMPO"].includes(venta.estado)) {
+        const prendasTotales = venta.items.reduce((acc, item) => acc + item.cantidad, 0);
+        const clienta = await tx.clienta.findUnique({ where: { id: venta.clientaId }});
+        if (clienta) {
+          await tx.clienta.update({
+            where: { id: venta.clientaId },
+            data: { puntos: Math.max(0, clienta.puntos - prendasTotales) } // evitar puntos negativos
+          });
+        }
+      }
+
+      // 3. Eliminar la venta y sus items (por onDelete: Cascade se eliminan los items automáticamente)
+      await tx.venta.delete({
+        where: { id }
+      });
+    });
+
     revalidatePath("/admin/pedidos");
+    revalidatePath("/admin/clientas");
+    revalidatePath("/admin/productos");
+    revalidatePath('/', 'layout');
+    
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

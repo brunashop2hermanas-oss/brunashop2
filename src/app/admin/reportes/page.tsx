@@ -1,12 +1,16 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { BarChart3, Download, TrendingUp, DollarSign, Calendar, Package, FileText } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getReportesFinancieros } from "@/app/actions/reportes";
+import { deleteVenta } from "@/app/actions/ventas";
+import { getUserRole } from "@/app/actions/auth";
+import { Trash2 } from "lucide-react";
 
 export default function AdminReportes() {
   const [rango, setRango] = useState("Mensual");
+  const [ventaABorrar, setVentaABorrar] = useState<string | null>(null);
   const [fechaEspecifica, setFechaEspecifica] = useState("");
   const [printMode, setPrintMode] = useState<"resumen" | "detalle">("resumen");
   const [reportes, setReportes] = useState({
@@ -20,9 +24,11 @@ export default function AdminReportes() {
     usarControlFinanciero: true
   });
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState("");
 
   useEffect(() => {
     const fetchReportes = async () => {
+      getUserRole().then(r => setUserRole(r || ""));
       setLoading(true);
       if (rango === "Especifica" && !fechaEspecifica) {
         setLoading(false);
@@ -41,6 +47,28 @@ export default function AdminReportes() {
   const handlePrintResumen = () => {
     setPrintMode("resumen");
     setTimeout(() => window.print(), 100);
+  };
+
+  const handleDeleteVenta = (ventaId: string) => {
+    setVentaABorrar(ventaId);
+  };
+
+  const confirmDeleteVenta = async () => {
+    if (!ventaABorrar) return;
+    setLoading(true);
+    const res = await deleteVenta(ventaABorrar);
+    if (res.success) {
+      alert("Venta eliminada y stock restaurado con éxito.");
+      const queryParam = rango === "Especifica" ? `fecha:${fechaEspecifica}` : rango;
+      const reportRes = await getReportesFinancieros(queryParam);
+      if (reportRes.success && reportRes.data) {
+        setReportes(reportRes.data as any);
+      }
+    } else {
+      alert("Error al eliminar venta: " + res.error);
+    }
+    setVentaABorrar(null);
+    setLoading(false);
   };
 
   const handlePrintDetalle = () => {
@@ -243,6 +271,7 @@ export default function AdminReportes() {
                 <th className="p-4 text-sm font-bold print-text-black">Clienta (Datos)</th>
                 <th className="p-4 text-sm font-bold print-text-black">Responsable (Cajero)</th>
                 <th className="p-4 text-sm font-bold print-text-black text-right">Fecha</th>
+                {userRole === "ADMINISTRADOR" && <th className="p-4 text-sm font-bold print-text-black text-center no-print">Acciones</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-border print-table-body">
@@ -250,7 +279,7 @@ export default function AdminReportes() {
                 <tr key={t.id} className="hover:bg-brand-primary/5 transition-colors print-item">
                   <td className="p-4">
                     <p className="font-bold print-text-black">{t.prendaNombre}</p>
-                    <p className="text-xs text-foreground/60 print-text-black">Cant: {t.cantidad}</p>
+                    <p className="text-xs text-foreground/60 print-text-black">Cant: {t.cantidad} | Talla: {t.talla} | Color: {t.color}</p>
                   </td>
                   <td className="p-4">
                     <span className="font-bold text-green-600 print-text-black">Bs. {t.monto}</span>
@@ -267,9 +296,16 @@ export default function AdminReportes() {
                   <td className="p-4 text-right text-sm text-foreground/70 print-text-black">
                     {t.fecha.split(', ')[0]}<br/>{t.fecha.split(', ')[1] || ""}
                   </td>
+                  {userRole === "ADMINISTRADOR" && (
+                    <td className="p-4 text-center no-print">
+                      <button onClick={() => handleDeleteVenta(t.ventaId)} className="p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition-colors" title="Eliminar Venta (Restaurar Stock)">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               )) : (
-                <tr><td colSpan={5} className="p-4 text-center text-foreground/60">No hay transacciones en este período.</td></tr>
+                <tr><td colSpan={userRole === "ADMINISTRADOR" ? 6 : 5} className="p-4 text-center text-foreground/60">No hay transacciones en este período.</td></tr>
               )}
             </tbody>
           </table>
@@ -376,6 +412,45 @@ export default function AdminReportes() {
           .print-table-body tr { page-break-inside: avoid; }
         }
       `}} />
-    </div>
+    
+      {/* VENTA DELETE MODAL */}
+      <AnimatePresence>
+        {ventaABorrar && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 no-print">
+            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setVentaABorrar(null)} />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-background w-full max-w-sm rounded-3xl overflow-hidden relative z-10 shadow-2xl border border-surface-border"
+            >
+              <div className="p-6 text-center">
+                <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Trash2 className="w-8 h-8" />
+                </div>
+                <h2 className="text-xl font-black text-foreground mb-2">Eliminar Venta</h2>
+                <p className="text-sm text-foreground/60 mb-6">
+                  ¿Estás seguro de eliminar esta venta por completo? <br/><br/>
+                  <span className="font-bold">El stock será devuelto al catálogo y los puntos restados a la clienta (si corresponde). Esta acción no se puede deshacer.</span>
+                </p>
+                <div className="flex gap-3">
+                  <button onClick={() => setVentaABorrar(null)} disabled={loading} className="flex-1 bg-surface border border-surface-border text-foreground font-bold py-3 rounded-xl hover:bg-background transition-colors disabled:opacity-50">
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={confirmDeleteVenta}
+                    disabled={loading}
+                    className="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition-colors shadow-md disabled:opacity-50 flex items-center justify-center"
+                  >
+                    {loading ? "Eliminando..." : "Eliminar"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+</div>
   );
 }

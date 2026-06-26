@@ -253,8 +253,11 @@ export async function getReportesFinancieros(rango: string) {
             // Añadir a transacciones
             transaccionesDetalladas.push({
               id: item.id,
+              ventaId: venta.id,
               prendaNombre: item.prenda.nombre,
               cantidad: item.cantidad,
+              talla: item.talla || "Unico",
+              color: item.color || "Unico",
               monto: item.precio * item.cantidad,
               clientaNombre: venta.clienta ? `${venta.clienta.nombres} ${venta.clienta.apellidos}`.trim() : "Cliente General",
               clientaDatos: venta.clienta ? `CI: ${venta.clienta.ci} - Cel: ${venta.clienta.celular}` : "Sin datos",

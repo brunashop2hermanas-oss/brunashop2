@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, Eye, CheckCircle, XCircle, Printer, MessageCircle, Star, PackageCheck, Download, X, Upload, Wallet, Package, Truck, History, Calendar } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getVentas, updateEstadoVenta, toggleEmpaquetado, subirGuiaEnvio, deleteVenta } from "@/app/actions/ventas";
+import { getConfiguracion } from "@/app/actions/config";
 import { getPrendas } from "@/app/actions/productos";
 import { uploadImage } from "@/app/actions/upload";
 import { compressImage } from "@/lib/imageCompression";
@@ -94,8 +95,26 @@ export default function AdminDashboard() {
   const [comprobanteAmpliado, setComprobanteAmpliado] = useState<string | null>(null);
   const [isUploadingGuia, setIsUploadingGuia] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState("");
+  const [pedidoACompletar, setPedidoACompletar] = useState<any>(null);
+  const [config, setConfig] = useState<any>({});
   // Función para obtener pedidos de la base de datos
+  
+  const handleCompletarSinGuia = async () => {
+    if (!pedidoACompletar) return;
+    const res = await updateEstadoVenta(pedidoACompletar.id, 'ENTREGADO');
+    if (res.success) {
+      const nuevosPedidos = pedidos.map(p => p.id === pedidoACompletar.id ? { ...p, estado: 'ENTREGADO' } : p);
+      setPedidos(nuevosPedidos);
+      toast.success('Pedido marcado como completado y enviado a historial.');
+      setPedidoACompletar(null);
+    } else {
+      toast.error('Error al completar el pedido.');
+    }
+  };
+
   const fetchPedidos = async () => {
+    const resConf = await getConfiguracion();
+    if (resConf.success) setConfig(resConf.data);
     const res = await getVentas();
     if (res.success) {
       setPedidos(res.data || []);
@@ -126,6 +145,44 @@ export default function AdminDashboard() {
     window.open(url, '_blank');
   };
 
+  
+  const getWhatsAppMessage = (tipo: string, pedido: any) => {
+    let template = "";
+    const isLocal = pedido.destino && pedido.destino.toUpperCase() === 'LA PAZ';
+    if (tipo === 'APROBADO') {
+      template = isLocal 
+        ? (config?.msgAprobadoLocal || "¡Hola {cliente}! 🌸 Tu pago por {total} Bs ha sido recibido con éxito y tu pedido está confirmado ✅.")
+        : (config?.msgAprobadoNacional || "Estamos preparando tu envío hacia {destino}. Te avisaremos en cuanto esté en camino. ¡Gracias por elegir Bruna Shop! 💖🛍️");
+    } else if (tipo === 'RECHAZADO') {
+      template = isLocal
+        ? (config?.msgRechazadoLocal || "Hola {cliente}. Te informamos que hemos tenido un inconveniente al verificar tu pago por {total} Bs. ❌")
+        : (config?.msgRechazadoNacional || "Hola {cliente}. Te informamos que hemos tenido un inconveniente al verificar tu pago por {total} Bs. ❌");
+    } else if (tipo === 'GUIA') {
+      template = isLocal
+        ? (config?.msgGuiaLocal || "¡Hola {cliente}! 🌸 Tu paquete ya está listo y completado.\n\nPuedes hacer seguimiento o ver el detalle aquí:\n{urlGuia}")
+        : (config?.msgGuiaNacional || "¡Hola {cliente}! 🌸 Tu paquete ya está en camino hacia {destino}. 🚚\n\nPuedes hacer seguimiento de tu guía aquí:\n{urlGuia}");
+    }
+
+    return template
+      .replace(/{cliente}/g, pedido.cliente || '')
+      .replace(/{total}/g, pedido.total ? pedido.total.toFixed(2) : '')
+      .replace(/{destino}/g, pedido.destino || 'tu ciudad')
+      .replace(/{urlGuia}/g, pedido.guiaEnvioUrl || '');
+  };
+
+  const reenviarWhatsApp = (pedido: any) => {
+    let tipo = "";
+    if (pedido.estado === 'Aprobado' || pedido.estado === 'PREPARANDO') tipo = "APROBADO";
+    else if (pedido.estado === 'Rechazado') tipo = "RECHAZADO";
+    else if (pedido.guiaEnvioUrl || pedido.estado === 'ENTREGADO') tipo = "GUIA";
+    else {
+      toast.error("Este pedido no tiene un estado válido para enviar mensaje.");
+      return;
+    }
+    const mensaje = getWhatsAppMessage(tipo, pedido);
+    enviarWhatsApp(pedido.celular, mensaje);
+  };
+
   const aprobarPago = async (pedido: any) => {
     if (!window.confirm("¿Estás segura de que quieres APROBAR este pago? El pedido pasará a la etapa de empaquetado.")) return;
     const res = await updateEstadoVenta(pedido.id, 'Aprobado');
@@ -135,7 +192,7 @@ export default function AdminDashboard() {
       setPedidos(nuevosPedidos);
       setPedidoSeleccionado(null);
       
-      const mensaje = `¡Hola ${pedido.cliente}! Somos BrunaShop2 ✨. Tu pago por Bs. ${pedido.total.toFixed(2)} ha sido VERIFICADO exitosamente ✅. Tu pedido ya está en preparación para ser enviado a la terminal de ${pedido.destino}. Te avisaremos apenas lo despachemos. ¡Gracias por tu compra!`;
+      const mensaje = getWhatsAppMessage("APROBADO", pedido);
       enviarWhatsApp(pedido.celular, mensaje);
       toast.success("¡Pago aprobado! Se ha descontado el stock y notificado a la clienta.");
     } else {
@@ -151,7 +208,7 @@ export default function AdminDashboard() {
       setPedidos(nuevosPedidos);
       setPedidoSeleccionado(null);
 
-      const mensaje = `¡Hola ${pedido.cliente}! Somos BrunaShop2. Tuvimos un inconveniente al verificar tu comprobante de pago por Bs. ${pedido.total.toFixed(2)} ❌. Por favor, ¿podrías enviarnos la imagen del comprobante por este medio para revisar qué pasó? Quedamos atentas.`;
+      const mensaje = getWhatsAppMessage("RECHAZADO", pedido);
       enviarWhatsApp(pedido.celular, mensaje);
       toast.success("Pago rechazado. El stock fue devuelto al catálogo.");
     } else {
@@ -618,7 +675,7 @@ const imprimirVineta = (pedido: any) => {
                       {pedido.estado}
                     </span>
                   </td>
-                  <td className="p-4 flex justify-center gap-2">
+                  <td className="p-4 flex flex-wrap justify-center gap-2">
                     {pedido.estado === 'Pendiente' && (
                       <button 
                         onClick={() => setPedidoSeleccionado(pedido)}
@@ -648,6 +705,26 @@ const imprimirVineta = (pedido: any) => {
                       </div>
                     )}
                     
+                    
+                    {(pedido.estado === 'Aprobado' || pedido.estado === 'PREPARANDO') && filtroTab === 'empaquetar' && (
+                      <button 
+                        onClick={() => enviarWhatsApp(pedido.celular, getWhatsAppMessage('APROBADO', pedido))}
+                        className="px-3 py-2 bg-[#25D366] text-white rounded-lg hover:bg-[#1da851] transition-colors shadow-md flex items-center gap-2 font-bold text-xs"
+                        title="Reenviar Mensaje WhatsApp"
+                      >
+                        <MessageCircle className="w-4 h-4" /> Reenviar Msg
+                      </button>
+                    )}
+                    {pedido.estado === 'Rechazado' && filtroTab === 'rechazados' && (
+                      <button 
+                        onClick={() => enviarWhatsApp(pedido.celular, getWhatsAppMessage('RECHAZADO', pedido))}
+                        className="px-3 py-2 bg-[#25D366] text-white rounded-lg hover:bg-[#1da851] transition-colors shadow-md flex items-center gap-2 font-bold text-xs"
+                        title="Reenviar Mensaje WhatsApp"
+                      >
+                        <MessageCircle className="w-4 h-4" /> Reenviar Msg
+                      </button>
+                    )}
+
                     {pedido.terminosAceptados && (
                       <a 
                         href={`/admin/certificado/${pedido.id}`}
@@ -687,11 +764,21 @@ const imprimirVineta = (pedido: any) => {
                             <input type="file" className="hidden" accept="image/*" disabled={!todasEmpaquetadas || isUploadingGuia === pedido.id} onChange={(e) => handleSubirGuia(e, pedido)} />
                           </label>
                         </div>
+                        {filtroTab === 'guias' && !pedido.guiaEnvioUrl && (
+                          <button 
+                            title="Completar sin Guía"
+                            onClick={() => setPedidoACompletar(pedido)}
+                            className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors shadow-sm border border-slate-300 font-bold text-xs flex items-center justify-center gap-2"
+                          >
+                            <CheckCircle className="w-4 h-4" /> Completar
+                          </button>
+                        )}
+
                         {pedido.guiaEnvioUrl && (
                           <button 
                             title="Enviar Guía por WhatsApp"
                             onClick={() => {
-                              const mensaje = `¡Hola ${pedido.cliente}! 😊 Tu pedido de BrunaShop ya fue enviado.\n\nEl siguiente enlace abrirá la imagen o foto de tu guía de envío para que puedas recogerlo:\n${pedido.guiaEnvioUrl}\n\n¡Gracias por tu preferencia!`;
+                              const mensaje = getWhatsAppMessage("GUIA", pedido);
                               enviarWhatsApp(pedido.celular, mensaje);
                             }}
                             className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-md border border-green-600"
@@ -781,6 +868,12 @@ const imprimirVineta = (pedido: any) => {
                       <Printer className="w-4 h-4"/> Ticket Envío
                     </button>
                   )}
+
+                  {(pedido.estado === 'Aprobado' || pedido.estado === 'PREPARANDO' || pedido.estado === 'Rechazado' || pedido.guiaEnvioUrl) && (
+                    <button onClick={() => reenviarWhatsApp(pedido)} className="px-3 py-1.5 bg-[#25D366] text-white hover:bg-[#1da851] rounded-lg shadow-md text-xs font-bold w-full flex items-center justify-center gap-2">
+                      <WhatsappIcon className="w-4 h-4"/> Reenviar Msg
+                    </button>
+                  )}
                   
                   {filtroTab === 'rechazados' && (
                     <div className="flex flex-col gap-2 w-full mt-2">
@@ -800,7 +893,7 @@ const imprimirVineta = (pedido: any) => {
                         <input type="file" className="hidden" accept="image/*" disabled={!todasEmpaquetadas || isUploadingGuia === pedido.id} onChange={(e) => handleSubirGuia(e, pedido)} />
                       </label>
                       {pedido.guiaEnvioUrl && (
-                        <button onClick={() => enviarWhatsApp(pedido.celular, `¡Hola ${pedido.cliente}! 😊 Tu pedido de BrunaShop ya fue enviado.\n\nEl siguiente enlace abrirá la imagen o foto de tu guía de envío para que puedas recogerlo:\n${pedido.guiaEnvioUrl}`)} className="px-3 py-1.5 bg-[#25D366] hover:bg-[#1da851] transition-colors text-white shadow-md rounded-lg"><WhatsappIcon className="w-4 h-4"/></button>
+                        <button onClick={() => enviarWhatsApp(pedido.celular, getWhatsAppMessage("GUIA", pedido))} className="px-3 py-1.5 bg-[#25D366] hover:bg-[#1da851] transition-colors text-white shadow-md rounded-lg"><WhatsappIcon className="w-4 h-4"/></button>
                       )}
                     </div>
                   )}
@@ -1057,6 +1150,52 @@ const imprimirVineta = (pedido: any) => {
                 >
                   Cerrar Lista
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+
+      {/* Modal Completar Sin Guia */}
+      <AnimatePresence>
+        {pedidoACompletar && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 no-print">
+            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setPedidoACompletar(null)} />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-3xl overflow-hidden shadow-2xl z-10 w-full max-w-md border border-brand-primary/20"
+            >
+              <div className="bg-blue-50 p-6 flex flex-col items-center justify-center border-b border-blue-100">
+                <div className="bg-blue-100 p-4 rounded-full mb-4 shadow-inner">
+                  <CheckCircle className="w-10 h-10 text-blue-600" />
+                </div>
+                <h3 className="text-2xl font-black text-slate-800 text-center tracking-tight">¿Completar pedido?</h3>
+              </div>
+              <div className="p-6 space-y-4">
+                <p className="text-slate-600 text-center text-sm">
+                  Estás a punto de marcar el pedido de <strong className="text-slate-800">{pedidoACompletar.cliente}</strong> como <strong className="text-blue-600">COMPLETADO</strong> sin subir una guía de envío.
+                </p>
+                <p className="text-slate-500 text-center text-xs">
+                  El pedido se moverá a la pestaña de <strong className="text-slate-700">Historial</strong> y se considerará entregado.
+                </p>
+                
+                <div className="grid grid-cols-2 gap-3 mt-6">
+                  <button 
+                    onClick={() => setPedidoACompletar(null)}
+                    className="py-3 font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors shadow-sm"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={handleCompletarSinGuia}
+                    className="py-3 font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle className="w-5 h-5" /> Confirmar
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>

@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, ArrowRight, X, Trash2, Search, Video, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getPrendas } from "@/app/actions/productos";
@@ -314,7 +315,7 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
                 ) : (
                   carrito.map((item) => (
                     <div key={item.itemUnicoId} className="flex gap-4 bg-[#fcfcfc] p-3 rounded-sm border border-gray-100">
-                      <img src={(() => {
+                      <Image fill sizes="(max-width: 768px) 50vw, 33vw" src={(() => {
                         let img = item.imagenes?.[0];
                         if (item.colorSeleccionado && item.imagenesPorColor) {
                           let raw = item.imagenesPorColor;
@@ -471,7 +472,7 @@ function ProductoCard({ producto, index, abrirVistaRapida, agregarAlCarrito, liv
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => { setIsHovered(false); setCurrentImgIndex(0); }}
       >
-        <img 
+        <Image fill sizes="(max-width: 768px) 50vw, 33vw" 
           src={imagenes[currentImgIndex]} 
           alt={`${producto.nombre}`} 
           className={`absolute inset-0 w-full h-full object-contain bg-slate-50 transition-transform duration-700 group-hover/gallery:scale-105 ${producto.stockCount === 0 && !producto.enPreventa ? 'grayscale opacity-60' : ''}`}
@@ -664,7 +665,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
             className="flex-1 relative group cursor-pointer min-h-0"
             onClick={() => setImagenAmpliada(imagenActual)}
           >
-            <img src={imagenActual} alt={producto.nombre} className="absolute inset-0 w-full h-full object-contain bg-slate-50 transition-opacity group-hover:opacity-90" />
+            <Image fill sizes="(max-width: 768px) 50vw, 33vw" src={imagenActual} alt={producto.nombre} className="absolute inset-0 w-full h-full object-contain bg-slate-50 transition-opacity group-hover:opacity-90" />
             <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
               <Search className="w-10 h-10 text-white drop-shadow-md" />
             </div>
@@ -677,7 +678,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
                   onClick={(e) => { e.stopPropagation(); setImagenActual(img); }}
                   className={`w-14 h-14 md:w-16 md:h-16 shrink-0 border-2 rounded-sm overflow-hidden transition-all ${imagenActual === img ? 'border-black shadow-md scale-105' : 'border-transparent opacity-60 hover:opacity-100 hover:scale-105'}`}
                 >
-                  <img src={img} alt={`Vista ${idx + 1}`} className="w-full h-full object-contain bg-slate-50" />
+                  <Image fill sizes="(max-width: 768px) 50vw, 33vw" src={img} alt={`Vista ${idx + 1}`} className="w-full h-full object-contain bg-slate-50" />
                 </button>
               ))}
             </div>
@@ -739,7 +740,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
                           const img = specificImg || prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80";
                           setImagenAmpliada(img);
                         }}>
-                          <img 
+                          <Image fill sizes="(max-width: 768px) 50vw, 33vw" 
                             src={(pieza.colorEspecifico && prodRef?.imagenesPorColor?.[pieza.colorEspecifico]) ? prodRef.imagenesPorColor[pieza.colorEspecifico] : (prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80")} 
                             alt={prodRef?.nombre || "Prenda"} 
                             className="w-10 h-12 object-contain bg-slate-50 rounded-sm border border-black/10 shadow-sm transition-opacity group-hover:opacity-75" 
@@ -843,7 +844,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
             >
               <X className="w-8 h-8" />
             </button>
-            <img 
+            <Image fill sizes="(max-width: 768px) 50vw, 33vw" 
               src={imagenAmpliada} 
               alt="Ampliada" 
               className="max-w-full max-h-full object-contain cursor-zoom-out" 

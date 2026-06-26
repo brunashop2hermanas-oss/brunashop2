@@ -100,6 +100,12 @@ export async function updateConfiguracion(data: {
   tiempoLlenadoDatosMinutos?: number;
   destinosHabilitados?: any;
   categoriasPrendas?: string[];
+  msgAprobadoLocal?: string | null;
+  msgAprobadoNacional?: string | null;
+  msgRechazadoLocal?: string | null;
+  msgRechazadoNacional?: string | null;
+  msgGuiaLocal?: string | null;
+  msgGuiaNacional?: string | null;
   liveHorariosRecurrentes?: any;
 }) {
   try {

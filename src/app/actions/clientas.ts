@@ -10,6 +10,11 @@ export async function getClientas() {
     const clientas = await prisma.clienta.findMany({
       include: {
         ventas: {
+          where: {
+            estado: {
+              notIn: ["CANCELADO", "CANCELADO_POR_TIEMPO"]
+            }
+          },
           include: {
             items: {
               include: {
@@ -23,10 +28,10 @@ export async function getClientas() {
       orderBy: { puntos: "desc" },
     });
     
-    // Transformar los datos para que coincidan con la estructura que espera la UI
     const clientasFormateadas = clientas.map(clienta => {
       const compras = clienta.ventas.flatMap(venta => 
         venta.items.map(item => ({
+          ventaId: venta.id,
           prenda: item.prenda?.nombre || "Producto Eliminado",
           fecha: venta.fecha.toLocaleDateString(),
           hora: venta.fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -78,6 +83,42 @@ export async function resetPuntosClientas() {
   try {
     await prisma.clienta.updateMany({
       data: { puntos: 0 }
+    });
+    revalidatePath('/', 'layout');
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateClienta(id: string, data: { nombres?: string; apellidos?: string; ci?: string; celular?: string }) {
+  try {
+    const clienta = await prisma.clienta.update({
+      where: { id },
+      data: {
+        ...(data.nombres && { nombres: data.nombres }),
+        ...(data.apellidos && { apellidos: data.apellidos }),
+        ...(data.ci && { ci: data.ci }),
+        ...(data.celular && { celular: data.celular })
+      }
+    });
+    revalidatePath('/', 'layout');
+    return { success: true, data: clienta };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteClienta(id: string) {
+  try {
+    const { getUserRole } = await import('@/app/actions/auth');
+    const role = await getUserRole();
+    if (role !== "ADMINISTRADOR") {
+      throw new Error("No tienes permisos de Administrador para eliminar clientas.");
+    }
+
+    await prisma.clienta.delete({
+      where: { id }
     });
     revalidatePath('/', 'layout');
     return { success: true };

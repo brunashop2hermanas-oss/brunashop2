@@ -145,5 +145,11 @@ model Configuracion {
   categoriasPrendas     String[] @default(["Vestidos", "Conjuntos", "Blusas y Tops", "Pantalones y Jeans", "Chaquetas y Abrigos", "Enterizos", "Ofertas / Sale"])
   liveHorariosRecurrentes Json? // Array de { diaSemana: number, hora: string } donde 0=Dom, 1=Lun, etc.
   planSupabase          String   @default("Gratuito") // "Gratuito" o "Pro"
+  msgAprobadoLocal      String?  @db.Text
+  msgAprobadoNacional   String?  @db.Text
+  msgRechazadoLocal     String?  @db.Text
+  msgRechazadoNacional  String?  @db.Text
+  msgGuiaLocal          String?  @db.Text
+  msgGuiaNacional       String?  @db.Text
   updatedAt             DateTime @updatedAt
 }

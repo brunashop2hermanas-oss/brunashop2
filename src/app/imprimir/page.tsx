@@ -126,53 +126,53 @@ export default function ImprimirVineta() {
             <div key={index} className="vineta relative overflow-hidden" style={{ backgroundColor: '#ffffff' }}>
               {/* Cabecera / Logo */}
               <div className="flex items-center gap-4 mb-4 border-b-2 pb-2" style={{ borderColor: '#000000' }}>
-                <img src="/logo.png" alt="BrunaShop2" className="w-12 h-12 object-cover rounded-full filter grayscale" style={{ clipPath: "circle(50%)" }} />
+                <img src="/logo.png" alt="BrunaShop2" className="w-14 h-14 object-cover rounded-full filter grayscale" style={{ clipPath: "circle(50%)" }} />
                 <div>
-                  <h2 className="text-xl font-black uppercase tracking-tighter" style={{ color: '#000000' }}>BrunaShop2</h2>
-                  <p className="text-[10px] uppercase font-bold tracking-widest" style={{ color: '#6b7280' }}>Tienda Online</p>
+                  <h2 className="text-3xl font-black uppercase tracking-tighter" style={{ color: '#000000' }}>BrunaShop2</h2>
+                  <p className="text-sm uppercase font-bold tracking-widest" style={{ color: '#6b7280' }}>Tienda Online</p>
                 </div>
               </div>
 
               {/* Datos del Envío */}
-              <div className="flex-1 space-y-3">
+              <div className="flex-1 space-y-4">
                 <div>
-                  <p className="text-[9px] uppercase tracking-widest mb-0.5 font-bold" style={{ color: '#6b7280' }}>Destinatario / Clienta</p>
-                  <p className="text-lg font-black uppercase leading-tight line-clamp-2" style={{ color: '#000000' }}>
+                  <p className="text-sm uppercase tracking-widest mb-0.5 font-bold" style={{ color: '#6b7280' }}>Destinatario / Clienta</p>
+                  <p className="text-3xl font-black uppercase leading-tight" style={{ color: '#000000' }}>
                     {pedido.receptorDiferente ? `${pedido.receptorNombres || ''} ${pedido.receptorApPaterno || ''} ${pedido.receptorApMaterno || ''}`.trim() : pedido.cliente}
                   </p>
                   {pedido.receptorDiferente && (
-                    <p className="text-[10px] font-bold" style={{ color: '#6b7280' }}>(Comprado por: {pedido.cliente})</p>
+                    <p className="text-sm font-bold" style={{ color: '#6b7280' }}>(Comprado por: {pedido.cliente})</p>
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-[9px] uppercase tracking-widest mb-0.5 font-bold" style={{ color: '#6b7280' }}>C.I.</p>
-                    <p className="text-sm font-bold" style={{ color: '#000000' }}>{pedido.receptorDiferente ? pedido.receptorCi : pedido.ci}</p>
+                    <p className="text-sm uppercase tracking-widest mb-0.5 font-bold" style={{ color: '#6b7280' }}>C.I.</p>
+                    <p className="text-2xl font-bold" style={{ color: '#000000' }}>{pedido.receptorDiferente ? pedido.receptorCi : pedido.ci}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] uppercase tracking-widest mb-0.5 font-bold" style={{ color: '#6b7280' }}>Celular</p>
-                    <p className="text-sm font-bold" style={{ color: '#000000' }}>{pedido.receptorDiferente ? pedido.receptorCelular : pedido.celular}</p>
+                    <p className="text-sm uppercase tracking-widest mb-0.5 font-bold" style={{ color: '#6b7280' }}>Celular</p>
+                    <p className="text-2xl font-bold" style={{ color: '#000000' }}>{pedido.receptorDiferente ? pedido.receptorCelular : pedido.celular}</p>
                   </div>
                 </div>
 
                 <div>
-                  <p className="text-[9px] uppercase tracking-widest mb-0.5 font-bold" style={{ color: '#6b7280' }}>Ciudad / Municipio</p>
-                  <p className="text-xl font-black uppercase tracking-wider border-2 inline-block px-2 py-0.5" style={{ borderColor: '#000000', backgroundColor: '#f3f4f6', color: '#000000' }}>{pedido.destino}</p>
+                  <p className="text-sm uppercase tracking-widest mb-1 font-bold" style={{ color: '#6b7280' }}>Ciudad / Municipio</p>
+                  <p className="text-3xl font-black uppercase tracking-wider border-[3px] inline-block px-3 py-1.5" style={{ borderColor: '#000000', backgroundColor: '#f3f4f6', color: '#000000' }}>{pedido.destino}</p>
                 </div>
               </div>
 
               {/* Pie de Viñeta - Transportadora */}
-              <div className="mt-auto pt-2 border-t border-dashed" style={{ borderColor: '#9ca3af' }}>
-                <p className="text-[9px] uppercase tracking-widest mb-1 font-bold" style={{ color: '#6b7280' }}>Empresa de Transporte (Flota)</p>
+              <div className="mt-auto pt-4 border-t-2 border-dashed" style={{ borderColor: '#9ca3af' }}>
+                <p className="text-xs uppercase tracking-widest mb-1 font-bold" style={{ color: '#6b7280' }}>Empresa de Transporte (Flota)</p>
                 {pedido.empresaBusesPreferida ? (
-                  <p className="text-sm font-black uppercase mb-1" style={{ color: '#000000' }}>{pedido.empresaBusesPreferida}</p>
+                  <p className="text-2xl font-black uppercase mb-1" style={{ color: '#000000' }}>{pedido.empresaBusesPreferida}</p>
                 ) : (
-                  <div className="w-full border-b h-4 mb-1" style={{ borderColor: '#000000' }}></div>
+                  <div className="w-full border-b-2 h-10 mb-2 mt-2" style={{ borderColor: '#000000' }}></div>
                 )}
-                <div className="flex justify-between items-end mt-2">
-                   <p className="text-[8px] font-mono" style={{ color: '#9ca3af' }}>ID: {pedido.id}</p>
-                   <p className="text-[8px] font-bold" style={{ color: '#9ca3af' }}>FRÁGIL</p>
+                <div className="flex justify-between items-end mt-1">
+                   <p className="text-[10px] font-mono" style={{ color: '#9ca3af' }}>ID: {pedido.id}</p>
+                   <p className="text-[10px] font-bold" style={{ color: '#9ca3af' }}>FRÁGIL</p>
                 </div>
               </div>
             </div>
