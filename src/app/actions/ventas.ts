@@ -531,3 +531,16 @@ export async function subirGuiaEnvio(ventaId: string, guiaUrl: string) {
     return { success: false, error: error.message };
   }
 }
+
+
+export async function deleteVenta(id: string) {
+  try {
+    await prisma.venta.delete({
+      where: { id }
+    });
+    revalidatePath("/admin/pedidos");
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

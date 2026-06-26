@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Eye, CheckCircle, XCircle, Printer, MessageCircle, Star, PackageCheck, Download, X, Upload, Wallet, Package, Truck, History, Calendar } from "lucide-react";
 import { useState, useEffect } from "react";
-import { getVentas, updateEstadoVenta, toggleEmpaquetado, subirGuiaEnvio } from "@/app/actions/ventas";
+import { getVentas, updateEstadoVenta, toggleEmpaquetado, subirGuiaEnvio, deleteVenta } from "@/app/actions/ventas";
 import { getPrendas } from "@/app/actions/productos";
 import { uploadImage } from "@/app/actions/upload";
 import { compressImage } from "@/lib/imageCompression";
@@ -66,6 +66,17 @@ export default function AdminDashboard() {
   const [pedidosParaImprimir, setPedidosParaImprimir] = useState<string[]>([]);
   const [filtroTab, setFiltroTab] = useState<'pagos' | 'empaquetar' | 'guias' | 'historial' | 'rechazados'>('pagos');
   
+  const borrarDefinitivamente = async (id: string) => {
+    if (!window.confirm("¿Estás súper segura de que quieres ELIMINAR DEFINITIVAMENTE este pedido? Esta acción no se puede deshacer.")) return;
+    const res = await deleteVenta(id);
+    if (res.success) {
+      setPedidos(pedidos.filter(p => p.id !== id));
+      toast.success("Pedido eliminado definitivamente.");
+    } else {
+      toast.error("Error al eliminar el pedido.");
+    }
+  };
+
   const restaurarPago = async (pedido: any) => {
     if (!window.confirm("¿Deseas RESTAURAR este pedido? Volverá a estar pendiente de verificación.")) return;
     const res = await updateEstadoVenta(pedido.id, 'Pendiente');
@@ -366,7 +377,7 @@ const imprimirVineta = (pedido: any) => {
             )}
           </div>
 
-          <div className="flex items-center bg-surface border border-surface-border px-4 py-2 rounded-xl shadow-inner w-full sm:max-w-xs relative">
+          <div className="flex items-center bg-surface border border-surface-border px-4 py-2 rounded-xl shadow-inner w-full sm:min-w-[280px] sm:max-w-md relative flex-1 shrink-0">
             <Search className="w-5 h-5 text-foreground/50 mr-3 shrink-0" />
             <input 
               type="text" 
@@ -760,6 +771,17 @@ const imprimirVineta = (pedido: any) => {
                     <button onClick={() => imprimirVineta(pedido)} className="px-3 py-1.5 bg-slate-800 text-white rounded-lg shadow-md text-xs font-bold w-full flex items-center justify-center gap-2">
                       <Printer className="w-4 h-4"/> Ticket Envío
                     </button>
+                  )}
+                  
+                  {filtroTab === 'rechazados' && (
+                    <div className="flex flex-col gap-2 w-full mt-2">
+                      <button onClick={() => restaurarPago(pedido)} className="px-3 py-1.5 bg-green-500 text-white rounded-lg shadow-md text-xs font-bold w-full flex items-center justify-center gap-2 hover:bg-green-600 transition-colors">
+                        <History className="w-4 h-4"/> Restaurar Pedido
+                      </button>
+                      <button onClick={() => borrarDefinitivamente(pedido.id)} className="px-3 py-1.5 bg-red-600 text-white rounded-lg shadow-md text-xs font-bold w-full flex items-center justify-center gap-2 hover:bg-red-700 transition-colors">
+                        <XCircle className="w-4 h-4"/> Borrar Definitivamente
+                      </button>
+                    </div>
                   )}
                   
                   {(!esTiendaDirecta && (pedido.estado === 'Aprobado' || pedido.estado === 'PREPARANDO' || pedido.estado === 'ENTREGADO' || filtroTab === 'guias')) && (
