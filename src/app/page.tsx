@@ -152,22 +152,22 @@ export default function Home() {
         {/* Imagen de fondo principal */}
         <div className="absolute inset-0 w-full h-full">
           <img 
-            src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=2070&auto=format&fit=crop" 
-            alt="Moda Femenina Lifestyle" 
+            src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop" 
+            alt="Moda Femenina Elegante" 
             className="w-full h-full object-cover object-center"
           />
           {/* Overlay base para oscurecer y dar el tono cálido */}
           <div className="absolute inset-0 bg-[#2a1712]/70 mix-blend-multiply"></div>
           
           {/* Marca de agua del logo (integrada orgánicamente) */}
-          <div className="absolute inset-0 w-full h-full flex items-center justify-center opacity-80 pointer-events-none">
+          <div className="absolute inset-0 w-full h-full flex items-center justify-center opacity-60 pointer-events-none">
             <img 
               src="/logo.png" 
               alt="BrunaShop Watermark" 
-              className="w-[85%] md:w-[45%] h-auto object-contain"
+              className="w-[85%] md:w-[45%] h-auto object-contain mix-blend-overlay"
               style={{ 
-                WebkitMaskImage: 'radial-gradient(circle, black 50%, transparent 68%)', 
-                maskImage: 'radial-gradient(circle, black 50%, transparent 68%)' 
+                WebkitMaskImage: 'radial-gradient(circle, black 30%, transparent 60%)', 
+                maskImage: 'radial-gradient(circle, black 30%, transparent 60%)' 
               }}
             />
           </div>
