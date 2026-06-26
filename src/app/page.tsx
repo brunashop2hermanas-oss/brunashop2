@@ -220,7 +220,7 @@ export default function Home() {
             onClick={() => scrollToSection('catalogo')}
             className="bg-white text-[#1a0f0a] px-10 py-4 font-bold text-xs tracking-widest uppercase hover:bg-[#ebd197] transition-colors flex items-center gap-3 shadow-2xl rounded-sm"
           >
-            Descubrir Colecciones <ArrowRight className="w-4 h-4" />
+            Ver Catálogo <ArrowRight className="w-4 h-4" />
           </motion.button>
         </div>
       </main>
