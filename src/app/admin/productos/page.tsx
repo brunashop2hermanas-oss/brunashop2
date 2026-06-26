@@ -46,7 +46,8 @@ export default function AdminProductos() {
   const [nuevaCategoria, setNuevaCategoria] = useState("");
   const [categoriaAEditar, setCategoriaAEditar] = useState<{old: string, new: string} | null>(null);
 
-  const [tallasDisponibles, setTallasDisponibles] = useState(['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Talla Única']);
+  const TALLAS_BASE = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Talla Única'];
+  const [tallasDisponibles, setTallasDisponibles] = useState(TALLAS_BASE);
   const [tallasSeleccionadas, setTallasSeleccionadas] = useState<string[]>([]);
   const [nuevaTalla, setNuevaTalla] = useState("");
 
@@ -111,6 +112,7 @@ export default function AdminProductos() {
     setProductoEditando(null);
     setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: false, piezasDetalle: {}, stockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "" });
     setCategoriaSeleccionada("");
+    setTallasDisponibles(TALLAS_BASE);
     setTallasSeleccionadas([]);
     setFotosPreview([]);
     setIsModalOpen(true);
@@ -120,6 +122,7 @@ export default function AdminProductos() {
     setProductoEditando(null);
     setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: true, piezasDetalle: {}, stockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "" });
     setCategoriaSeleccionada("");
+    setTallasDisponibles(TALLAS_BASE);
     setTallasSeleccionadas([]);
     setFotosPreview([]);
     setIsModalOpen(true);
@@ -163,7 +166,10 @@ export default function AdminProductos() {
       setCategorias([...categorias, producto.categoria]);
       setCategoriaSeleccionada(producto.categoria);
     }
-    setTallasSeleccionadas(producto.tallas || []);
+    const tallasProducto: string[] = producto.tallas || [];
+    const tallasExtras = tallasProducto.filter((t: string) => !TALLAS_BASE.includes(t));
+    setTallasDisponibles([...TALLAS_BASE, ...tallasExtras]);
+    setTallasSeleccionadas(tallasProducto);
     setFotosPreview(producto.imagenes || []);
     setIsModalOpen(true);
   };
@@ -700,20 +706,38 @@ export default function AdminProductos() {
                         <div>
                           <label className="block text-sm font-bold text-foreground mb-2">Tallas Disponibles</label>
                           <div className="flex flex-wrap gap-2 mb-3">
-                            {tallasDisponibles.map(talla => (
-                              <label key={talla} className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${tallasSeleccionadas.includes(talla) ? 'bg-brand-primary/10 border-brand-primary text-brand-primary' : 'bg-surface border-surface-border hover:border-brand-primary'}`}>
-                                <input 
-                                  type="checkbox" 
-                                  checked={tallasSeleccionadas.includes(talla)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) setTallasSeleccionadas([...tallasSeleccionadas, talla]);
-                                    else setTallasSeleccionadas(tallasSeleccionadas.filter(t => t !== talla));
-                                  }}
-                                  className="hidden" 
-                                />
-                                <span className="text-sm font-bold">{talla}</span>
-                              </label>
-                            ))}
+                            {tallasDisponibles.map(talla => {
+                              const esPersonalizada = !TALLAS_BASE.includes(talla);
+                              return (
+                                <label key={talla} className={`flex items-center gap-1 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${tallasSeleccionadas.includes(talla) ? 'bg-brand-primary/10 border-brand-primary text-brand-primary' : 'bg-surface border-surface-border hover:border-brand-primary'}`}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={tallasSeleccionadas.includes(talla)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) setTallasSeleccionadas([...tallasSeleccionadas, talla]);
+                                      else setTallasSeleccionadas(tallasSeleccionadas.filter(t => t !== talla));
+                                    }}
+                                    className="hidden" 
+                                  />
+                                  <span className="text-sm font-bold">{talla}</span>
+                                  {esPersonalizada && (
+                                    <span
+                                      role="button"
+                                      title={`Eliminar talla ${talla}`}
+                                      className="ml-1 text-xs leading-none opacity-50 hover:opacity-100 hover:text-red-500 transition-colors"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setTallasDisponibles(tallasDisponibles.filter(t => t !== talla));
+                                        setTallasSeleccionadas(tallasSeleccionadas.filter(t => t !== talla));
+                                      }}
+                                    >
+                                      &times;
+                                    </span>
+                                  )}
+                                </label>
+                              );
+                            })}
                           </div>
                           <div className="flex gap-2 mb-3">
                             <input 
