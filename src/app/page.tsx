@@ -103,18 +103,25 @@ export default function Home() {
           {/* Nav Desktop */}
           <nav className="hidden md:flex items-center gap-8 text-xs font-medium">
             <div className="relative group">
-              <button className={`hover:opacity-70 transition-opacity uppercase tracking-widest flex items-center gap-1 ${isScrolled ? "text-black" : "text-white drop-shadow-md"}`}>
+              <button 
+                onClick={() => { setColeccionActiva(null); scrollToSection('catalogo'); }}
+                className={`hover:opacity-70 transition-opacity uppercase tracking-widest flex items-center gap-1 ${isScrolled ? "text-black" : "text-white drop-shadow-md"}`}
+              >
                 Colecciones <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
               </button>
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 hidden group-hover:flex flex-col bg-white shadow-2xl py-3 rounded-xl min-w-[220px] border border-gray-100">
-                <button onClick={() => { setColeccionActiva(null); scrollToSection('catalogo'); }} className="text-left px-5 py-2.5 hover:bg-gray-50 text-black text-sm uppercase tracking-widest font-bold border-b border-gray-100">
-                  Todas las Colecciones
-                </button>
-                {colecciones.map((col) => (
-                  <button key={col} onClick={() => { setColeccionActiva(col); scrollToSection('catalogo'); }} className="text-left px-5 py-2 hover:bg-gray-50 text-gray-700 text-sm uppercase tracking-wider">
-                    {col}
+              
+              {/* Invisible bridge to keep hover active */}
+              <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 hidden group-hover:flex flex-col min-w-[220px]">
+                <div className="bg-white shadow-2xl py-3 rounded-xl border border-gray-100 flex flex-col">
+                  <button onClick={() => { setColeccionActiva(null); scrollToSection('catalogo'); }} className="text-left px-5 py-2.5 hover:bg-gray-50 text-black text-sm uppercase tracking-widest font-bold border-b border-gray-100">
+                    Todas las Colecciones
                   </button>
-                ))}
+                  {colecciones.map((col) => (
+                    <button key={col} onClick={() => { setColeccionActiva(col); scrollToSection('catalogo'); }} className="text-left px-5 py-2 hover:bg-gray-50 text-gray-700 text-sm uppercase tracking-wider">
+                      {col}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
             <button onClick={() => scrollToSection('catalogo')} className={`hover:opacity-70 transition-opacity uppercase tracking-widest font-bold ${isScrolled ? "text-red-600" : "text-red-500 drop-shadow-sm"}`}>Ofertas</button>
