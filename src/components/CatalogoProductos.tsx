@@ -193,17 +193,31 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
             </div>
             
             <div className="flex flex-col lg:flex-row gap-8 items-start">
-              {/* Sección Izquierda: TikTok iframe (aparece al lado) */}
+              {/* Sección Izquierda: Banner TikTok Live */}
               {tiktokUrl && tiktokUrl.includes("tiktok.com/@") && (
-                <div className="lg:w-[350px] w-full shrink-0">
-                  <div className="bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-100 aspect-[9/16] relative flex items-center justify-center">
-                    <iframe
-                      className="absolute inset-0 w-full h-full"
-                      src={`https://www.tiktok.com/embed/v2/live/${tiktokUrl.split('tiktok.com/')[1]?.split('?')[0]?.split('/')[0]?.replace('@', '')}`}
-                      allowFullScreen
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    ></iframe>
+                <div className="lg:w-[350px] w-full shrink-0 flex flex-col items-center justify-center bg-gradient-to-br from-zinc-900 to-black rounded-2xl p-8 border border-zinc-800 shadow-2xl text-center">
+                  <div className="relative mb-6">
+                    <div className="absolute inset-0 bg-red-600 rounded-full blur-xl opacity-50 animate-pulse"></div>
+                    <div className="relative bg-red-600 text-white w-20 h-20 rounded-full flex items-center justify-center shadow-lg shadow-red-600/50">
+                      <Video className="w-10 h-10 animate-bounce" />
+                    </div>
                   </div>
+                  <h4 className="text-white text-xl font-bold mb-2">¡Transmisión en Vivo!</h4>
+                  <p className="text-zinc-400 text-sm mb-8 leading-relaxed">
+                    Estamos mostrando nuestras prendas en TikTok ahora mismo. ¡Únete para ver los detalles en tiempo real!
+                  </p>
+                  <a 
+                    href={tiktokUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-[0_0_20px_rgba(220,38,38,0.4)] flex items-center justify-center gap-3"
+                  >
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                    </span>
+                    Ver Live en TikTok
+                  </a>
                 </div>
               )}
 
