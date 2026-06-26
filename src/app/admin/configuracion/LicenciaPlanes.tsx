@@ -31,10 +31,10 @@ export default function LicenciaPlanes() {
         fecha = new Date(proximoPagoStr);
       } else {
         fecha = new Date();
-        if (fecha.getDate() > 26) {
+        if (fecha.getDate() > 25) {
           fecha.setMonth(fecha.getMonth() + 1);
         }
-        fecha.setDate(26);
+        fecha.setDate(25);
       }
       setFechaVencimiento(fecha);
     };
