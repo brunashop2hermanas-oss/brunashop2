@@ -18,12 +18,12 @@ export default function PaymentReminder() {
     if (proximoPagoStr) {
       fechaProximoPago = new Date(proximoPagoStr);
     } else {
-      // Default: el 25 de este mes
+      // Default: el 26 de este mes
       fechaProximoPago = new Date();
-      if (fechaProximoPago.getDate() > 25) {
+      if (fechaProximoPago.getDate() > 26) {
         fechaProximoPago.setMonth(fechaProximoPago.getMonth() + 1);
       }
-      fechaProximoPago.setDate(25);
+      fechaProximoPago.setDate(26);
     }
     
     setFechaProximo(fechaProximoPago);
