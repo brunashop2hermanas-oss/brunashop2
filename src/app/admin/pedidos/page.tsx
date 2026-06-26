@@ -443,6 +443,15 @@ const imprimirVineta = (pedido: any) => {
           </div>
 
           <button 
+            onClick={() => setFiltroTab('historial')}
+            className={`flex-1 min-w-[120px] px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 relative ${filtroTab === 'historial' ? 'bg-green-500 text-white shadow-lg scale-[1.02]' : 'bg-surface hover:bg-surface-border/50 text-foreground/70'}`}
+          >
+            <History className="w-5 h-5" /> Historial
+          </button>
+          <div className="hidden sm:flex items-center text-surface-border shrink-0">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </div>
+          <button 
             onClick={() => setFiltroTab('rechazados')}
             className={`flex-1 min-w-[140px] px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 relative ${filtroTab === 'rechazados' ? 'bg-red-500 text-white shadow-lg scale-[1.02]' : 'bg-surface hover:bg-surface-border/50 text-foreground/70'}`}
           >
@@ -452,15 +461,6 @@ const imprimirVineta = (pedido: any) => {
                 {counts.rechazados}
               </span>
             )}
-          </button>
-          <div className="hidden sm:flex items-center text-surface-border shrink-0">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-          </div>
-          <button 
-            onClick={() => setFiltroTab('historial')}
-            className={`flex-1 min-w-[120px] px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 relative ${filtroTab === 'historial' ? 'bg-green-500 text-white shadow-lg scale-[1.02]' : 'bg-surface hover:bg-surface-border/50 text-foreground/70'}`}
-          >
-            <History className="w-5 h-5" /> Historial
           </button>
         </div>
         
@@ -630,13 +630,22 @@ const imprimirVineta = (pedido: any) => {
                     )}
                     
                     {pedido.estado === 'Rechazado' && (
-                      <button 
-                        onClick={() => restaurarPago(pedido)}
-                        className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors shadow-md flex items-center gap-2 font-bold text-xs"
-                        title="Restaurar a Pendiente"
-                      >
-                        <History className="w-4 h-4" /> Restaurar Pedido
-                      </button>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => restaurarPago(pedido)}
+                          className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors shadow-md flex items-center gap-2 font-bold text-xs"
+                          title="Restaurar a Pendiente"
+                        >
+                          <History className="w-4 h-4" /> Restaurar Pedido
+                        </button>
+                        <button 
+                          onClick={() => borrarDefinitivamente(pedido.id)}
+                          className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors shadow-md flex items-center gap-2 font-bold text-xs"
+                          title="Borrar Definitivamente"
+                        >
+                          <XCircle className="w-4 h-4" /> Borrar Definitivamente
+                        </button>
+                      </div>
                     )}
                     
                     {pedido.terminosAceptados && (
