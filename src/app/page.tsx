@@ -8,12 +8,27 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getPrendas } from "@/app/actions/productos";
 
+const HERO_IMAGES = [
+  "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=2070&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=2070&auto=format&fit=crop"
+];
+
 export default function Home() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [liveActivoBanner, setLiveActivoBanner] = useState(false);
   const [colecciones, setColecciones] = useState<string[]>([]);
   const [coleccionActiva, setColeccionActiva] = useState<string | null>(null);
+  const [currentHeroImage, setCurrentHeroImage] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentHeroImage((prev) => (prev + 1) % HERO_IMAGES.length);
+    }, 7000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -149,13 +164,20 @@ export default function Home() {
       {/* Hero Section a Pantalla Completa */}
       <main className="relative w-full h-[85vh] md:h-screen flex items-center justify-center overflow-hidden bg-[#1a0f0a]">
         
-        {/* Imagen de fondo principal */}
-        <div className="absolute inset-0 w-full h-full">
-          <img 
-            src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop" 
-            alt="Moda Femenina Elegante" 
-            className="w-full h-full object-cover object-center"
-          />
+        {/* Carrusel de Imágenes de fondo principal */}
+        <div className="absolute inset-0 w-full h-full bg-[#1a0f0a]">
+          <AnimatePresence>
+            <motion.img 
+              key={currentHeroImage}
+              src={HERO_IMAGES[currentHeroImage]}
+              alt="Moda Femenina Elegante" 
+              className="absolute inset-0 w-full h-full object-cover object-center"
+              initial={{ opacity: 0, scale: 1.05 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.8, ease: "easeInOut" }}
+            />
+          </AnimatePresence>
           {/* Overlay base para oscurecer y dar el tono cálido */}
           <div className="absolute inset-0 bg-[#2a1712]/70 mix-blend-multiply"></div>
           
