@@ -84,7 +84,7 @@ export default function Home() {
           {/* Nav Desktop */}
           <nav className="hidden md:flex items-center gap-8 text-xs font-medium">
             <div className="relative group">
-              <button className={`hover:opacity-70 transition-opacity uppercase tracking-widest flex items-center gap-1 ${isScrolled ? "text-black" : "text-[#4e342e]"}`}>
+              <button className={`hover:opacity-70 transition-opacity uppercase tracking-widest flex items-center gap-1 ${isScrolled ? "text-black" : "text-white drop-shadow-md"}`}>
                 Colecciones <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
               </button>
               <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 hidden group-hover:flex flex-col bg-white shadow-2xl py-3 rounded-xl min-w-[220px] border border-gray-100">
@@ -147,13 +147,26 @@ export default function Home() {
       </AnimatePresence>
 
       {/* Hero Section a Pantalla Completa */}
-      <main className="relative w-full h-[85vh] md:h-screen flex items-center justify-center overflow-hidden bg-[#FDFBF7]">
-        {/* Imagen de fondo (logo como marca de agua gigante) */}
-        <div className="absolute inset-0 w-full h-full flex items-center justify-center opacity-[0.07] pointer-events-none">
+      <main className="relative w-full h-[85vh] md:h-screen flex items-center justify-center overflow-hidden bg-[#2a1712]">
+        
+        {/* Imagen de fondo principal */}
+        <div className="absolute inset-0 w-full h-full">
+          <img 
+            src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=2070&auto=format&fit=crop" 
+            alt="Moda Femenina Lifestyle" 
+            className="w-full h-full object-cover object-center"
+          />
+          {/* Overlay para dar tonos tierra/dorados que combinen con el logo */}
+          <div className="absolute inset-0 bg-[#4e342e] opacity-50 mix-blend-color"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-[#2a1712]/90 via-[#4e342e]/40 to-[#2a1712]/60"></div>
+        </div>
+
+        {/* Marca de agua del logo (menos transparente, más pequeña) */}
+        <div className="absolute inset-0 w-full h-full flex items-center justify-center opacity-40 pointer-events-none z-0">
           <img 
             src="/logo.png" 
             alt="BrunaShop Watermark" 
-            className="w-[150%] md:w-[90%] h-auto object-contain mix-blend-multiply"
+            className="w-[60%] md:w-[35%] h-auto object-contain drop-shadow-2xl"
           />
         </div>
 
@@ -162,7 +175,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-7xl md:text-[9rem] font-serif text-[#4e342e] mb-0 leading-none drop-shadow-sm uppercase tracking-tighter"
+            className="text-7xl md:text-[9rem] font-serif text-white mb-0 leading-none drop-shadow-lg uppercase tracking-tighter"
           >
             BRUNAS
           </motion.h2>
@@ -170,7 +183,7 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-lg md:text-3xl text-[#6d4c41] mb-12 font-light tracking-[0.4em] uppercase"
+            className="text-lg md:text-3xl text-white/80 mb-12 font-light tracking-[0.4em] uppercase drop-shadow-md"
           >
             Bolivia
           </motion.p>
@@ -181,15 +194,15 @@ export default function Home() {
              transition={{ duration: 0.8, delay: 0.4 }}
              className="flex flex-col items-center mb-12 relative"
           >
-            <div className="absolute -inset-4 bg-white/40 blur-xl rounded-full z-0"></div>
+            <div className="absolute -inset-8 bg-black/20 blur-2xl rounded-full z-0"></div>
             <div className="relative z-10">
-              <p className="text-xl md:text-4xl font-serif italic text-[#3e2723] mb-2">
+              <p className="text-xl md:text-4xl font-serif italic text-white mb-2 drop-shadow-md">
                 Más que un outfit,
               </p>
-              <p className="text-3xl md:text-5xl font-serif text-[#4e342e] font-bold uppercase tracking-widest mb-4">
+              <p className="text-3xl md:text-5xl font-serif text-[#ebd197] font-bold uppercase tracking-widest mb-4 drop-shadow-lg">
                 Una Conexión Única.
               </p>
-              <p className="text-lg md:text-2xl font-serif italic text-[#5d4037]">
+              <p className="text-lg md:text-2xl font-serif italic text-white/90 drop-shadow-md">
                 Bruna te viste de historia y luz.
               </p>
             </div>
@@ -200,7 +213,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
             onClick={() => scrollToSection('catalogo')}
-            className="bg-[#4e342e] text-white px-10 py-4 font-medium text-xs tracking-widest uppercase hover:bg-[#3e2723] transition-colors flex items-center gap-3 shadow-2xl rounded-sm"
+            className="bg-white text-[#2a1712] px-10 py-4 font-bold text-xs tracking-widest uppercase hover:bg-[#ebd197] transition-colors flex items-center gap-3 shadow-2xl rounded-sm"
           >
             Descubrir Colecciones <ArrowRight className="w-4 h-4" />
           </motion.button>
