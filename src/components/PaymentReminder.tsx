@@ -46,7 +46,7 @@ export default function PaymentReminder() {
               <div>
                 <p className="font-bold text-xs tracking-widest uppercase mb-0.5">Recordatorio de Pago</p>
                 <p className="text-xs text-white/90">
-                  Tu plan Pro se debita cada 25 de mes. Por favor, asegúrate de contar con saldo en tu tarjeta para evitar suspensiones.
+                  Tus planes de <strong>Supabase (Base de datos)</strong> y <strong>Render (Servidor)</strong> se debitan automáticamente cada 25 de mes. Por favor, asegúrate de contar con saldo en tu tarjeta para evitar suspensiones de la tienda.
                 </p>
               </div>
             </div>
