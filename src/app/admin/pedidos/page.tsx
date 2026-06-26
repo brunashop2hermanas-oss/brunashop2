@@ -64,7 +64,19 @@ export default function AdminDashboard() {
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState<any>(null); // Modal de Verificación de Pago
   const [pedidoEmpaquetando, setPedidoEmpaquetando] = useState<any>(null); // Modal de Empaquetado
   const [pedidosParaImprimir, setPedidosParaImprimir] = useState<string[]>([]);
-  const [filtroTab, setFiltroTab] = useState<'pagos' | 'empaquetar' | 'guias' | 'historial'>('pagos');
+  const [filtroTab, setFiltroTab] = useState<'pagos' | 'empaquetar' | 'guias' | 'historial' | 'rechazados'>('pagos');
+  
+  const restaurarPago = async (pedido: any) => {
+    if (!window.confirm("¿Deseas RESTAURAR este pedido? Volverá a estar pendiente de verificación.")) return;
+    const res = await updateEstadoVenta(pedido.id, 'Pendiente');
+    if (res.success) {
+      const nuevosPedidos = pedidos.map(p => p.id === pedido.id ? { ...p, estado: 'Pendiente' } : p);
+      setPedidos(nuevosPedidos);
+      toast.success("Pedido restaurado a Pendiente.");
+    } else {
+      toast.error("Error al restaurar pedido.");
+    }
+  };
   const [filtroFecha, setFiltroFecha] = useState<'hoy' | 'semana' | 'mes' | 'año' | 'todo' | 'dia_especifico' | 'mes_especifico'>('todo');
   const [fechaEspecifica, setFechaEspecifica] = useState("");
   const [mesEspecifico, setMesEspecifico] = useState("");
@@ -104,6 +116,7 @@ export default function AdminDashboard() {
   };
 
   const aprobarPago = async (pedido: any) => {
+    if (!window.confirm("¿Estás segura de que quieres APROBAR este pago? El pedido pasará a la etapa de empaquetado.")) return;
     const res = await updateEstadoVenta(pedido.id, 'Aprobado');
     if (res.success) {
       // Actualización optimista local
@@ -120,6 +133,7 @@ export default function AdminDashboard() {
   };
 
   const rechazarPago = async (pedido: any) => {
+    if (!window.confirm("¿Estás segura de que quieres RECHAZAR este pago? El pedido será movido a Rechazados.")) return;
     const res = await updateEstadoVenta(pedido.id, 'Rechazado');
     if (res.success) {
       const nuevosPedidos = pedidos.map(p => p.id === pedido.id ? { ...p, estado: "Rechazado" } : p);
@@ -253,25 +267,33 @@ const imprimirVineta = (pedido: any) => {
     const todasEmpaquetadas = esTiendaDirecta ? true : (arts.length > 0 && arts.every((art: any) => art.empaquetado));
     const esAbandonado = pedido.estado === 'Esperando Pago' || pedido.estado === 'Expirado';
 
-    const textoBusqueda = busqueda.toLowerCase();
-    const coincideBusqueda = 
-      (pedido.cliente && pedido.cliente.toLowerCase().includes(textoBusqueda)) || 
-      (pedido.ci && pedido.ci.includes(textoBusqueda)) || 
-      (pedido.id && pedido.id.toLowerCase().includes(textoBusqueda));
-
-    if (busqueda && !coincideBusqueda) return false;
+    const textoBusqueda = busqueda.toLowerCase().trim();
+    if (textoBusqueda) {
+      const coincideBusqueda = 
+        (pedido.cliente && pedido.cliente.toLowerCase().includes(textoBusqueda)) || 
+        (pedido.ci && pedido.ci.includes(textoBusqueda)) || 
+        (pedido.id && pedido.id.toLowerCase().includes(textoBusqueda));
+      return coincideBusqueda;
+    }
 
     if (filtroTab === 'pagos') return pedido.estado === 'Pendiente' && !esAbandonado;
     if (filtroTab === 'empaquetar') return (pedido.estado === 'Aprobado' || pedido.estado === 'PREPARANDO') && !todasEmpaquetadas && !esAbandonado && pedido.estado !== 'ENTREGADO';
     if (filtroTab === 'guias') return (pedido.estado === 'Aprobado' || pedido.estado === 'PREPARANDO') && todasEmpaquetadas && !pedido.guiaEnvioUrl && !esAbandonado && pedido.estado !== 'ENTREGADO';
+    if (filtroTab === 'rechazados') return pedido.estado === 'Rechazado';
     if (filtroTab === 'historial') return pedido.estado === 'ENTREGADO' || pedido.estado === 'ENVIADO' || (todasEmpaquetadas && !!pedido.guiaEnvioUrl) || (esTiendaDirecta && pedido.estado === 'ENTREGADO');
     
     return true;
   });
 
-  const pedidosARenderizar = filtroTab === 'historial' ? pedidosFiltrados.slice(0, 50) : pedidosFiltrados;
+  const pedidosARenderizar = busqueda.trim() ? pedidos.filter(pedido => {
+    if (pedido.origen === 'CAJA' || pedido.origen === 'POS') return false;
+    const t = busqueda.toLowerCase().trim();
+    return (pedido.cliente && pedido.cliente.toLowerCase().includes(t)) || 
+           (pedido.ci && pedido.ci.includes(t)) || 
+           (pedido.id && pedido.id.toLowerCase().includes(t));
+  }) : (filtroTab === 'historial' ? pedidosFiltrados.slice(0, 50) : pedidosFiltrados);
 
-  const counts = { pagos: 0, empaquetar: 0, guias: 0, historial: 0 };
+  const counts = { pagos: 0, empaquetar: 0, guias: 0, historial: 0, rechazados: 0 };
   pedidosPorFecha.forEach(pedido => {
     if (pedido.origen === 'CAJA' || pedido.origen === 'POS') return;
     const arts = pedido.articulos || [];
@@ -282,6 +304,7 @@ const imprimirVineta = (pedido: any) => {
     if (pedido.estado === 'Pendiente' && !esAbandonado) counts.pagos++;
     else if ((pedido.estado === 'Aprobado' || pedido.estado === 'PREPARANDO') && !todasEmpaquetadas && !esAbandonado && pedido.estado !== 'ENTREGADO') counts.empaquetar++;
     else if ((pedido.estado === 'Aprobado' || pedido.estado === 'PREPARANDO') && todasEmpaquetadas && !pedido.guiaEnvioUrl && !esAbandonado && pedido.estado !== 'ENTREGADO') counts.guias++;
+    else if (pedido.estado === 'Rechazado') counts.rechazados++;
     else if (pedido.estado === 'ENTREGADO' || pedido.estado === 'ENVIADO' || (todasEmpaquetadas && !!pedido.guiaEnvioUrl) || (esTiendaDirecta && pedido.estado === 'ENTREGADO')) counts.historial++;
   });
 
@@ -408,6 +431,20 @@ const imprimirVineta = (pedido: any) => {
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
           </div>
 
+          <button 
+            onClick={() => setFiltroTab('rechazados')}
+            className={`flex-1 min-w-[140px] px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 relative ${filtroTab === 'rechazados' ? 'bg-red-500 text-white shadow-lg scale-[1.02]' : 'bg-surface hover:bg-surface-border/50 text-foreground/70'}`}
+          >
+            <XCircle className="w-5 h-5" /> Rechazados
+            {counts.rechazados > 0 && (
+              <span className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-surface shadow-sm ${filtroTab === 'rechazados' ? 'bg-white text-red-500' : 'bg-red-500 text-white animate-pulse'}`}>
+                {counts.rechazados}
+              </span>
+            )}
+          </button>
+          <div className="hidden sm:flex items-center text-surface-border shrink-0">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </div>
           <button 
             onClick={() => setFiltroTab('historial')}
             className={`flex-1 min-w-[120px] px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 relative ${filtroTab === 'historial' ? 'bg-green-500 text-white shadow-lg scale-[1.02]' : 'bg-surface hover:bg-surface-border/50 text-foreground/70'}`}
@@ -578,6 +615,16 @@ const imprimirVineta = (pedido: any) => {
                         title="Ver Comprobante"
                       >
                         <Eye className="w-4 h-4" /> Verificar Pago
+                      </button>
+                    )}
+                    
+                    {pedido.estado === 'Rechazado' && (
+                      <button 
+                        onClick={() => restaurarPago(pedido)}
+                        className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors shadow-md flex items-center gap-2 font-bold text-xs"
+                        title="Restaurar a Pendiente"
+                      >
+                        <History className="w-4 h-4" /> Restaurar Pedido
                       </button>
                     )}
                     
