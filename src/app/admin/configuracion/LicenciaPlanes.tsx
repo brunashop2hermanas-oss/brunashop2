@@ -11,6 +11,8 @@ export default function LicenciaPlanes() {
   const [planActual, setPlanActual] = useState("Gratuito");
   const [loading, setLoading] = useState(true);
 
+  const [fechaVencimiento, setFechaVencimiento] = useState<Date>(new Date());
+  
   useEffect(() => {
     const fetchConf = async () => {
       const res = await getConfiguracion();
@@ -20,18 +22,36 @@ export default function LicenciaPlanes() {
       setLoading(false);
     };
     fetchConf();
+
+    // Actualizar la fecha leyendo de localStorage
+    const updateFecha = () => {
+      let proximoPagoStr = localStorage.getItem('fecha_proximo_pago_render');
+      let fecha: Date;
+      if (proximoPagoStr) {
+        fecha = new Date(proximoPagoStr);
+      } else {
+        fecha = new Date();
+        if (fecha.getDate() > 25) {
+          fecha.setMonth(fecha.getMonth() + 1);
+        }
+        fecha.setDate(25);
+      }
+      setFechaVencimiento(fecha);
+    };
+
+    updateFecha();
+    window.addEventListener('pago_actualizado', updateFecha);
+    return () => window.removeEventListener('pago_actualizado', updateFecha);
   }, []);
 
   const esPlanDePago = planActual !== "Gratuito";
 
   // Fecha de vencimiento (solo aplica si es plan de pago)
-  const fechaVencimiento = new Date();
-  fechaVencimiento.setMonth(fechaVencimiento.getMonth() + 1);
-  fechaVencimiento.setDate(0); // Último día del mes actual
-
-  const diasRestantes = Math.ceil((fechaVencimiento.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const diasRestantes = Math.ceil((fechaVencimiento.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   
-  const alertaVencimiento = esPlanDePago && diasRestantes <= 5;
+  const alertaVencimiento = esPlanDePago && diasRestantes <= 5 && diasRestantes >= 0;
 
   const planes = [
     {
