@@ -147,7 +147,7 @@ export default function Home() {
       </AnimatePresence>
 
       {/* Hero Section a Pantalla Completa */}
-      <main className="relative w-full h-[85vh] md:h-screen flex items-center justify-center overflow-hidden bg-[#2a1712]">
+      <main className="relative w-full h-[85vh] md:h-screen flex items-center justify-center overflow-hidden bg-[#1a0f0a]">
         
         {/* Imagen de fondo principal */}
         <div className="absolute inset-0 w-full h-full">
@@ -156,18 +156,24 @@ export default function Home() {
             alt="Moda Femenina Lifestyle" 
             className="w-full h-full object-cover object-center"
           />
-          {/* Overlay para dar tonos tierra/dorados que combinen con el logo */}
-          <div className="absolute inset-0 bg-[#4e342e] opacity-50 mix-blend-color"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-[#2a1712]/90 via-[#4e342e]/40 to-[#2a1712]/60"></div>
-        </div>
+          {/* Overlay base para oscurecer y dar el tono cálido */}
+          <div className="absolute inset-0 bg-[#2a1712]/70 mix-blend-multiply"></div>
+          
+          {/* Marca de agua del logo (integrada orgánicamente) */}
+          <div className="absolute inset-0 w-full h-full flex items-center justify-center opacity-80 pointer-events-none">
+            <img 
+              src="/logo.png" 
+              alt="BrunaShop Watermark" 
+              className="w-[85%] md:w-[45%] h-auto object-contain"
+              style={{ 
+                WebkitMaskImage: 'radial-gradient(circle, black 50%, transparent 68%)', 
+                maskImage: 'radial-gradient(circle, black 50%, transparent 68%)' 
+              }}
+            />
+          </div>
 
-        {/* Marca de agua del logo (menos transparente, más pequeña) */}
-        <div className="absolute inset-0 w-full h-full flex items-center justify-center opacity-40 pointer-events-none z-0">
-          <img 
-            src="/logo.png" 
-            alt="BrunaShop Watermark" 
-            className="w-[60%] md:w-[35%] h-auto object-contain drop-shadow-2xl"
-          />
+          {/* Gradiente final para legibilidad del texto */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1a0f0a] via-transparent to-[#1a0f0a]/60"></div>
         </div>
 
         <div className="relative z-10 text-center px-4 max-w-4xl flex flex-col items-center mt-20 md:mt-0">
@@ -175,7 +181,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-7xl md:text-[9rem] font-serif text-white mb-0 leading-none drop-shadow-lg uppercase tracking-tighter"
+            className="text-7xl md:text-[9rem] font-serif text-white mb-0 leading-none drop-shadow-2xl uppercase tracking-tighter"
           >
             BRUNAS
           </motion.h2>
@@ -183,7 +189,7 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-lg md:text-3xl text-white/80 mb-12 font-light tracking-[0.4em] uppercase drop-shadow-md"
+            className="text-lg md:text-3xl text-white/90 mb-12 font-light tracking-[0.4em] uppercase drop-shadow-xl"
           >
             Bolivia
           </motion.p>
@@ -194,15 +200,14 @@ export default function Home() {
              transition={{ duration: 0.8, delay: 0.4 }}
              className="flex flex-col items-center mb-12 relative"
           >
-            <div className="absolute -inset-8 bg-black/20 blur-2xl rounded-full z-0"></div>
             <div className="relative z-10">
-              <p className="text-xl md:text-4xl font-serif italic text-white mb-2 drop-shadow-md">
+              <p className="text-xl md:text-4xl font-serif italic text-white mb-2 drop-shadow-xl">
                 Más que un outfit,
               </p>
-              <p className="text-3xl md:text-5xl font-serif text-[#ebd197] font-bold uppercase tracking-widest mb-4 drop-shadow-lg">
+              <p className="text-3xl md:text-5xl font-serif text-[#ebd197] font-bold uppercase tracking-widest mb-4 drop-shadow-2xl">
                 Una Conexión Única.
               </p>
-              <p className="text-lg md:text-2xl font-serif italic text-white/90 drop-shadow-md">
+              <p className="text-lg md:text-2xl font-serif italic text-white/90 drop-shadow-xl">
                 Bruna te viste de historia y luz.
               </p>
             </div>
@@ -213,7 +218,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
             onClick={() => scrollToSection('catalogo')}
-            className="bg-white text-[#2a1712] px-10 py-4 font-bold text-xs tracking-widest uppercase hover:bg-[#ebd197] transition-colors flex items-center gap-3 shadow-2xl rounded-sm"
+            className="bg-white text-[#1a0f0a] px-10 py-4 font-bold text-xs tracking-widest uppercase hover:bg-[#ebd197] transition-colors flex items-center gap-3 shadow-2xl rounded-sm"
           >
             Descubrir Colecciones <ArrowRight className="w-4 h-4" />
           </motion.button>
