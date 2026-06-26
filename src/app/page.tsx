@@ -83,8 +83,22 @@ export default function Home() {
 
           {/* Nav Desktop */}
           <nav className="hidden md:flex items-center gap-8 text-xs font-medium">
-            <button onClick={() => scrollToSection('catalogo')} className={`hover:opacity-70 transition-opacity uppercase tracking-widest ${isScrolled ? "text-black" : "text-white drop-shadow-md"}`}>Colección</button>
-            <button onClick={() => scrollToSection('catalogo')} className={`hover:opacity-70 transition-opacity uppercase tracking-widest font-bold ${isScrolled ? "text-red-600" : "text-red-400 drop-shadow-md"}`}>Ofertas</button>
+            <div className="relative group">
+              <button className={`hover:opacity-70 transition-opacity uppercase tracking-widest flex items-center gap-1 ${isScrolled ? "text-black" : "text-[#4e342e]"}`}>
+                Colecciones <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 hidden group-hover:flex flex-col bg-white shadow-2xl py-3 rounded-xl min-w-[220px] border border-gray-100">
+                <button onClick={() => { setColeccionActiva(null); scrollToSection('catalogo'); }} className="text-left px-5 py-2.5 hover:bg-gray-50 text-black text-sm uppercase tracking-widest font-bold border-b border-gray-100">
+                  Todas las Colecciones
+                </button>
+                {colecciones.map((col) => (
+                  <button key={col} onClick={() => { setColeccionActiva(col); scrollToSection('catalogo'); }} className="text-left px-5 py-2 hover:bg-gray-50 text-gray-700 text-sm uppercase tracking-wider">
+                    {col}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button onClick={() => scrollToSection('catalogo')} className={`hover:opacity-70 transition-opacity uppercase tracking-widest font-bold ${isScrolled ? "text-red-600" : "text-red-500 drop-shadow-sm"}`}>Ofertas</button>
           </nav>
 
           {/* Acciones */}
@@ -133,15 +147,14 @@ export default function Home() {
       </AnimatePresence>
 
       {/* Hero Section a Pantalla Completa */}
-      <main className="relative w-full h-[85vh] md:h-screen flex items-center justify-center overflow-hidden bg-gray-900">
-        <div className="absolute inset-0 w-full h-full">
+      <main className="relative w-full h-[85vh] md:h-screen flex items-center justify-center overflow-hidden bg-[#FDFBF7]">
+        {/* Imagen de fondo (logo como marca de agua gigante) */}
+        <div className="absolute inset-0 w-full h-full flex items-center justify-center opacity-[0.07] pointer-events-none">
           <img 
-            src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=2070&auto=format&fit=crop" 
-            alt="Moda Femenina Lifestyle" 
-            className="w-full h-full object-cover object-center opacity-80"
+            src="/logo.png" 
+            alt="BrunaShop Watermark" 
+            className="w-[150%] md:w-[90%] h-auto object-contain mix-blend-multiply"
           />
-          {/* Gradient Overlay sutil */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30"></div>
         </div>
 
         <div className="relative z-10 text-center px-4 max-w-4xl flex flex-col items-center mt-20 md:mt-0">
@@ -149,26 +162,47 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-5xl md:text-8xl font-serif text-white mb-6 drop-shadow-lg"
+            className="text-7xl md:text-[9rem] font-serif text-[#4e342e] mb-0 leading-none drop-shadow-sm uppercase tracking-tighter"
           >
-            Nueva Colección
+            BRUNAS
           </motion.h2>
           <motion.p 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="text-base md:text-xl text-white/90 mb-10 max-w-lg font-light drop-shadow-md"
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-lg md:text-3xl text-[#6d4c41] mb-12 font-light tracking-[0.4em] uppercase"
           >
-            Diseños exclusivos que definen tu estilo. Descubre lo último en moda femenina, adaptado a ti.
+            Bolivia
           </motion.p>
+          
+          <motion.div
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             transition={{ duration: 0.8, delay: 0.4 }}
+             className="flex flex-col items-center mb-12 relative"
+          >
+            <div className="absolute -inset-4 bg-white/40 blur-xl rounded-full z-0"></div>
+            <div className="relative z-10">
+              <p className="text-xl md:text-4xl font-serif italic text-[#3e2723] mb-2">
+                Más que un outfit,
+              </p>
+              <p className="text-3xl md:text-5xl font-serif text-[#4e342e] font-bold uppercase tracking-widest mb-4">
+                Una Conexión Única.
+              </p>
+              <p className="text-lg md:text-2xl font-serif italic text-[#5d4037]">
+                Bruna te viste de historia y luz.
+              </p>
+            </div>
+          </motion.div>
+
           <motion.button
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
             onClick={() => scrollToSection('catalogo')}
-            className="bg-white text-black px-10 py-4 font-medium text-xs tracking-widest uppercase hover:bg-gray-100 transition-colors flex items-center gap-3 shadow-xl"
+            className="bg-[#4e342e] text-white px-10 py-4 font-medium text-xs tracking-widest uppercase hover:bg-[#3e2723] transition-colors flex items-center gap-3 shadow-2xl rounded-sm"
           >
-            Descubrir <ArrowRight className="w-4 h-4" />
+            Descubrir Colecciones <ArrowRight className="w-4 h-4" />
           </motion.button>
         </div>
       </main>
