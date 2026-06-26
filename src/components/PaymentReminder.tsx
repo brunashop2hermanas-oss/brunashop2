@@ -47,8 +47,9 @@ export default function PaymentReminder() {
     const seguro = window.confirm("¿Está seguro de que ya realizó el pago de Supabase y Render?");
     if (!seguro) return;
 
-    // Si presiona "Ya hice el pago" y confirma, el próximo pago es en 1 mes exacto a partir de hoy
+    // Si presiona "Ya hice el pago", el próximo pago siempre será el 25 del próximo mes
     const nuevoProximoPago = new Date();
+    nuevoProximoPago.setDate(25);
     nuevoProximoPago.setMonth(nuevoProximoPago.getMonth() + 1);
     localStorage.setItem('fecha_proximo_pago_render', nuevoProximoPago.toISOString());
     setIsVisible(false);
