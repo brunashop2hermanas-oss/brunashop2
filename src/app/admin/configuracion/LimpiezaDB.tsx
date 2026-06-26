@@ -21,14 +21,14 @@ export default function LimpiezaDB() {
   const [espacio, setEspacio] = useState<{dbSize: string, storageSize: string, fileCount: number, dbSizeBytes: number, storageSizeBytes: number} | null>(null);
   const [loading, setLoading] = useState(true);
   const [limpiando, setLimpiando] = useState(false);
-  const [planSupabase, setPlanSupabase] = useState("Gratuito");
+  const [planSupabase, setPlanSupabase] = useState("Pro");
   
   // Limites por defecto según plan de Supabase
   let MAX_DB_MB = 500;
   let MAX_STORAGE_MB = 1024; // 1 GB
   
   if (planSupabase === "Pro") {
-    MAX_DB_MB = 8000; // 8 GB
+    MAX_DB_MB = 8192; // 8 GB
     MAX_STORAGE_MB = 102400; // 100 GB
   }
 
