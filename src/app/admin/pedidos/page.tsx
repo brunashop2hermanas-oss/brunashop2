@@ -9,6 +9,7 @@ import { getPrendas } from "@/app/actions/productos";
 import { uploadImage } from "@/app/actions/upload";
 import { compressImage } from "@/lib/imageCompression";
 import toast from "react-hot-toast";
+import { ConfirmModal, ConfirmVariant } from "@/components/ui/ConfirmModal";
 
 const resolveImage = (item: any, colorSeleccionado?: string, fallbackIndex = 0) => {
   let img = item?.imagenes?.[fallbackIndex] || item?.imagen; // For art.imagen mapping
@@ -194,37 +195,49 @@ export default function AdminDashboard() {
     enviarWhatsApp(pedido.celular, mensaje);
   };
 
-  const aprobarPago = async (pedido: any) => {
-    if (!window.confirm("¿Estás segura de que quieres APROBAR este pago? El pedido pasará a la etapa de empaquetado.")) return;
-    const res = await updateEstadoVenta(pedido.id, 'Aprobado');
-    if (res.success) {
-      // Actualización optimista local
-      const nuevosPedidos = pedidos.map(p => p.id === pedido.id ? { ...p, estado: "Aprobado" } : p);
-      setPedidos(nuevosPedidos);
-      setPedidoSeleccionado(null);
-      
-      const mensaje = getWhatsAppMessage("APROBADO", pedido);
-      enviarWhatsApp(pedido.celular, mensaje);
-      toast.success("¡Pago aprobado! Se ha descontado el stock y notificado a la clienta.");
-    } else {
-      toast.error("¡Uy! Tuvimos un problema al aprobar este pago.");
-    }
+  const aprobarPago = (pedido: any) => {
+    confirmarAccion(
+      "Aprobar Pago",
+      "¿Estás segura de que quieres APROBAR este pago? El pedido pasará a la etapa de empaquetado.",
+      "success",
+      async () => {
+        const res = await updateEstadoVenta(pedido.id, 'Aprobado');
+        if (res.success) {
+          // Actualización optimista local
+          const nuevosPedidos = pedidos.map(p => p.id === pedido.id ? { ...p, estado: "Aprobado" } : p);
+          setPedidos(nuevosPedidos);
+          setPedidoSeleccionado(null);
+          
+          const mensaje = getWhatsAppMessage("APROBADO", pedido);
+          enviarWhatsApp(pedido.celular, mensaje);
+          toast.success("¡Pago aprobado! Se ha descontado el stock y notificado a la clienta.");
+        } else {
+          toast.error("¡Uy! Tuvimos un problema al aprobar este pago.");
+        }
+      }
+    );
   };
 
-  const rechazarPago = async (pedido: any) => {
-    if (!window.confirm("¿Estás segura de que quieres RECHAZAR este pago? El pedido será movido a Rechazados.")) return;
-    const res = await updateEstadoVenta(pedido.id, 'Rechazado');
-    if (res.success) {
-      const nuevosPedidos = pedidos.map(p => p.id === pedido.id ? { ...p, estado: "Rechazado" } : p);
-      setPedidos(nuevosPedidos);
-      setPedidoSeleccionado(null);
+  const rechazarPago = (pedido: any) => {
+    confirmarAccion(
+      "Rechazar Pago",
+      "¿Estás segura de que quieres RECHAZAR este pago? El pedido será movido a Rechazados.",
+      "danger",
+      async () => {
+        const res = await updateEstadoVenta(pedido.id, 'Rechazado');
+        if (res.success) {
+          const nuevosPedidos = pedidos.map(p => p.id === pedido.id ? { ...p, estado: "Rechazado" } : p);
+          setPedidos(nuevosPedidos);
+          setPedidoSeleccionado(null);
 
-      const mensaje = getWhatsAppMessage("RECHAZADO", pedido);
-      enviarWhatsApp(pedido.celular, mensaje);
-      toast.success("Pago rechazado. El stock fue devuelto al catálogo.");
-    } else {
-      toast.error("¡Uy! Tuvimos un problema al rechazar este pago.");
-    }
+          const mensaje = getWhatsAppMessage("RECHAZADO", pedido);
+          enviarWhatsApp(pedido.celular, mensaje);
+          toast.success("Pago rechazado. El stock fue devuelto al catálogo.");
+        } else {
+          toast.error("¡Uy! Tuvimos un problema al rechazar este pago.");
+        }
+      }
+    );
   };
 
   
@@ -1144,6 +1157,17 @@ const imprimirVineta = (pedido: any) => {
           </div>
         )}
       </AnimatePresence>
+
+      {confirmConfig && (
+        <ConfirmModal
+          isOpen={confirmConfig.isOpen}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          variant={confirmConfig.variant}
+          onConfirm={confirmConfig.onConfirm}
+          onCancel={confirmConfig.onCancel}
+        />
+      )}
 
       {/* Modal de Empaquetado */}
       <AnimatePresence>

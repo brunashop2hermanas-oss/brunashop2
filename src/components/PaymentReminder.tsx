@@ -3,10 +3,20 @@
 import { useState, useEffect } from "react";
 import { AlertTriangle, X, CheckCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ConfirmModal, ConfirmVariant } from "@/components/ui/ConfirmModal";
 
 export default function PaymentReminder() {
   const [isVisible, setIsVisible] = useState(false);
   const [fechaProximo, setFechaProximo] = useState<Date | null>(null);
+  
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    variant: ConfirmVariant;
+    onConfirm: () => void;
+    onCancel: () => void;
+  } | null>(null);
 
   useEffect(() => {
     const isSimulation = typeof window !== 'undefined' && window.location.search.includes('simular_alarma=true');
@@ -44,17 +54,24 @@ export default function PaymentReminder() {
   };
 
   const registrarPago = () => {
-    const seguro = window.confirm("¿Está seguro de que ya realizó el pago de Supabase y Render?");
-    if (!seguro) return;
-
-    // Si presiona "Ya hice el pago", el próximo pago será exactamente en 1 mes desde el día que lo presionó
-    const nuevoProximoPago = new Date();
-    nuevoProximoPago.setMonth(nuevoProximoPago.getMonth() + 1);
-    localStorage.setItem('fecha_proximo_pago_render', nuevoProximoPago.toISOString());
-    setIsVisible(false);
-    
-    // Disparar un evento para que otras partes de la app se enteren si es necesario
-    window.dispatchEvent(new Event('pago_actualizado'));
+    setConfirmConfig({
+      isOpen: true,
+      title: "Confirmar Pago",
+      message: "¿Está seguro de que ya realizó el pago de Supabase y Render?",
+      variant: "info",
+      onConfirm: () => {
+        setConfirmConfig(null);
+        // Si presiona "Ya hice el pago", el próximo pago será exactamente en 1 mes desde el día que lo presionó
+        const nuevoProximoPago = new Date();
+        nuevoProximoPago.setMonth(nuevoProximoPago.getMonth() + 1);
+        localStorage.setItem('fecha_proximo_pago_render', nuevoProximoPago.toISOString());
+        setIsVisible(false);
+        
+        // Disparar un evento para que otras partes de la app se enteren si es necesario
+        window.dispatchEvent(new Event('pago_actualizado'));
+      },
+      onCancel: () => setConfirmConfig(null)
+    });
   };
 
   if (!fechaProximo) return null;
@@ -98,6 +115,17 @@ export default function PaymentReminder() {
             </div>
           </div>
         </motion.div>
+      )}
+
+      {confirmConfig && (
+        <ConfirmModal
+          isOpen={confirmConfig.isOpen}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          variant={confirmConfig.variant}
+          onConfirm={confirmConfig.onConfirm}
+          onCancel={confirmConfig.onCancel}
+        />
       )}
     </AnimatePresence>
   );
