@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server';
 const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
 
 // Configuración del Rate Limiting
-const RATE_LIMIT = 60; // Maximo 60 peticiones
+const RATE_LIMIT = 300; // Maximo 300 peticiones
 const TIME_WINDOW_MS = 60 * 1000; // 1 minuto
 
 export function middleware(request: NextRequest) {
