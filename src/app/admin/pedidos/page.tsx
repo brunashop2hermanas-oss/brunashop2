@@ -68,33 +68,68 @@ export default function AdminDashboard() {
   const [pedidosParaImprimir, setPedidosParaImprimir] = useState<string[]>([]);
   const [filtroTab, setFiltroTab] = useState<'pagos' | 'empaquetar' | 'guias' | 'historial' | 'rechazados'>('pagos');
   
-  const borrarDefinitivamente = async (id: string) => {
-    if (!window.confirm("¿Estás súper segura de que quieres ELIMINAR DEFINITIVAMENTE este pedido? Esta acción no se puede deshacer.")) return;
-    const res = await deleteVenta(id);
-    if (res.success) {
-      setPedidos(pedidos.filter(p => p.id !== id));
-      toast.success("Pedido eliminado definitivamente.");
-    } else {
-      toast.error("Error al eliminar el pedido.");
-    }
+  const borrarDefinitivamente = (id: string) => {
+    confirmarAccion(
+      "Eliminar Pedido",
+      "¿Estás súper segura de que quieres ELIMINAR DEFINITIVAMENTE este pedido? Esta acción no se puede deshacer.",
+      "danger",
+      async () => {
+        const res = await deleteVenta(id);
+        if (res.success) {
+          setPedidos(pedidos.filter(p => p.id !== id));
+          toast.success("Pedido eliminado definitivamente.");
+        } else {
+          toast.error("Error al eliminar el pedido.");
+        }
+      }
+    );
   };
 
-  const restaurarPago = async (pedido: any) => {
-    if (!window.confirm("¿Deseas RESTAURAR este pedido? Volverá a estar pendiente de verificación.")) return;
-    const res = await updateEstadoVenta(pedido.id, 'Pendiente');
-    if (res.success) {
-      const nuevosPedidos = pedidos.map(p => p.id === pedido.id ? { ...p, estado: 'Pendiente' } : p);
-      setPedidos(nuevosPedidos);
-      toast.success("Pedido restaurado a Pendiente.");
-    } else {
-      toast.error("Error al restaurar pedido.");
-    }
+  const restaurarPago = (pedido: any) => {
+    confirmarAccion(
+      "Restaurar Pedido",
+      "¿Deseas RESTAURAR este pedido? Volverá a estar pendiente de verificación.",
+      "warning",
+      async () => {
+        const res = await updateEstadoVenta(pedido.id, 'Pendiente');
+        if (res.success) {
+          const nuevosPedidos = pedidos.map(p => p.id === pedido.id ? { ...p, estado: 'Pendiente' } : p);
+          setPedidos(nuevosPedidos);
+          toast.success("Pedido restaurado a Pendiente.");
+        } else {
+          toast.error("Error al restaurar pedido.");
+        }
+      }
+    );
   };
   const [filtroFecha, setFiltroFecha] = useState<'hoy' | 'semana' | 'mes' | 'año' | 'todo' | 'dia_especifico' | 'mes_especifico'>('todo');
   const [fechaEspecifica, setFechaEspecifica] = useState("");
   const [mesEspecifico, setMesEspecifico] = useState("");
   const [comprobanteAmpliado, setComprobanteAmpliado] = useState<string | null>(null);
   const [isUploadingGuia, setIsUploadingGuia] = useState<string | null>(null);
+
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    variant: ConfirmVariant;
+    onConfirm: () => void;
+    onCancel: () => void;
+  } | null>(null);
+
+  const confirmarAccion = (title: string, message: string, variant: ConfirmVariant, action: () => void) => {
+    setConfirmConfig({
+      isOpen: true,
+      title,
+      message,
+      variant,
+      onConfirm: () => {
+        setConfirmConfig(null);
+        action();
+      },
+      onCancel: () => setConfirmConfig(null)
+    });
+  };
   const [busqueda, setBusqueda] = useState("");
   const [pedidoACompletar, setPedidoACompletar] = useState<any>(null);
   const [pedidoPreviewArticulos, setPedidoPreviewArticulos] = useState<any>(null);
