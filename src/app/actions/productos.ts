@@ -126,7 +126,7 @@ export async function createPrenda(data: any) {
 
     revalidatePath("/admin/productos");
     revalidatePath('/', 'layout');
-    revalidateTag('prendas');
+    revalidateTag('prendas', 'max');
     return { success: true, data: prenda };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -179,7 +179,7 @@ export async function updatePrenda(id: string, data: any) {
 
     revalidatePath("/admin/productos");
     revalidatePath('/', 'layout');
-    revalidateTag('prendas');
+    revalidateTag('prendas', 'max');
     return { success: true, data: prenda };
   } catch (error: any) {
     return { success: false, error: error.message };
