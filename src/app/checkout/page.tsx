@@ -799,8 +799,8 @@ function CheckoutContent() {
                 <Check className="w-10 h-10 text-black" />
               </div>
               <h2 className="text-4xl md:text-5xl font-light mb-6 uppercase tracking-widest">¡Pago Recibido!</h2>
-              <p className="text-lg text-foreground/70 mb-12 font-light">
-                Tu comprobante está en revisión. El pedido ya está confirmado y nos contactaremos contigo por WhatsApp para avisarte del envío.
+              <p className="text-lg text-foreground/70 mb-12 font-light max-w-2xl mx-auto">
+                Tu comprobante ya fue enviado con éxito. Te confirmaremos tu compra mediante WhatsApp en breve, ¡gracias por elegirnos!
               </p>
               <Link href="/">
                 <button className="bg-black text-white px-12 py-5 text-sm uppercase tracking-[0.2em] font-bold hover:bg-brand-primary transition-colors">
