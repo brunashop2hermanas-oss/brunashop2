@@ -35,6 +35,7 @@ export default function AdminProductos() {
     isConjunto: false,
     piezasDetalle: {} as any,
     stockPorTalla: {} as any,
+    nuevoStockPorTalla: {} as any,
     imagenesPorColor: {} as any,
     descripcionLarga: "",
     costoProveedor: "",
@@ -123,7 +124,7 @@ export default function AdminProductos() {
 
   const abrirModalNueva = () => {
     setProductoEditando(null);
-    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: false, piezasDetalle: {}, stockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "", visiblePublico: false });
+    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: false, piezasDetalle: {}, stockPorTalla: {}, nuevoStockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "", visiblePublico: false });
     setCategoriaSeleccionada("");
     setTallasDisponibles(TALLAS_BASE);
     setTallasSeleccionadas([]);
@@ -133,7 +134,7 @@ export default function AdminProductos() {
 
   const abrirModalNuevoCombo = () => {
     setProductoEditando(null);
-    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: true, piezasDetalle: {}, stockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "", visiblePublico: false });
+    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: true, piezasDetalle: {}, stockPorTalla: {}, nuevoStockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "", visiblePublico: false });
     setCategoriaSeleccionada("");
     setTallasDisponibles(TALLAS_BASE);
     setTallasSeleccionadas([]);
@@ -170,6 +171,7 @@ export default function AdminProductos() {
         }
         return s;
       })(),
+      nuevoStockPorTalla: {},
       imagenesPorColor: producto.imagenesPorColor || {},
       descripcionLarga: producto.descripcionLarga || "",
       costoProveedor: producto.costoProveedor?.toString() || "",
@@ -211,8 +213,11 @@ export default function AdminProductos() {
           for (const color in formData.stockPorTalla[talla]) {
             // Solo contar 'Unico' si no hay colores especificados. Si hay colores, ignorar 'Unico'.
             if ((coloresLimpios.length === 0 && color === 'Unico') || coloresLimpios.includes(color)) {
-              stockTotal += Number(formData.stockPorTalla[talla][color]) || 0;
-              stockPorTallaLimpio[talla][color] = formData.stockPorTalla[talla][color];
+              const currentStock = Number(formData.stockPorTalla[talla][color]) || 0;
+              const addedStock = Number(formData.nuevoStockPorTalla?.[talla]?.[color]) || 0;
+              const finalStock = currentStock + addedStock;
+              stockTotal += finalStock;
+              stockPorTallaLimpio[talla][color] = finalStock.toString();
             }
           }
         }
@@ -814,11 +819,13 @@ export default function AdminProductos() {
                     <p className="text-xs text-foreground/50 ml-auto hidden sm:block">Controla si los clientes pueden verla</p>
                   </div>
 
-                  <div className="flex items-center gap-3 mb-6 bg-surface p-4 rounded-xl border border-surface-border cursor-pointer" onClick={() => setFormData({...formData, isConjunto: !formData.isConjunto})}>
-                    <input type="checkbox" checked={formData.isConjunto} onChange={() => {}} className="w-5 h-5 rounded text-brand-primary focus:ring-brand-primary" />
-                    <span className="font-bold text-foreground">¿Es un Conjunto / Combo?</span>
-                    <p className="text-xs text-foreground/50 ml-auto">Agrupa múltiples prendas</p>
-                  </div>
+                  {!productoEditando && (
+                    <div className="flex items-center gap-3 mb-6 bg-surface p-4 rounded-xl border border-surface-border cursor-pointer" onClick={() => setFormData({...formData, isConjunto: !formData.isConjunto})}>
+                      <input type="checkbox" checked={formData.isConjunto} onChange={() => {}} className="w-5 h-5 rounded text-brand-primary focus:ring-brand-primary" />
+                      <span className="font-bold text-foreground">¿Es un Conjunto / Combo?</span>
+                      <p className="text-xs text-foreground/50 ml-auto">Agrupa múltiples prendas</p>
+                    </div>
+                  )}
                   {!formData.isConjunto && (
                     <>
                       <h3 className="font-bold text-brand-primary uppercase tracking-widest text-xs mb-4">Variantes y Stock</h3>
@@ -996,10 +1003,14 @@ export default function AdminProductos() {
                                 <th className="pb-2 border-b border-surface-border font-black text-brand-primary">Talla</th>
                                 {formData.colores.split(",").filter(c => c.trim()).length > 0 ? (
                                   formData.colores.split(",").map(c => c.trim()).filter(c => c).map(color => (
-                                    <th key={color} className="pb-2 border-b border-surface-border font-bold uppercase text-xs tracking-wider">{color}</th>
+                                    <th key={color} className="pb-2 border-b border-surface-border font-bold uppercase text-xs tracking-wider">
+                                      {color}
+                                    </th>
                                   ))
                                 ) : (
-                                  <th className="pb-2 border-b border-surface-border font-bold uppercase text-xs tracking-wider">Cantidad</th>
+                                  <th className="pb-2 border-b border-surface-border font-bold uppercase text-xs tracking-wider">
+                                    Cantidad
+                                  </th>
                                 )}
                               </tr>
                             </thead>
@@ -1010,54 +1021,82 @@ export default function AdminProductos() {
                                   {formData.colores.split(",").filter(c => c.trim()).length > 0 ? (
                                     formData.colores.split(",").map(c => c.trim()).filter(c => c).map(color => (
                                       <td key={color} className="py-2 pr-2 border-b border-surface-border/50">
-                                        <input 
-                                          type="number" min="0" 
-                                          value={formData.stockPorTalla?.[talla]?.[color] || ""}
-                                          onChange={(e) => {
-                                            const val = Math.max(0, Number(e.target.value));
-                                            setFormData({
-                                              ...formData,
-                                              stockPorTalla: {
-                                                ...formData.stockPorTalla,
-                                                [talla]: {
-                                                  ...(formData.stockPorTalla[talla] || {}),
-                                                  [color]: val.toString()
-                                                }
-                                              }
-                                            });
-                                          }}
-                                          className="w-full bg-surface border border-surface-border p-2 rounded-lg outline-none focus:ring-2 focus:ring-brand-primary font-mono text-center" 
-                                          placeholder="0"
-                                        />
+                                        <div className="flex items-end gap-2 pb-1">
+                                          <div className="flex flex-col items-center">
+                                            <span className="text-[9px] uppercase font-bold text-foreground/50 mb-1">Stock Actual</span>
+                                            <span className="text-sm font-medium w-12 text-center text-foreground/70 bg-surface-border/30 rounded py-1.5" title="Stock Actual">
+                                              {formData.stockPorTalla?.[talla]?.[color] || "0"}
+                                            </span>
+                                          </div>
+                                          <span className="text-foreground/40 font-bold mb-2">+</span>
+                                          <div className="flex flex-col items-center flex-1">
+                                            <span className="text-[9px] uppercase font-bold text-brand-primary/80 mb-1">Sumar Nueva Cantidad</span>
+                                            <input 
+                                              type="number" min="0" 
+                                              value={formData.nuevoStockPorTalla?.[talla]?.[color] || ""}
+                                              onChange={(e) => {
+                                                const val = Math.max(0, Number(e.target.value));
+                                                setFormData({
+                                                  ...formData,
+                                                  nuevoStockPorTalla: {
+                                                    ...formData.nuevoStockPorTalla,
+                                                    [talla]: {
+                                                      ...(formData.nuevoStockPorTalla?.[talla] || {}),
+                                                      [color]: e.target.value ? val.toString() : ""
+                                                    }
+                                                  }
+                                                });
+                                              }}
+                                              className="w-full bg-surface border-2 border-brand-primary/20 p-1 rounded-lg outline-none focus:ring-2 focus:ring-brand-primary font-mono text-center hover:border-brand-primary/40 transition-colors" 
+                                              placeholder="0"
+                                            />
+                                          </div>
+                                        </div>
                                       </td>
                                     ))
                                   ) : (
                                     <td className="py-2 pr-2 border-b border-surface-border/50">
-                                      <input 
-                                        type="number" min="0" 
-                                        value={formData.stockPorTalla?.[talla]?.['Unico'] || ""}
-                                        onChange={(e) => {
-                                          const val = Math.max(0, Number(e.target.value));
-                                          setFormData({
-                                            ...formData,
-                                            stockPorTalla: {
-                                              ...formData.stockPorTalla,
-                                              [talla]: {
-                                                ...(formData.stockPorTalla[talla] || {}),
-                                                ['Unico']: val.toString()
-                                              }
-                                            }
-                                          });
-                                        }}
-                                        className="w-full bg-surface border border-surface-border p-2 rounded-lg outline-none focus:ring-2 focus:ring-brand-primary font-mono text-center" 
-                                        placeholder="0"
-                                      />
+                                      <div className="flex items-end gap-2 pb-1">
+                                        <div className="flex flex-col items-center">
+                                          <span className="text-[9px] uppercase font-bold text-foreground/50 mb-1">Stock Actual</span>
+                                          <span className="text-sm font-medium w-12 text-center text-foreground/70 bg-surface-border/30 rounded py-1.5" title="Stock Actual">
+                                            {formData.stockPorTalla?.[talla]?.['Unico'] || "0"}
+                                          </span>
+                                        </div>
+                                        <span className="text-foreground/40 font-bold mb-2">+</span>
+                                        <div className="flex flex-col items-center flex-1">
+                                          <span className="text-[9px] uppercase font-bold text-brand-primary/80 mb-1">Sumar Nueva Cantidad</span>
+                                          <input 
+                                            type="number" min="0" 
+                                            value={formData.nuevoStockPorTalla?.[talla]?.['Unico'] || ""}
+                                            onChange={(e) => {
+                                              const val = Math.max(0, Number(e.target.value));
+                                              setFormData({
+                                                ...formData,
+                                                nuevoStockPorTalla: {
+                                                  ...formData.nuevoStockPorTalla,
+                                                  [talla]: {
+                                                    ...(formData.nuevoStockPorTalla?.[talla] || {}),
+                                                    ['Unico']: e.target.value ? val.toString() : ""
+                                                  }
+                                                }
+                                              });
+                                            }}
+                                            className="w-full bg-surface border-2 border-brand-primary/20 p-1 rounded-lg outline-none focus:ring-2 focus:ring-brand-primary font-mono text-center hover:border-brand-primary/40 transition-colors" 
+                                            placeholder="0"
+                                          />
+                                        </div>
+                                      </div>
                                     </td>
                                   )}
                                 </tr>
                               ))}
                             </tbody>
                           </table>
+                          <div className="mt-4 p-3 bg-brand-primary/5 rounded-xl border border-brand-primary/10 text-xs text-foreground/70 flex items-start gap-2">
+                            <span className="text-base leading-none">💡</span>
+                            <p><strong>Consejo:</strong> El número en gris es tu <strong>stock actual</strong>. Usa el campo de al lado para ingresar <strong>cuánto stock nuevo vas a sumar</strong>. Al guardar, ambos valores se sumarán automáticamente.</p>
+                          </div>
                         </div>
                       ) : (
                         <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-xl">
