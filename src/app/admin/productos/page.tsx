@@ -38,11 +38,12 @@ export default function AdminProductos() {
     imagenesPorColor: {} as any,
     descripcionLarga: "",
     costoProveedor: "",
-    visiblePublico: true
+    visiblePublico: false
   });
 
   const [usarControlFinanciero, setUsarControlFinanciero] = useState(false);
-  const [filtroVisibilidad, setFiltroVisibilidad] = useState<"Todas" | "Publicas" | "Ocultas">("Todas");
+  const [filtroVisibilidad, setFiltroVisibilidad] = useState<"Todas" | "En Live" | "Publicas" | "Ocultas">("Todas");
+  const [ordenamiento, setOrdenamiento] = useState<"fecha_desc" | "fecha_asc" | "mod_desc" | "nombre_asc" | "nombre_desc" | "stock_asc" | "stock_desc">("fecha_desc");
 
   const [categorias, setCategorias] = useState(["Vestidos", "Conjuntos", "Blusas y Tops", "Pantalones y Jeans", "Chaquetas y Abrigos", "Enterizos", "Ofertas / Sale"]);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("");
@@ -114,7 +115,7 @@ export default function AdminProductos() {
 
   const abrirModalNueva = () => {
     setProductoEditando(null);
-    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: false, piezasDetalle: {}, stockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "", visiblePublico: true });
+    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: false, piezasDetalle: {}, stockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "", visiblePublico: false });
     setCategoriaSeleccionada("");
     setTallasDisponibles(TALLAS_BASE);
     setTallasSeleccionadas([]);
@@ -124,7 +125,7 @@ export default function AdminProductos() {
 
   const abrirModalNuevoCombo = () => {
     setProductoEditando(null);
-    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: true, piezasDetalle: {}, stockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "", visiblePublico: true });
+    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: true, piezasDetalle: {}, stockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "", visiblePublico: false });
     setCategoriaSeleccionada("");
     setTallasDisponibles(TALLAS_BASE);
     setTallasSeleccionadas([]);
@@ -508,23 +509,58 @@ export default function AdminProductos() {
         </div>
       </div>
       
-      <div className="flex gap-2 mb-6 border-b border-surface-border pb-2 overflow-x-auto scrollbar-hide">
-        <button onClick={() => setFiltroVisibilidad("Todas")} className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${filtroVisibilidad === "Todas" ? 'bg-brand-primary text-white shadow-md' : 'bg-surface text-foreground/70 hover:bg-surface-border'}`}>
-          Todas
-        </button>
-        <button onClick={() => setFiltroVisibilidad("Publicas")} className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors flex items-center gap-2 ${filtroVisibilidad === "Publicas" ? 'bg-green-500 text-white shadow-md' : 'bg-surface text-foreground/70 hover:bg-surface-border'}`}>
-          <Eye className="w-4 h-4" /> Públicas
-        </button>
-        <button onClick={() => setFiltroVisibilidad("Ocultas")} className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors flex items-center gap-2 ${filtroVisibilidad === "Ocultas" ? 'bg-gray-500 text-white shadow-md' : 'bg-surface text-foreground/70 hover:bg-surface-border'}`}>
-          <EyeOff className="w-4 h-4" /> Ocultas
-        </button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-surface-border pb-4">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide w-full sm:w-auto">
+          <button onClick={() => setFiltroVisibilidad("Todas")} className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${filtroVisibilidad === "Todas" ? 'bg-brand-primary text-white shadow-md' : 'bg-surface text-foreground/70 hover:bg-surface-border'}`}>
+            Todas
+          </button>
+          <button onClick={() => setFiltroVisibilidad("En Live")} className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors flex items-center gap-2 ${filtroVisibilidad === "En Live" ? 'bg-red-500 text-white shadow-md' : 'bg-surface text-foreground/70 hover:bg-surface-border'}`}>
+            <Video className="w-4 h-4" /> En Live
+          </button>
+          <button onClick={() => setFiltroVisibilidad("Publicas")} className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors flex items-center gap-2 ${filtroVisibilidad === "Publicas" ? 'bg-green-500 text-white shadow-md' : 'bg-surface text-foreground/70 hover:bg-surface-border'}`}>
+            <Eye className="w-4 h-4" /> Públicas
+          </button>
+          <button onClick={() => setFiltroVisibilidad("Ocultas")} className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors flex items-center gap-2 ${filtroVisibilidad === "Ocultas" ? 'bg-gray-500 text-white shadow-md' : 'bg-surface text-foreground/70 hover:bg-surface-border'}`}>
+            <EyeOff className="w-4 h-4" /> Ocultas
+          </button>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-sm font-bold text-foreground/70">Ordenar:</span>
+          <select
+            value={ordenamiento}
+            onChange={(e) => setOrdenamiento(e.target.value as any)}
+            className="bg-surface border border-surface-border rounded-xl px-3 py-2 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-brand-primary"
+          >
+            <option value="fecha_desc">Más recientes</option>
+            <option value="fecha_asc">Más antiguas</option>
+            <option value="mod_desc">Recién modificadas</option>
+            <option value="nombre_asc">Nombre (A-Z)</option>
+            <option value="nombre_desc">Nombre (Z-A)</option>
+            <option value="stock_asc">Menor Stock</option>
+            <option value="stock_desc">Mayor Stock</option>
+          </select>
+        </div>
       </div>
 
       {(() => {
-        const productosAVisualizar = productos.filter(p => {
+        let productosAVisualizar = productos.filter(p => {
+          if (filtroVisibilidad === "En Live") return p.enLive;
           if (filtroVisibilidad === "Publicas") return p.visiblePublico !== false;
           if (filtroVisibilidad === "Ocultas") return p.visiblePublico === false;
           return true;
+        });
+
+        productosAVisualizar = productosAVisualizar.sort((a, b) => {
+          switch (ordenamiento) {
+            case "fecha_asc": return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            case "mod_desc": return new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime();
+            case "nombre_asc": return a.nombre.localeCompare(b.nombre);
+            case "nombre_desc": return b.nombre.localeCompare(a.nombre);
+            case "stock_asc": return a.stockCount - b.stockCount;
+            case "stock_desc": return b.stockCount - a.stockCount;
+            case "fecha_desc":
+            default: return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          }
         });
 
         if (isLoading) {
