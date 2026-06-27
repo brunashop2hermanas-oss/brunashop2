@@ -676,7 +676,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
                 <button 
                   key={idx} 
                   onClick={(e) => { e.stopPropagation(); setImagenActual(img); }}
-                  className={`w-14 h-14 md:w-16 md:h-16 shrink-0 border-2 rounded-sm overflow-hidden transition-all ${imagenActual === img ? 'border-black shadow-md scale-105' : 'border-transparent opacity-60 hover:opacity-100 hover:scale-105'}`}
+                  className={`relative w-14 h-14 md:w-16 md:h-16 shrink-0 border-2 rounded-sm overflow-hidden transition-all ${imagenActual === img ? 'border-black shadow-md scale-105' : 'border-transparent opacity-60 hover:opacity-100 hover:scale-105'}`}
                 >
                   <Image fill sizes="(max-width: 768px) 50vw, 33vw" src={img} alt={`Vista ${idx + 1}`} className="w-full h-full object-contain bg-slate-50" />
                 </button>
@@ -735,7 +735,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
                   return (
                     <li key={pieza.id} className="text-sm text-gray-700 flex flex-col mb-3 last:mb-0">
                       <div className="flex items-center gap-3">
-                        <div className="relative group cursor-pointer shrink-0" onClick={() => {
+                        <div className="relative group cursor-pointer shrink-0 w-12 h-14" onClick={() => {
                           const specificImg = (pieza.colorEspecifico && prodRef?.imagenesPorColor?.[pieza.colorEspecifico]) ? prodRef.imagenesPorColor[pieza.colorEspecifico] : null;
                           const img = specificImg || prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80";
                           setImagenAmpliada(img);
@@ -743,7 +743,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
                           <Image fill sizes="(max-width: 768px) 50vw, 33vw" 
                             src={(pieza.colorEspecifico && prodRef?.imagenesPorColor?.[pieza.colorEspecifico]) ? prodRef.imagenesPorColor[pieza.colorEspecifico] : (prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80")} 
                             alt={prodRef?.nombre || "Prenda"} 
-                            className="w-10 h-12 object-contain bg-slate-50 rounded-sm border border-black/10 shadow-sm transition-opacity group-hover:opacity-75" 
+                            className="object-contain bg-slate-50 rounded-sm border border-black/10 shadow-sm transition-opacity group-hover:opacity-75" 
                           />
                           <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
                             <Search className="w-4 h-4 text-white drop-shadow-md" />

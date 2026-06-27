@@ -239,14 +239,6 @@ export async function confirmarPagoCheckout(ventaId: string, data: {
         }
       });
 
-      // Sumar puntos a clienta
-      const prendasTotales = venta.items.reduce((acc, item) => acc + item.cantidad, 0);
-      if (venta.clientaId) {
-        await tx.clienta.update({
-          where: { id: venta.clientaId },
-          data: { puntos: { increment: prendasTotales } }
-        });
-      }
       return ventaActualizada;
     });
 
@@ -325,6 +317,7 @@ export async function createVenta(data: {
   try {
     const nombreCompleto = `${data.nombres} ${data.apellidoPaterno} ${data.apellidoMaterno || ""}`.trim();
     const prendasTotales = data.items.reduce((acc, item) => acc + item.cantidad, 0);
+    const puntosAOtorgar = (data.estado === "ENTREGADO" || data.estado === "PREPARANDO") ? 1 : 0;
 
     const ciLimpio = data.ci ? data.ci.trim() : "";
     const celularLimpio = data.celular ? data.celular.trim() : "";
@@ -345,7 +338,7 @@ export async function createVenta(data: {
               nombres: data.nombres || clienta.nombres,
               apellidos: (data.apellidoPaterno ? `${data.apellidoPaterno} ${data.apellidoMaterno || ""}`.trim() : clienta.apellidos),
               celular: celularLimpio || clienta.celular,
-              puntos: { increment: prendasTotales },
+              puntos: { increment: puntosAOtorgar },
             }
           });
         } else {
@@ -355,7 +348,7 @@ export async function createVenta(data: {
               apellidos: data.apellidoPaterno ? `${data.apellidoPaterno} ${data.apellidoMaterno || ""}`.trim() : "",
               ci: ciLimpio,
               celular: celularLimpio,
-              puntos: prendasTotales,
+              puntos: puntosAOtorgar,
             }
           });
         }
@@ -385,6 +378,7 @@ export async function createVenta(data: {
           origen: data.origen || "WEB",
           tipoEntrega: data.tipoEntrega || "ENVIO",
           empresaBusesPreferida: data.empresaBusesPreferida || null,
+          puntosOtorgados: puntosAOtorgar > 0,
           items: {
             create: data.items.map(item => ({
               prendaId: item.prendaId,
@@ -498,9 +492,29 @@ export async function updateEstadoVenta(ventaId: string, nuevoEstado: string) {
     if (nuevoEstado === 'Aprobado') estadoDB = 'PREPARANDO';
     if (nuevoEstado === 'Rechazado') estadoDB = 'RECHAZADO';
 
-    await prisma.venta.update({
-      where: { id: ventaId },
-      data: { estado: estadoDB }
+    const venta = await prisma.venta.findUnique({ where: { id: ventaId } });
+    if (!venta) throw new Error("Venta no encontrada");
+
+    let otorgaPuntos = false;
+    if ((estadoDB === 'PREPARANDO' || estadoDB === 'ENTREGADO') && !venta.puntosOtorgados && venta.clientaId) {
+      otorgaPuntos = true;
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.venta.update({
+        where: { id: ventaId },
+        data: { 
+          estado: estadoDB,
+          ...(otorgaPuntos ? { puntosOtorgados: true } : {})
+        }
+      });
+
+      if (otorgaPuntos && venta.clientaId) {
+        await tx.clienta.update({
+          where: { id: venta.clientaId },
+          data: { puntos: { increment: 1 } }
+        });
+      }
     });
     revalidatePath('/', 'layout');
     return { success: true };
@@ -524,9 +538,27 @@ export async function toggleEmpaquetado(ventaItemId: string, estadoActual: boole
 
 export async function subirGuiaEnvio(ventaId: string, guiaUrl: string) {
   try {
-    await prisma.venta.update({
-      where: { id: ventaId },
-      data: { guiaEnvioUrl: guiaUrl, estado: "ENTREGADO" }
+    const venta = await prisma.venta.findUnique({ where: { id: ventaId } });
+    if (!venta) throw new Error("Venta no encontrada");
+
+    let otorgaPuntos = !venta.puntosOtorgados && !!venta.clientaId;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.venta.update({
+        where: { id: ventaId },
+        data: { 
+          guiaEnvioUrl: guiaUrl, 
+          estado: "ENTREGADO",
+          ...(otorgaPuntos ? { puntosOtorgados: true } : {})
+        }
+      });
+
+      if (otorgaPuntos && venta.clientaId) {
+        await tx.clienta.update({
+          where: { id: venta.clientaId },
+          data: { puntos: { increment: 1 } }
+        });
+      }
     });
     revalidatePath('/', 'layout');
     return { success: true };
@@ -562,15 +594,12 @@ export async function deleteVenta(id: string) {
       }
 
       // 2. Si la clienta ganó puntos por esto, restárselos
-      // Los puntos se ganan en PENDIENTE_VERIFICACION, PREPARANDO, ENVIADO, ENTREGADO. 
-      // Las que están en ESPERANDO_PAGO no sumaron puntos todavía, y las CANCELADAS tampoco.
-      if (venta.clientaId && !["ESPERANDO_PAGO", "CANCELADO", "CANCELADO_POR_TIEMPO"].includes(venta.estado)) {
-        const prendasTotales = venta.items.reduce((acc, item) => acc + item.cantidad, 0);
+      if (venta.clientaId && venta.puntosOtorgados) {
         const clienta = await tx.clienta.findUnique({ where: { id: venta.clientaId }});
         if (clienta) {
           await tx.clienta.update({
             where: { id: venta.clientaId },
-            data: { puntos: Math.max(0, clienta.puntos - prendasTotales) } // evitar puntos negativos
+            data: { puntos: Math.max(0, clienta.puntos - 1) } // evitar puntos negativos
           });
         }
       }

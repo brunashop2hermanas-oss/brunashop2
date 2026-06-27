@@ -97,6 +97,7 @@ model Venta {
   terminosAceptados Boolean @default(false)
   fechaAceptacion   DateTime?
   ipAceptacion      String?
+  puntosOtorgados   Boolean @default(false)
   
   vendedorId    String?
   vendedor      User?       @relation(fields: [vendedorId], references: [id])
