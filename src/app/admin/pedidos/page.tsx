@@ -1419,22 +1419,27 @@ const imprimirVineta = (pedido: any) => {
                   }
 
                   // Lógica para Productos Normales
-                  const hasColor = art.color && art.color !== 'N/A';
                   let imagenesParaMostrar: string[] = [];
-                  
-                  if (hasColor) {
-                    const resolved = resolveImage(prodRef, art.color);
-                    if (resolved) imagenesParaMostrar = [resolved];
+                  const imgs = prodRef?.imagenes || art.imagenes || [];
+                  if (imgs.length > 0) {
+                    imagenesParaMostrar = imgs;
+                  } else if (art.imagen || prodRef?.imagen) {
+                    imagenesParaMostrar = [art.imagen || prodRef?.imagen];
+                  } else if (art.imagenUrl) {
+                    imagenesParaMostrar = [art.imagenUrl];
                   }
 
-                  if (imagenesParaMostrar.length === 0) {
-                    const imgs = prodRef?.imagenes || art.imagenes || [];
-                    if (imgs.length > 0) {
-                      imagenesParaMostrar = imgs;
-                    } else if (art.imagen || prodRef?.imagen) {
-                      imagenesParaMostrar = [art.imagen || prodRef?.imagen];
-                    } else if (art.imagenUrl) {
-                      imagenesParaMostrar = [art.imagenUrl];
+                  // Comprobar si hay un mapeo explícito de color a imagen
+                  const hasColor = art.color && art.color !== 'N/A';
+                  if (hasColor && prodRef?.imagenesPorColor) {
+                    let raw = prodRef.imagenesPorColor;
+                    if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch(e){} }
+                    if (typeof raw === 'object' && raw !== null) {
+                      const keyMatch = Object.keys(raw).find(k => k.toLowerCase() === art.color.toLowerCase());
+                      if (keyMatch && typeof raw[keyMatch] === 'string') {
+                        // ¡Se encontró una imagen específica para este color!
+                        imagenesParaMostrar = [raw[keyMatch]];
+                      }
                     }
                   }
 
