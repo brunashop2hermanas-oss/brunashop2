@@ -37,6 +37,33 @@ export async function getPrendas() {
   }
 }
 
+export async function getPrendasPaginadas(page: number, limit: number, categoriaFiltro: string = "Todas") {
+  try {
+    const prendasMapeadas = await getCachedPrendas();
+    
+    // 1. Filtrar solo prendas públicas
+    let filtradas = prendasMapeadas.filter(p => p.visiblePublico !== false);
+    
+    // 2. Filtrar por categoría
+    if (categoriaFiltro && categoriaFiltro !== "Todas") {
+      filtradas = filtradas.filter(p => p.categoria === categoriaFiltro);
+    }
+    
+    // 3. Paginar
+    const total = filtradas.length;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginadas = filtradas.slice(startIndex, endIndex);
+    
+    // 4. Extraer categorías únicas para el menú (basado en todas las prendas públicas)
+    const categoriasDisponibles = Array.from(new Set(prendasMapeadas.filter(p => p.visiblePublico !== false).map(p => p.categoria).filter(Boolean))) as string[];
+    
+    return { success: true, data: paginadas, total, categorias: ["Todas", ...categoriasDisponibles] };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 async function adjustPiecesStock(tx: any, piezasDetalle: any, combosCount: number, action: 'deduct' | 'restore') {
   if (!piezasDetalle) return;
   const detailObj = typeof piezasDetalle === 'string' ? JSON.parse(piezasDetalle) : piezasDetalle;

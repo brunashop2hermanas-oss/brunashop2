@@ -26,6 +26,7 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
   const router = useRouter();
   
   const [productoSeleccionado, setProductoSeleccionado] = useState<any | null>(null);
+  const [visibleCount, setVisibleCount] = useState(12);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,6 +66,17 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
     if (coleccionFiltro && p.coleccion !== coleccionFiltro) return false;
     return true; // we show all, even out of stock, they show as Agotado.
   });
+
+  const productosPaginados = productosFiltrados.slice(0, visibleCount);
+  
+  const cargarMas = () => {
+    setVisibleCount(prev => prev + 12);
+  };
+  
+  // Resetear paginación al cambiar filtros
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [filtroCategoria, coleccionFiltro]);
 
   const mostrarToast = (mensaje: string) => {
     setToast(mensaje);
@@ -270,11 +282,22 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-8 md:gap-y-16">
-              {productosFiltrados.map((producto, index) => (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-8 md:gap-y-16 mb-12">
+              {productosPaginados.map((producto, index) => (
                 <ProductoCard key={producto.id} producto={producto} index={index} abrirVistaRapida={abrirVistaRapida} agregarAlCarrito={agregarAlCarritoRapido} liveActivo={liveActivo} />
               ))}
             </div>
+            
+            {visibleCount < productosFiltrados.length && (
+              <div className="flex justify-center mt-8 mb-16">
+                <button 
+                  onClick={cargarMas}
+                  className="bg-white border-2 border-black text-black px-8 py-3 text-sm font-bold tracking-widest uppercase hover:bg-black hover:text-white transition-colors duration-300 shadow-md"
+                >
+                  Cargar más prendas ({productosFiltrados.length - visibleCount} restantes)
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-24">
