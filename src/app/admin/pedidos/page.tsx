@@ -1370,25 +1370,39 @@ const imprimirVineta = (pedido: any) => {
                 </button>
               </div>
               <div className="p-4 overflow-y-auto flex-1 flex flex-col gap-3 bg-slate-50">
-                {(pedidoPreviewArticulos.articulos || []).map((art: any, i: number) => (
-                  <div key={i} className="flex gap-4 p-3 bg-white rounded-xl border border-surface-border shadow-sm items-center">
-                    <div className="w-16 h-16 rounded-lg bg-surface-border/30 overflow-hidden shrink-0 border border-surface-border/50 relative">
-                      {art.imagenUrl ? (
-                        <Image src={art.imagenUrl} alt={art.prenda} fill className="object-cover" sizes="64px" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-foreground/30"><PackageCheck className="w-6 h-6" /></div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-sm text-foreground truncate">{art.prenda}</div>
-                      <div className="flex flex-wrap gap-1.5 mt-1">
-                        <span className="text-[10px] px-2 py-0.5 bg-brand-primary/10 text-brand-primary rounded-md font-bold uppercase">Color: {art.color}</span>
-                        <span className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-bold uppercase">Talla: {art.talla}</span>
-                        <span className="text-[10px] px-2 py-0.5 bg-surface-border text-foreground/70 rounded-md font-bold">Cant: {art.cantidad}</span>
+                {(pedidoPreviewArticulos.articulos || []).map((art: any, i: number) => {
+                  const imgUrl = resolveImage(art, art.color);
+                  return (
+                    <div key={i} className="flex gap-4 p-3 bg-white rounded-xl border border-surface-border shadow-sm items-center">
+                      <div 
+                        className={`w-16 h-16 rounded-lg bg-surface-border/30 overflow-hidden shrink-0 border border-surface-border/50 relative group ${imgUrl ? 'cursor-zoom-in' : ''}`}
+                        onClick={() => {
+                          if (imgUrl) setComprobanteAmpliado(imgUrl);
+                        }}
+                      >
+                        {imgUrl ? (
+                          <>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={imgUrl} alt={art.nombre || 'Prenda'} className="w-full h-full object-cover transition-opacity group-hover:opacity-80" />
+                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                              <Search className="w-4 h-4 text-white" />
+                            </div>
+                          </>
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-foreground/30"><PackageCheck className="w-6 h-6" /></div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-sm text-foreground truncate">{art.nombre || 'Prenda'}</div>
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          <span className="text-[10px] px-2 py-0.5 bg-brand-primary/10 text-brand-primary rounded-md font-bold uppercase">Color: {art.color || 'N/A'}</span>
+                          <span className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-bold uppercase">Talla: {art.talla || 'ÚNICA'}</span>
+                          <span className="text-[10px] px-2 py-0.5 bg-surface-border text-foreground/70 rounded-md font-bold">Cant: {art.cantidad}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <div className="p-4 border-t border-surface-border bg-white flex justify-end">
                 <button 
