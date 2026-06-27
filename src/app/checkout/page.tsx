@@ -791,11 +791,11 @@ function CheckoutContent() {
             <div className="space-y-4">
               {carrito.map((item, idx) => (
                 <div key={idx} className="flex gap-4 border-b border-surface-border pb-4">
-                  <div className="shrink-0 relative group cursor-pointer" onClick={() => setImagenAmpliada(resolveImage(item, item.colorSeleccionado))}>
+                  <div className="shrink-0 relative group cursor-pointer w-16 h-20" onClick={() => setImagenAmpliada(resolveImage(item, item.colorSeleccionado))}>
                     <Image fill sizes="(max-width: 768px) 100vw, 50vw" 
                       src={resolveImage(item, item.colorSeleccionado)} 
                       alt={item.nombre} 
-                      className="w-16 h-20 object-contain bg-slate-50 rounded-sm border border-black/10 transition-opacity group-hover:opacity-75" 
+                      className="object-contain bg-slate-50 rounded-sm border border-black/10 transition-opacity group-hover:opacity-75" 
                     />
                     <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
                       <Search className="w-5 h-5 text-white" />
@@ -819,11 +819,11 @@ function CheckoutContent() {
                               const prodRef = productos.find(p => p.id === pieza.id);
                               return (
                                 <div key={pieza.id} className="flex items-center gap-2">
-                                  <div className="relative group cursor-pointer" onClick={() => setImagenAmpliada(resolveImage(prodRef, pieza.colorEspecifico))}>
+                                  <div className="relative group cursor-pointer w-8 h-10" onClick={() => setImagenAmpliada(resolveImage(prodRef, pieza.colorEspecifico))}>
                                     <Image fill sizes="(max-width: 768px) 100vw, 50vw" 
                                       src={resolveImage(prodRef, pieza.colorEspecifico)} 
                                       alt={prodRef?.nombre || "Prenda"} 
-                                      className="w-8 h-10 object-contain bg-slate-50 rounded-sm border border-black/10 transition-opacity group-hover:opacity-75" 
+                                      className="object-contain bg-slate-50 rounded-sm border border-black/10 transition-opacity group-hover:opacity-75" 
                                     />
                                     <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
                                       <Search className="w-3 h-3 text-white" />
