@@ -62,6 +62,8 @@ function CheckoutContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagenAmpliada, setImagenAmpliada] = useState<string | null>(null);
   const [serverTimeOffset, setServerTimeOffset] = useState<number>(0);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [formDataPaso2, setFormDataPaso2] = useState<any>(null);
 
   // Estados para datos manuales del comprobante
   const [depositanteNombres, setDepositanteNombres] = useState("");
@@ -330,46 +332,61 @@ function CheckoutContent() {
     }
   };
 
-  const procesarPaso2 = async (e: React.FormEvent<HTMLFormElement>) => {
+  const attemptProcesarPaso2 = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!ventaEnCurso) return;
     if (!comprobante) return toast.error("¡No olvides subir la foto de tu comprobante de pago!");
 
     const formData = new FormData(e.currentTarget);
+    setFormDataPaso2({
+      depositanteNombres: formData.get("depositanteNombres") as string,
+      depositanteApPaterno: formData.get("depositanteApPaterno") as string,
+      depositanteApMaterno: formData.get("depositanteApMaterno") as string,
+      depositanteCi: formData.get("depositanteCi") as string,
+      depositanteCuenta: formData.get("depositanteCuenta") as string,
+    });
     
-    // OPTIMISTIC UI: Transición inmediata a paso 3 para que se sienta instantáneo
-    setPaso(3);
+    setShowConfirmModal(true);
+  };
 
-    // Procesar en segundo plano
+  const ejecutarProcesarPaso2 = async () => {
+    setShowConfirmModal(false);
+    setIsSubmitting(true); // Mostramos el overlay de carga bloqueando la pantalla
+    
     let comprobanteRealUrl = "";
     try {
-      const compressedFile = await compressImage(comprobante, 'baja'); 
+      const compressedFile = await compressImage(comprobante!, 'baja'); 
       const fileData = new FormData();
       fileData.append("file", compressedFile);
       const resUpload = await uploadImage(fileData);
       if (resUpload.success && resUpload.url) {
         comprobanteRealUrl = resUpload.url;
       } else {
+        setIsSubmitting(false);
         toast.error("Tu comprobante no se pudo subir. Por favor envíalo por WhatsApp.");
         return;
       }
     } catch (err) {
+      setIsSubmitting(false);
       toast.error("Tuvimos un problemita con tu foto. Por favor envíalo por WhatsApp.");
       return;
     }
 
     const reqData = {
       comprobanteUrl: comprobanteRealUrl,
-      depositanteNombres: depositanteNombres || (formData.get("depositanteNombres") as string),
-      depositanteApPaterno: depositanteApPaterno || (formData.get("depositanteApPaterno") as string),
-      depositanteApMaterno: depositanteApMaterno || (formData.get("depositanteApMaterno") as string),
-      depositanteCi: depositanteCi || (formData.get("depositanteCi") as string),
-      depositanteCuenta: depositanteCuenta || (formData.get("depositanteCuenta") as string),
+      depositanteNombres: depositanteNombres || formDataPaso2?.depositanteNombres,
+      depositanteApPaterno: depositanteApPaterno || formDataPaso2?.depositanteApPaterno,
+      depositanteApMaterno: depositanteApMaterno || formDataPaso2?.depositanteApMaterno,
+      depositanteCi: depositanteCi || formDataPaso2?.depositanteCi,
+      depositanteCuenta: depositanteCuenta || formDataPaso2?.depositanteCuenta,
     };
 
     const res = await confirmarPagoCheckout(ventaEnCurso.id, reqData);
+    setIsSubmitting(false);
     
-    if (!res.success) {
+    if (res.success) {
+      setPaso(3);
+    } else {
       toast.error("Hubo un inconveniente confirmando tu pago en el sistema. Por favor, avísanos por WhatsApp.");
     }
   };
@@ -658,7 +675,8 @@ function CheckoutContent() {
                   </div>
                 </div>
 
-                <form id="paso2-form" onSubmit={procesarPaso2} className="space-y-8">
+                <div className="lg:w-[600px]">
+                <form id="paso2-form" onSubmit={attemptProcesarPaso2} className="space-y-12 pb-12">
                   <div className="bg-white p-6 rounded-2xl border border-surface-border shadow-sm">
                     <h3 className="text-sm uppercase tracking-widest font-bold mb-4 flex items-center gap-2">
                       <CreditCard className="w-5 h-5 text-brand-primary"/> Datos del Depositante
@@ -699,49 +717,59 @@ function CheckoutContent() {
                     </div>
                   </div>
 
-                  <div className="relative group cursor-pointer overflow-hidden border border-black rounded-2xl">
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={async (e) => {
-                        if(e.target.files && e.target.files[0]) {
-                          const file = e.target.files[0];
-                          setComprobante(file);
-                        }
-                      }} 
-                      className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer" 
-                    />
-                    <div className={`p-8 text-center transition-all ${comprobante ? 'bg-black text-white p-0' : 'bg-transparent text-black hover:bg-black/5'}`}>
-                      {comprobante ? (
-                        <div className="relative w-full h-48 bg-black flex flex-col items-center justify-center">
-                          <Image fill sizes="(max-width: 768px) 100vw, 50vw" 
-                            src={URL.createObjectURL(comprobante)} 
-                            alt="Vista previa" 
-                            className="absolute inset-0 w-full h-full object-contain opacity-60"
-                          />
-                          <div className="relative z-10 flex flex-col items-center gap-2">
-                            <Check className="w-10 h-10 text-green-400 drop-shadow-md" />
-                            <span className="block font-bold text-sm uppercase drop-shadow-md">¡Comprobante Listo!</span>
-                            <span className="text-xs bg-black/50 px-3 py-1 rounded-full backdrop-blur-md">Toca para cambiar imagen</span>
+                  <div className="flex flex-col gap-3 items-center">
+                    <div className="relative group overflow-hidden border border-black rounded-2xl w-full">
+                      <input 
+                        id="comprobante-input"
+                        type="file" 
+                        accept="image/*" 
+                        onChange={async (e) => {
+                          if(e.target.files && e.target.files[0]) {
+                            const file = e.target.files[0];
+                            setComprobante(file);
+                          }
+                        }} 
+                        className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer" 
+                      />
+                      <div className={`p-8 text-center transition-all ${comprobante ? 'bg-black text-white p-0' : 'bg-transparent text-black hover:bg-black/5'}`}>
+                        {comprobante ? (
+                          <div className="relative w-full h-48 bg-black flex flex-col items-center justify-center">
+                            <Image fill sizes="(max-width: 768px) 100vw, 50vw" 
+                              src={URL.createObjectURL(comprobante)} 
+                              alt="Vista previa" 
+                              className="absolute inset-0 w-full h-full object-contain opacity-60"
+                            />
+                            <div className="relative z-10 flex flex-col items-center gap-2">
+                              <Check className="w-10 h-10 text-green-400 drop-shadow-md" />
+                              <span className="block font-bold text-sm uppercase drop-shadow-md">¡Comprobante Listo!</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewAmpliada(true); }}
+                              className="absolute top-2 right-2 z-30 bg-black/70 text-white p-2 rounded-full hover:bg-black transition-colors backdrop-blur-md"
+                              title="Ampliar imagen"
+                            >
+                              <Search className="w-5 h-5" />
+                            </button>
                           </div>
-                          {/* Botón para ampliar */}
-                          <button
-                            type="button"
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewAmpliada(true); }}
-                            className="absolute top-2 right-2 z-30 bg-black/70 text-white p-2 rounded-full hover:bg-black transition-colors backdrop-blur-md"
-                            title="Ampliar imagen"
-                          >
-                            <Search className="w-5 h-5" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-3">
-                          <Upload className="w-8 h-8 text-brand-primary" />
-                          <span className="text-sm font-bold uppercase">Subir Captura de Pago</span>
-                          <span className="text-xs text-foreground/50">Toca aquí para seleccionar</span>
-                        </div>
-                      )}
+                        ) : (
+                          <div className="flex flex-col items-center gap-3 cursor-pointer">
+                            <Upload className="w-8 h-8 text-brand-primary" />
+                            <span className="text-sm font-bold uppercase">Subir Captura de Pago</span>
+                            <span className="text-xs text-foreground/50">Toca aquí para seleccionar</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    {comprobante && (
+                      <button 
+                        type="button" 
+                        onClick={() => document.getElementById('comprobante-input')?.click()}
+                        className="text-xs font-bold text-brand-primary uppercase underline hover:text-black transition-colors py-2 px-4 bg-brand-primary/10 rounded-full"
+                      >
+                        Cambiar Imagen
+                      </button>
+                    )}
                   </div>
 
                   <div className="text-center">
@@ -760,6 +788,7 @@ function CheckoutContent() {
                     </div>
                   </div>
                 </form>
+                </div>
               </div>
             </motion.div>
           )}
@@ -870,7 +899,6 @@ function CheckoutContent() {
         )}
       </div>
 
-      {/* Lightbox para vista ampliada */}
       <AnimatePresence>
         {imagenAmpliada && (
           <motion.div 
@@ -916,14 +944,76 @@ function CheckoutContent() {
           </motion.div>
         )}
       </AnimatePresence>
-    </main>
+        {isSubmitting && (
+          <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center text-white px-4">
+            <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin mb-6"></div>
+            <h3 className="text-xl font-bold uppercase tracking-widest text-center">Procesando tu pedido...</h3>
+            <p className="text-sm text-white/70 mt-3 text-center max-w-sm">
+              Por favor, no cierres esta ventana ni presiones atrás mientras confirmamos tu comprobante de forma segura.
+            </p>
+          </div>
+        )}
+
+        <AnimatePresence>
+          {showConfirmModal && comprobante && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+            >
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white p-6 md:p-10 rounded-3xl max-w-lg w-full flex flex-col items-center text-center relative"
+              >
+                <button onClick={() => setShowConfirmModal(false)} className="absolute top-4 right-4 text-black/50 hover:text-black">
+                  <X className="w-6 h-6" />
+                </button>
+                <h3 className="text-2xl font-black uppercase mb-2">Verifica tu Imagen</h3>
+                <p className="text-foreground/70 mb-6 text-sm">¿Estás segura de que esta es la imagen correcta de tu transferencia?</p>
+                
+                <div className="relative w-full h-64 bg-black rounded-xl overflow-hidden mb-8 border border-black/10">
+                  <Image 
+                    fill 
+                    sizes="(max-width: 768px) 100vw, 50vw" 
+                    src={URL.createObjectURL(comprobante)} 
+                    alt="Previsualización de Comprobante" 
+                    className="object-contain"
+                  />
+                </div>
+                
+                <div className="w-full flex flex-col gap-3">
+                  <button 
+                    onClick={ejecutarProcesarPaso2}
+                    className="w-full py-4 bg-black text-white font-bold uppercase tracking-widest hover:bg-brand-primary transition-colors rounded-xl"
+                  >
+                    Sí, Enviar Pedido
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowConfirmModal(false);
+                      document.getElementById('comprobante-input')?.click();
+                    }}
+                    className="w-full py-4 bg-gray-100 text-black font-bold uppercase tracking-widest hover:bg-gray-200 transition-colors rounded-xl"
+                  >
+                    No, Cambiar Foto
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+      </main>
     </div>
   );
 }
 
 export default function CheckoutPage() {
   return (
-    <Suspense fallback={<div className='min-h-screen flex items-center justify-center'>Cargando...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><span className="animate-pulse tracking-widest">Cargando Checkout...</span></div>}>
       <CheckoutContent />
     </Suspense>
   );

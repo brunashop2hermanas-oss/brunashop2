@@ -97,6 +97,7 @@ export default function AdminDashboard() {
   const [busqueda, setBusqueda] = useState("");
   const [pedidoACompletar, setPedidoACompletar] = useState<any>(null);
   const [config, setConfig] = useState<any>({});
+  const [guiaPreview, setGuiaPreview] = useState<{file: File, pedido: any} | null>(null);
   
   const [visibleCount, setVisibleCount] = useState(15);
   const cargarMas = () => setVisibleCount(prev => prev + 15);
@@ -265,8 +266,6 @@ const imprimirVineta = (pedido: any) => {
             articulos: (p.articulos || []).map((art: any) => art.id === articulo.id ? { ...art, empaquetado: !art.empaquetado } : art)
           };
         }
-        return p;
-      });
       setPedidos(nuevosPedidos);
       
       const updatedPedido = nuevosPedidos.find(p => p.id === pedidoId);
@@ -274,31 +273,41 @@ const imprimirVineta = (pedido: any) => {
     }
   };
 
-  const handleSubirGuia = async (e: React.ChangeEvent<HTMLInputElement>, pedido: any) => {
+  const handleSubirGuia = (e: React.ChangeEvent<HTMLInputElement>, pedido: any) => {
     if (e.target.files && e.target.files[0]) {
-      setIsUploadingGuia(pedido.id);
-      try {
-        const file = e.target.files[0];
-        const compressedFile = await compressImage(file, 'alta'); // Guía en alta calidad
-        const fileData = new FormData();
-        fileData.append("file", compressedFile);
-        
-        const resUpload = await uploadImage(fileData);
-        if (resUpload.success && resUpload.url) {
-          const resGuia = await subirGuiaEnvio(pedido.id, resUpload.url);
-          if (resGuia.success) {
-            const nuevosPedidos = pedidos.map(p => p.id === pedido.id ? { ...p, guiaEnvioUrl: resUpload.url } : p);
-            setPedidos(nuevosPedidos);
-            toast.success("¡Excelente! La guía se subió y guardó correctamente.");
-          } else {
-            toast.error("Hubo un inconveniente al vincular la guía con el pedido.");
-          }
+      setGuiaPreview({ file: e.target.files[0], pedido });
+    }
+  };
+
+  const confirmarSubirGuia = async () => {
+    if (!guiaPreview) return;
+    const { file, pedido } = guiaPreview;
+    
+    // Cerramos el modal de inmediato
+    setGuiaPreview(null);
+    setIsUploadingGuia(pedido.id);
+    
+    try {
+      const compressedFile = await compressImage(file, 'alta'); // Guía en alta calidad
+      const fileData = new FormData();
+      fileData.append("file", compressedFile);
+      
+      const resUpload = await uploadImage(fileData);
+      if (resUpload.success && resUpload.url) {
+        const resGuia = await subirGuiaEnvio(pedido.id, resUpload.url);
+        if (resGuia.success) {
+          const nuevosPedidos = pedidos.map(p => p.id === pedido.id ? { ...p, guiaEnvioUrl: resUpload.url } : p);
+          setPedidos(nuevosPedidos);
+          toast.success("¡Excelente! La guía se subió y guardó correctamente.");
         } else {
-          toast.error("Hubo un error subiendo la imagen. Por favor, intenta de nuevo.");
+          toast.error("Hubo un inconveniente al vincular la guía con el pedido.");
         }
-      } catch (err) {
-        toast.error("¡Uy! Ocurrió un error inesperado al subir la guía.");
+      } else {
+        toast.error("Hubo un error subiendo la imagen. Por favor, intenta de nuevo.");
       }
+    } catch (err) {
+      toast.error("¡Uy! Ocurrió un error inesperado al subir la guía.");
+    } finally {
       setIsUploadingGuia(null);
     }
   };
@@ -311,6 +320,19 @@ const imprimirVineta = (pedido: any) => {
     );
   }
 
+  // --- Modal Preview Guía ---
+  {guiaPreview && (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-surface p-6 rounded-2xl max-w-sm w-full shadow-2xl border border-surface-border">
+        <h3 className="text-xl font-bold mb-4">¿Confirmar subida de guía?</h3>
+        <p className="text-foreground/70 mb-6 text-sm">Vas a subir el archivo <strong>{guiaPreview.file.name}</strong> al pedido {guiaPreview.pedido.id.slice(-6).toUpperCase()}.</p>
+        <div className="flex gap-3">
+          <button onClick={() => setGuiaPreview(null)} className="flex-1 py-2 rounded-lg bg-surface-border font-bold">Cancelar</button>
+          <button onClick={confirmarSubirGuia} className="flex-1 py-2 rounded-lg bg-brand-primary text-white font-bold">Subir</button>
+        </div>
+      </div>
+    </div>
+  )}
 
   const pedidosPorFecha = pedidos.filter(pedido => {
     if (!pedido.fechaRaw) return true; // Fallback para registros antiguos
@@ -764,22 +786,40 @@ const imprimirVineta = (pedido: any) => {
 
                     {(pedido.estado === 'Aprobado' || pedido.estado === 'PREPARANDO' || pedido.estado === 'ENTREGADO' || filtroTab === 'guias' || filtroTab === 'historial') && !esTiendaDirecta && (
                       <div className="flex items-center gap-1">
-                        <div className="relative group" title="Subir o Ver Guía de Envío">
-                          <label className={`p-2 rounded-lg transition-colors shadow-md border flex items-center justify-center cursor-pointer ${pedido.guiaEnvioUrl ? 'bg-green-100 text-green-700 border-green-300' : 'bg-brand-primary text-white hover:bg-brand-accent'}`}>
-                            {isUploadingGuia === pedido.id ? (
-                              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                            ) : pedido.guiaEnvioUrl ? (
-                              <div className="flex items-center gap-2 font-bold text-xs" onClick={(e) => { e.preventDefault(); setComprobanteAmpliado(pedido.guiaEnvioUrl); }}>
-                                <CheckCircle className="w-4 h-4" /> Ver Guía de Envío
+                        <label className={`p-2 rounded-lg transition-colors shadow-md border flex items-center justify-center cursor-pointer ${pedido.guiaEnvioUrl ? 'bg-green-100 text-green-700 border-green-300' : 'bg-brand-primary text-white hover:bg-brand-accent'}`}>
+                          {isUploadingGuia === pedido.id ? (
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          ) : pedido.guiaEnvioUrl ? (
+                            <div className="flex flex-col items-center gap-1 font-bold text-xs">
+                              <div className="flex items-center gap-1" onClick={(e) => { e.preventDefault(); setComprobanteAmpliado(pedido.guiaEnvioUrl); }}>
+                                <Eye className="w-4 h-4" /> Ver Guía
                               </div>
-                            ) : (
-                              <div className="flex items-center gap-2 font-bold text-xs">
-                                <Upload className="w-4 h-4" /> Subir Guía
-                              </div>
-                            )}
-                            <input type="file" className="hidden" accept="image/*" disabled={!todasEmpaquetadas || isUploadingGuia === pedido.id} onChange={(e) => handleSubirGuia(e, pedido)} />
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 font-bold text-xs">
+                              <Upload className="w-4 h-4" /> Subir Guía
+                            </div>
+                          )}
+                          <input 
+                            type="file" 
+                            className="hidden" 
+                            accept="image/*" 
+                            disabled={!todasEmpaquetadas || isUploadingGuia === pedido.id} 
+                            onChange={(e) => handleSubirGuia(e, pedido)} 
+                          />
+                        </label>
+                        {pedido.guiaEnvioUrl && (
+                          <label className="p-2 ml-1 cursor-pointer bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-lg hover:bg-brand-primary/20 shadow-sm transition-colors flex flex-col justify-center items-center" title="Reemplazar Guía">
+                            <Upload className="w-4 h-4" />
+                            <input 
+                              type="file" 
+                              className="hidden" 
+                              accept="image/*" 
+                              disabled={isUploadingGuia === pedido.id} 
+                              onChange={(e) => handleSubirGuia(e, pedido)} 
+                            />
                           </label>
-                        </div>
+                        )}
                         {filtroTab === 'guias' && !pedido.guiaEnvioUrl && (
                           <button 
                             title="Completar sin Guía"
@@ -898,6 +938,28 @@ const imprimirVineta = (pedido: any) => {
                     </button>
                   )}
 
+                  {(!esTiendaDirecta && (pedido.estado === 'Aprobado' || pedido.estado === 'PREPARANDO' || pedido.estado === 'ENTREGADO' || filtroTab === 'guias' || filtroTab === 'historial')) && (
+                    <div className="w-full flex gap-2">
+                      <label className={`flex-1 text-center px-3 py-1.5 rounded-lg shadow-md font-bold text-xs flex items-center justify-center cursor-pointer border ${pedido.guiaEnvioUrl ? 'bg-green-500/20 text-green-600 border-green-500/50' : 'bg-brand-primary text-white'}`}>
+                        {pedido.guiaEnvioUrl ? (
+                          <div className="flex items-center gap-1" onClick={(e) => { e.preventDefault(); setComprobanteAmpliado(pedido.guiaEnvioUrl); }}>
+                            <Eye className="w-4 h-4" /> Ver Guía
+                          </div>
+                        ) : 'Subir Guía'}
+                        <input type="file" className="hidden" accept="image/*" disabled={!todasEmpaquetadas || isUploadingGuia === pedido.id} onChange={(e) => handleSubirGuia(e, pedido)} />
+                      </label>
+                      {pedido.guiaEnvioUrl && (
+                        <label className="px-3 py-1.5 cursor-pointer bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-lg shadow-md flex justify-center items-center" title="Reemplazar Guía">
+                          <Upload className="w-4 h-4" />
+                          <input type="file" className="hidden" accept="image/*" disabled={isUploadingGuia === pedido.id} onChange={(e) => handleSubirGuia(e, pedido)} />
+                        </label>
+                      )}
+                      {pedido.guiaEnvioUrl && (
+                        <button onClick={() => enviarWhatsApp(pedido.celular, getWhatsAppMessage("GUIA", pedido))} className="px-3 py-1.5 bg-[#25D366] hover:bg-[#1da851] transition-colors text-white shadow-md rounded-lg"><WhatsappIcon className="w-4 h-4"/></button>
+                      )}
+                    </div>
+                  )}
+
                   {(pedido.estado === 'Aprobado' || pedido.estado === 'PREPARANDO' || pedido.estado === 'Rechazado' || pedido.guiaEnvioUrl) && (
                     <button onClick={() => reenviarWhatsApp(pedido)} className="px-3 py-1.5 bg-[#25D366] text-white hover:bg-[#1da851] rounded-lg shadow-md text-xs font-bold w-full flex items-center justify-center gap-2">
                       <WhatsappIcon className="w-4 h-4"/> Reenviar Msg
@@ -914,19 +976,6 @@ const imprimirVineta = (pedido: any) => {
                       </button>
                     </div>
                   )}
-                  
-                  {(!esTiendaDirecta && (pedido.estado === 'Aprobado' || pedido.estado === 'PREPARANDO' || pedido.estado === 'ENTREGADO' || filtroTab === 'guias')) && (
-                    <div className="w-full flex gap-2">
-                      <label className={`flex-1 text-center px-3 py-1.5 rounded-lg shadow-md font-bold text-xs flex items-center justify-center cursor-pointer border ${pedido.guiaEnvioUrl ? 'bg-green-500/20 text-green-600 border-green-500/50' : 'bg-brand-primary text-white'}`}>
-                        {pedido.guiaEnvioUrl ? 'Ver Guía' : 'Subir Guía'}
-                        <input type="file" className="hidden" accept="image/*" disabled={!todasEmpaquetadas || isUploadingGuia === pedido.id} onChange={(e) => handleSubirGuia(e, pedido)} />
-                      </label>
-                      {pedido.guiaEnvioUrl && (
-                        <button onClick={() => enviarWhatsApp(pedido.celular, getWhatsAppMessage("GUIA", pedido))} className="px-3 py-1.5 bg-[#25D366] hover:bg-[#1da851] transition-colors text-white shadow-md rounded-lg"><WhatsappIcon className="w-4 h-4"/></button>
-                      )}
-                    </div>
-                  )}
-
                   
                       {filtroTab === 'guias' && (
                         <button onClick={() => entregarPedidoEnTienda(pedido)} className="px-3 py-2 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-lg shadow-md flex flex-shrink-0 items-center gap-2 font-bold text-xs" title="Finalizar sin guía">
