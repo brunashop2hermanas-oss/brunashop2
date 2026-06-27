@@ -377,7 +377,7 @@ const imprimirVineta = (pedido: any) => {
   });
 
   return (
-    <div className="flex-1 p-6 md:p-10 relative">
+    <div className="flex-1 relative min-w-0 w-full">
       <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-foreground mb-2">Gestión de Pedidos</h1>
@@ -542,6 +542,7 @@ const imprimirVineta = (pedido: any) => {
                 <th className="p-4 font-semibold w-10"></th>
                 <th className="p-4 font-semibold">ID Pedido</th>
                 <th className="p-4 font-semibold">Origen</th>
+                <th className="p-4 font-semibold">Fecha y Hora</th>
                 <th className="p-4 font-semibold">Prendas a Enviar</th>
                 <th className="p-4 font-semibold">Clienta</th>
                 <th className="p-4 font-semibold">Destino</th>
@@ -587,6 +588,10 @@ const imprimirVineta = (pedido: any) => {
                         <div className="text-xs text-foreground/50 mt-1 italic">Automático (Web)</div>
                       )}
                     </div>
+                  </td>
+                  <td className="p-4">
+                    <div className="text-sm font-bold text-foreground/80 whitespace-nowrap">{pedido.fecha.split(',')[0]}</div>
+                    <div className="text-xs text-foreground/50">{pedido.fecha.split(',')[1]}</div>
                   </td>
                   <td className="p-4">
                     {(() => {
@@ -810,8 +815,9 @@ const imprimirVineta = (pedido: any) => {
                     <span className="font-mono font-bold text-brand-primary">{pedido.id.slice(-6).toUpperCase()}</span>
                     <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${pedido.origen === 'WEB' ? 'bg-blue-500/20 text-blue-500' : 'bg-pink-500/20 text-pink-500'}`}>{pedido.origen}</span>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right flex flex-col items-end gap-1">
                     <span className="font-bold text-foreground">Bs. {pedido.total.toFixed(2)}</span>
+                    <span className="text-[10px] font-medium text-foreground/60">{pedido.fecha}</span>
                   </div>
                 </div>
                 <div>

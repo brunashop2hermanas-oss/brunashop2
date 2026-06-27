@@ -410,7 +410,6 @@ export async function createVenta(data: {
 
 export async function getVentas() {
   noStore();
-  await limpiarReservasExpiradas();
   
   try {
     const ventas = await prisma.venta.findMany({

@@ -6,7 +6,6 @@ import { limpiarReservasExpiradas } from "./ventas";
 
 export async function getPrendas() {
   noStore();
-  await limpiarReservasExpiradas();
   
   try {
     const prendas = await prisma.prenda.findMany({

@@ -62,6 +62,10 @@ model Prenda {
   createdAt       DateTime @default(now())
   
   ventaItems      VentaItem[]
+
+  @@index([estado, createdAt])
+  @@index([categoria])
+  @@index([enLive, enPreventa])
 }
 
 model Venta {
@@ -106,6 +110,9 @@ model Venta {
   clienta       Clienta?    @relation(fields: [clientaId], references: [id])
   
   items         VentaItem[]
+
+  @@index([fecha, estado])
+  @@index([clientaId])
 }
 
 model VentaItem {
@@ -119,6 +126,9 @@ model VentaItem {
   talla     String?
   color     String?
   empaquetado Boolean @default(false)
+
+  @@index([ventaId])
+  @@index([prendaId])
 }
 
 model Configuracion {
