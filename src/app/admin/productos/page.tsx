@@ -32,6 +32,7 @@ export default function AdminProductos() {
     stockCount: "",
     material: "",
     marca: "",
+    isConjunto: false,
     piezasDetalle: {} as any,
     stockPorTalla: {} as any,
     nuevoStockPorTalla: {} as any,
