@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { logoutUser } from "@/app/actions/auth";
+import { getCountPedidosNuevos } from "@/app/actions/ventas";
 
 export default function AdminSidebar() {
   const pathname = usePathname();
@@ -17,6 +18,7 @@ export default function AdminSidebar() {
   const [userName, setUserName] = useState("Cargando...");
   const [userRole, setUserRole] = useState("");
   const [userPerms, setUserPerms] = useState<string[]>([]);
+  const [nuevosPedidos, setNuevosPedidos] = useState(0);
 
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -35,6 +37,22 @@ export default function AdminSidebar() {
     }
     setIsOpenMobile(false);
   }, [pathname]);
+
+  // Polling para nuevos pedidos cada 30 segundos
+  useEffect(() => {
+    const fetchNuevosPedidos = async () => {
+      try {
+        const res = await getCountPedidosNuevos();
+        if (res.success && res.count !== undefined) {
+          setNuevosPedidos(res.count);
+        }
+      } catch (e) {}
+    };
+    
+    fetchNuevosPedidos();
+    const intervalo = setInterval(fetchNuevosPedidos, 30000);
+    return () => clearInterval(intervalo);
+  }, []);
 
   const navItems = [
     { name: "Inicio", path: "/admin", icon: LayoutDashboard, perm: null },
@@ -128,7 +146,7 @@ export default function AdminSidebar() {
                 href={item.path}
                 title={isCollapsed ? item.name : undefined}
                 className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-md transition-all
+                  flex items-center gap-3 px-3 py-2.5 rounded-md transition-all relative
                   ${isActive 
                     ? 'bg-black text-white shadow-md' 
                     : 'text-gray-500 hover:bg-gray-100 hover:text-black'
@@ -136,9 +154,22 @@ export default function AdminSidebar() {
                 `}
               >
                 <Icon className={`w-5 h-5 min-w-[1.25rem] ${isActive ? 'text-white' : 'text-gray-400'}`} strokeWidth={isActive ? 2.5 : 2} /> 
-                <span className={`text-sm font-medium tracking-wide transition-opacity duration-200 whitespace-nowrap ${isCollapsed ? 'md:opacity-0 md:hidden' : 'opacity-100'}`}>
+                <span className={`text-sm font-medium tracking-wide transition-opacity duration-200 whitespace-nowrap flex-1 flex justify-between items-center ${isCollapsed ? 'md:opacity-0 md:hidden' : 'opacity-100'}`}>
                   {item.name}
+                  {item.name === "Pedidos" && nuevosPedidos > 0 && (
+                    <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm animate-pulse">
+                      +{nuevosPedidos}
+                    </span>
+                  )}
                 </span>
+                
+                {/* Notificación en modo colapsado */}
+                {isCollapsed && item.name === "Pedidos" && nuevosPedidos > 0 && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping md:block hidden"></span>
+                )}
+                {isCollapsed && item.name === "Pedidos" && nuevosPedidos > 0 && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full md:block hidden"></span>
+                )}
               </Link>
             );
           })}

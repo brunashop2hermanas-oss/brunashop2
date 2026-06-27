@@ -630,3 +630,15 @@ export async function deleteVenta(id: string) {
     return { success: false, error: error.message };
   }
 }
+
+export async function getCountPedidosNuevos() {
+  try {
+    const count = await prisma.venta.count({
+      where: { estado: 'PENDIENTE_VERIFICACION' }
+    });
+    return { success: true, count };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
