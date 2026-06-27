@@ -203,7 +203,7 @@ export async function deletePrenda(id: string) {
 
     revalidatePath("/admin/productos");
     revalidatePath('/', 'layout');
-    revalidateTag('prendas');
+    revalidateTag('prendas', 'max');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
