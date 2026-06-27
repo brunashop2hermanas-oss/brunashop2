@@ -949,7 +949,7 @@ function CheckoutContent() {
             <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin mb-6"></div>
             <h3 className="text-xl font-bold uppercase tracking-widest text-center">Procesando tu pedido...</h3>
             <p className="text-sm text-white/70 mt-3 text-center max-w-sm">
-              Por favor, no cierres esta ventana ni presiones atrás mientras confirmamos tu comprobante de forma segura.
+              Por favor, no cierres esta ventana ni presiones atrás mientras {paso === 1 ? 'reservamos tus prendas' : 'confirmamos tu comprobante de forma segura'}.
             </p>
           </div>
         )}

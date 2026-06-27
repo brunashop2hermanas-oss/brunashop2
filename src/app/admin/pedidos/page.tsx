@@ -266,6 +266,8 @@ const imprimirVineta = (pedido: any) => {
             articulos: (p.articulos || []).map((art: any) => art.id === articulo.id ? { ...art, empaquetado: !art.empaquetado } : art)
           };
         }
+        return p;
+      });
       setPedidos(nuevosPedidos);
       
       const updatedPedido = nuevosPedidos.find(p => p.id === pedidoId);
