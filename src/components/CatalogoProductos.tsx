@@ -57,8 +57,9 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
     return () => clearInterval(intervalo);
   }, []);
 
-  const productosLive = liveActivo ? productos.filter(p => p.enLive && (p.stockCount > 0 || p.enPreventa)) : [];
+  const productosLive = liveActivo ? productos.filter(p => p.enLive && (p.stockCount > 0 || p.enPreventa) && p.visiblePublico !== false) : [];
   const productosFiltrados = productos.filter(p => {
+    if (p.visiblePublico === false) return false;
     if (p.enLive && liveActivo) return false;
     if (filtroCategoria !== "Todas" && p.categoria !== filtroCategoria) return false;
     if (coleccionFiltro && p.coleccion !== coleccionFiltro) return false;

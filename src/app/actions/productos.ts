@@ -102,6 +102,7 @@ export async function createPrenda(data: any) {
           coleccion: data.coleccion || null,
           marca: data.marca || null,
           tallas: data.tallas || [],
+          visiblePublico: data.visiblePublico !== undefined ? data.visiblePublico : true,
           stockPorTalla: data.stockPorTalla || {},
           colores: data.colores || [],
           material: data.material || null,
@@ -154,6 +155,7 @@ export async function updatePrenda(id: string, data: any) {
           coleccion: data.coleccion,
           marca: data.marca,
           tallas: data.tallas,
+          visiblePublico: data.visiblePublico !== undefined ? data.visiblePublico : true,
           stockPorTalla: data.stockPorTalla,
           colores: data.colores,
           material: data.material,
@@ -205,6 +207,23 @@ export async function deletePrenda(id: string) {
     revalidatePath('/', 'layout');
     revalidateTag('prendas', 'max');
     return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function toggleVisibilidadPrenda(id: string, visiblePublico: boolean) {
+  try {
+    const prenda = await prisma.prenda.update({
+      where: { id },
+      data: { visiblePublico }
+    });
+    
+    revalidatePath("/admin/productos");
+    revalidatePath('/', 'layout');
+    revalidateTag('prendas', 'max');
+    
+    return { success: true, data: prenda };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

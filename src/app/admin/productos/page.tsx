@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Video, EyeOff, Edit, Trash2, X, Palette, Scaling, Tag, Package, Image as ImageIcon } from "lucide-react";
+import { Plus, Video, Eye, EyeOff, Edit, Trash2, X, Palette, Scaling, Tag, Package, Image as ImageIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getPrendas, createPrenda, updatePrenda, deletePrenda } from "@/app/actions/productos";
+import { getPrendas, createPrenda, updatePrenda, deletePrenda, toggleVisibilidadPrenda } from "@/app/actions/productos";
 import { uploadImage } from "@/app/actions/upload";
 import { getConfiguracion, updateConfiguracion } from "@/app/actions/config";
 import { compressImage } from "@/lib/imageCompression";
@@ -37,10 +37,12 @@ export default function AdminProductos() {
     stockPorTalla: {} as any,
     imagenesPorColor: {} as any,
     descripcionLarga: "",
-    costoProveedor: ""
+    costoProveedor: "",
+    visiblePublico: true
   });
 
   const [usarControlFinanciero, setUsarControlFinanciero] = useState(false);
+  const [filtroVisibilidad, setFiltroVisibilidad] = useState<"Todas" | "Publicas" | "Ocultas">("Todas");
 
   const [categorias, setCategorias] = useState(["Vestidos", "Conjuntos", "Blusas y Tops", "Pantalones y Jeans", "Chaquetas y Abrigos", "Enterizos", "Ofertas / Sale"]);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("");
@@ -112,7 +114,7 @@ export default function AdminProductos() {
 
   const abrirModalNueva = () => {
     setProductoEditando(null);
-    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: false, piezasDetalle: {}, stockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "" });
+    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: false, piezasDetalle: {}, stockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "", visiblePublico: true });
     setCategoriaSeleccionada("");
     setTallasDisponibles(TALLAS_BASE);
     setTallasSeleccionadas([]);
@@ -122,7 +124,7 @@ export default function AdminProductos() {
 
   const abrirModalNuevoCombo = () => {
     setProductoEditando(null);
-    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: true, piezasDetalle: {}, stockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "" });
+    setFormData({ nombre: "", precioBase: "", descuento: "", enPromocion: false, categoria: "", coleccion: "", colores: "", stockCount: "", material: "", marca: "", isConjunto: true, piezasDetalle: {}, stockPorTalla: {}, imagenesPorColor: {}, descripcionLarga: "", costoProveedor: "", visiblePublico: true });
     setCategoriaSeleccionada("");
     setTallasDisponibles(TALLAS_BASE);
     setTallasSeleccionadas([]);
@@ -161,7 +163,8 @@ export default function AdminProductos() {
       })(),
       imagenesPorColor: producto.imagenesPorColor || {},
       descripcionLarga: producto.descripcionLarga || "",
-      costoProveedor: producto.costoProveedor?.toString() || ""
+      costoProveedor: producto.costoProveedor?.toString() || "",
+      visiblePublico: producto.visiblePublico !== false
     });
     setCategoriaSeleccionada(categorias.includes(producto.categoria) ? producto.categoria : (producto.categoria ? "nueva" : ""));
     if (producto.categoria && !categorias.includes(producto.categoria)) {
@@ -228,7 +231,8 @@ export default function AdminProductos() {
       imagenes: fotosPreview.length > 0 ? fotosPreview : ["https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"], // Placeholder
       imagenesPorColor: formData.imagenesPorColor,
       enLive: productoEditando ? productoEditando.enLive : false,
-      enPreventa: productoEditando ? productoEditando.enPreventa : false
+      enPreventa: productoEditando ? productoEditando.enPreventa : false,
+      visiblePublico: formData.visiblePublico
     };
 
     if (productoEditando) {
@@ -286,6 +290,11 @@ export default function AdminProductos() {
   const togglePreventaBD = async (id: string, currentState: boolean) => {
     setProductos(productos.map(p => p.id === id ? { ...p, enPreventa: !currentState } : p));
     await updatePrenda(id, { enPreventa: !currentState });
+  };
+
+  const toggleVisibilidadBD = async (id: string, currentState: boolean) => {
+    setProductos(productos.map(p => p.id === id ? { ...p, visiblePublico: !currentState } : p));
+    await toggleVisibilidadPrenda(id, !currentState);
   };
 
   const confirmarStockBD = async (id: string, newStock: number) => {
@@ -375,6 +384,16 @@ export default function AdminProductos() {
               <span className={`text-[11px] font-bold mb-1 ${producto.enPreventa ? 'text-purple-600' : 'text-foreground/60'}`}>Preventa</span>
               <button className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${producto.enPreventa ? 'bg-purple-500' : 'bg-gray-300'}`}>
                 <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${producto.enPreventa ? 'translate-x-5' : 'translate-x-1'}`} />
+              </button>
+            </div>
+            
+            <div className={`flex-1 flex flex-col items-center justify-center border p-2 rounded-xl transition-colors cursor-pointer shadow-sm ${producto.visiblePublico === false ? 'bg-gray-500/10 border-gray-500/30' : 'bg-green-500/10 border-green-500/30 hover:bg-green-500/20'}`} onClick={() => toggleVisibilidadBD(producto.id, producto.visiblePublico !== false)}>
+              <span className={`text-[11px] font-bold mb-1 flex items-center gap-1 ${producto.visiblePublico === false ? 'text-gray-600' : 'text-green-600'}`}>
+                {producto.visiblePublico === false ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                {producto.visiblePublico === false ? 'OCULTO' : 'PÚBLICO'}
+              </span>
+              <button className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${producto.visiblePublico === false ? 'bg-gray-400' : 'bg-green-500'}`}>
+                <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${producto.visiblePublico === false ? 'translate-x-1' : 'translate-x-5'}`} />
               </button>
             </div>
           </div>
@@ -481,45 +500,73 @@ export default function AdminProductos() {
           </button>
         </div>
       </div>
+      
+      <div className="flex gap-2 mb-6 border-b border-surface-border pb-2 overflow-x-auto scrollbar-hide">
+        <button onClick={() => setFiltroVisibilidad("Todas")} className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${filtroVisibilidad === "Todas" ? 'bg-brand-primary text-white shadow-md' : 'bg-surface text-foreground/70 hover:bg-surface-border'}`}>
+          Todas
+        </button>
+        <button onClick={() => setFiltroVisibilidad("Publicas")} className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors flex items-center gap-2 ${filtroVisibilidad === "Publicas" ? 'bg-green-500 text-white shadow-md' : 'bg-surface text-foreground/70 hover:bg-surface-border'}`}>
+          <Eye className="w-4 h-4" /> Públicas
+        </button>
+        <button onClick={() => setFiltroVisibilidad("Ocultas")} className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors flex items-center gap-2 ${filtroVisibilidad === "Ocultas" ? 'bg-gray-500 text-white shadow-md' : 'bg-surface text-foreground/70 hover:bg-surface-border'}`}>
+          <EyeOff className="w-4 h-4" /> Ocultas
+        </button>
+      </div>
 
-      {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
-        </div>
-      ) : productos.length === 0 ? (
-        <div className="text-center py-20 bg-surface rounded-3xl border border-surface-border">
-          <h2 className="text-2xl font-bold text-foreground mb-2">Tu catálogo está vacío</h2>
-          <p className="text-foreground/60 mb-6">Añade tu primera prenda para empezar a vender.</p>
-          <button onClick={abrirModalNueva} className="bg-brand-primary text-white px-6 py-3 rounded-full font-bold shadow-xl">Añadir Prenda</button>
-        </div>
-      ) : (
-        <div className="space-y-12">
-          {/* Sección EN LIVE */}
-          {productos.filter(p => p.enLive).length > 0 && (
-            <div>
-              <div className="flex items-center gap-3 mb-6 bg-red-500/10 border border-red-500/20 p-4 rounded-2xl">
-                <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-                <h2 className="text-xl font-bold text-red-600 tracking-widest uppercase">Prendas Seleccionadas para Live</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {productos.filter(p => p.enLive).map(renderProductoCard)}
-              </div>
-            </div>
-          )}
+      {(() => {
+        const productosAVisualizar = productos.filter(p => {
+          if (filtroVisibilidad === "Publicas") return p.visiblePublico !== false;
+          if (filtroVisibilidad === "Ocultas") return p.visiblePublico === false;
+          return true;
+        });
 
-          {/* Sección GENERAL */}
-          {productos.filter(p => !p.enLive).length > 0 && (
-            <div>
-              {productos.filter(p => p.enLive).length > 0 && (
-                <h2 className="text-sm font-bold tracking-widest uppercase text-foreground/50 mb-6">Catálogo General</h2>
-              )}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {productos.filter(p => !p.enLive).map(renderProductoCard)}
-              </div>
+        if (isLoading) {
+          return (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
             </div>
-          )}
-        </div>
-      )}
+          );
+        }
+
+        if (productosAVisualizar.length === 0) {
+          return (
+            <div className="text-center py-20 bg-surface rounded-3xl border border-surface-border">
+              <h2 className="text-2xl font-bold text-foreground mb-2">No hay prendas que mostrar</h2>
+              <p className="text-foreground/60 mb-6">No hay prendas que coincidan con tu filtro actual.</p>
+              <button onClick={abrirModalNueva} className="bg-brand-primary text-white px-6 py-3 rounded-full font-bold shadow-xl">Añadir Prenda</button>
+            </div>
+          );
+        }
+
+        return (
+          <div className="space-y-12">
+            {/* Sección EN LIVE */}
+            {productosAVisualizar.filter(p => p.enLive).length > 0 && (
+              <div>
+                <div className="flex items-center gap-3 mb-6 bg-red-500/10 border border-red-500/20 p-4 rounded-2xl">
+                  <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+                  <h2 className="text-xl font-bold text-red-600 tracking-widest uppercase">Prendas Seleccionadas para Live</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {productosAVisualizar.filter(p => p.enLive).map(renderProductoCard)}
+                </div>
+              </div>
+            )}
+
+            {/* Sección GENERAL */}
+            {productosAVisualizar.filter(p => !p.enLive).length > 0 && (
+              <div>
+                {productosAVisualizar.filter(p => p.enLive).length > 0 && (
+                  <h2 className="text-sm font-bold tracking-widest uppercase text-foreground/50 mb-6">Catálogo General</h2>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {productosAVisualizar.filter(p => !p.enLive).map(renderProductoCard)}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Modal de Agregar / Editar */}
       <AnimatePresence>
@@ -693,6 +740,15 @@ export default function AdminProductos() {
                 </div>
 
                 <div className="bg-brand-primary/5 border border-brand-primary/20 rounded-2xl p-5 space-y-5">
+                  <div className="flex items-center gap-3 bg-surface p-4 rounded-xl border border-surface-border cursor-pointer" onClick={() => setFormData({...formData, visiblePublico: !formData.visiblePublico})}>
+                    <input type="checkbox" checked={formData.visiblePublico} onChange={() => {}} className="w-5 h-5 rounded text-brand-primary focus:ring-brand-primary" />
+                    <span className="font-bold text-foreground flex items-center gap-2">
+                      {formData.visiblePublico ? <Eye className="w-4 h-4 text-green-500" /> : <EyeOff className="w-4 h-4 text-gray-500" />}
+                      {formData.visiblePublico ? 'Visible en Tienda Pública' : 'Oculto (Solo Admins)'}
+                    </span>
+                    <p className="text-xs text-foreground/50 ml-auto hidden sm:block">Controla si los clientes pueden verla</p>
+                  </div>
+
                   <div className="flex items-center gap-3 mb-6 bg-surface p-4 rounded-xl border border-surface-border cursor-pointer" onClick={() => setFormData({...formData, isConjunto: !formData.isConjunto})}>
                     <input type="checkbox" checked={formData.isConjunto} onChange={() => {}} className="w-5 h-5 rounded text-brand-primary focus:ring-brand-primary" />
                     <span className="font-bold text-foreground">¿Es un Conjunto / Combo?</span>

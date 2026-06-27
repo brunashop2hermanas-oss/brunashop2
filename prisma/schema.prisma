@@ -53,6 +53,7 @@ model Prenda {
   stockCount      Int      @default(0)
   enLive          Boolean  @default(false)
   enPreventa      Boolean  @default(false)
+  visiblePublico  Boolean  @default(true) // Controla si la prenda es visible en la tienda pública
   
   isConjunto      Boolean  @default(false)
   piezasId        String[] // Array de IDs de prendas que lo componen
