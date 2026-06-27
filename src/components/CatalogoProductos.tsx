@@ -315,20 +315,22 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
                 ) : (
                   carrito.map((item) => (
                     <div key={item.itemUnicoId} className="flex gap-4 bg-[#fcfcfc] p-3 rounded-sm border border-gray-100">
-                      <Image fill sizes="(max-width: 768px) 50vw, 33vw" src={(() => {
-                        let img = item.imagenes?.[0];
-                        if (item.colorSeleccionado && item.imagenesPorColor) {
-                          let raw = item.imagenesPorColor;
-                          if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch(e){} }
-                          if (typeof raw === 'object' && raw !== null) {
-                            const keyMatch = Object.keys(raw).find(k => k.toLowerCase() === item.colorSeleccionado!.toLowerCase());
-                            if (keyMatch && typeof raw[keyMatch] === 'string') {
-                              img = raw[keyMatch];
+                      <div className="relative w-20 h-24 shrink-0">
+                        <Image fill sizes="(max-width: 768px) 50vw, 33vw" src={(() => {
+                          let img = item.imagenes?.[0];
+                          if (item.colorSeleccionado && item.imagenesPorColor) {
+                            let raw = item.imagenesPorColor;
+                            if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch(e){} }
+                            if (typeof raw === 'object' && raw !== null) {
+                              const keyMatch = Object.keys(raw).find(k => k.toLowerCase() === item.colorSeleccionado!.toLowerCase());
+                              if (keyMatch && typeof raw[keyMatch] === 'string') {
+                                img = raw[keyMatch];
+                              }
                             }
                           }
-                        }
-                        return img || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80";
-                      })()} alt={item.nombre} className="w-20 h-24 object-contain bg-slate-50 rounded-sm" />
+                          return img || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80";
+                        })()} alt={item.nombre} className="object-contain bg-slate-50 rounded-sm" />
+                      </div>
                       <div className="flex-1 flex flex-col justify-between">
                         <div>
                           <div className="flex justify-between items-start">
