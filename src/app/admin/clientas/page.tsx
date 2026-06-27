@@ -440,6 +440,7 @@ export default function AdminClientas() {
                 <tr className="border-b border-gray-300">
                   <th className="pb-2 text-xs font-bold uppercase text-gray-500">Fecha y Hora</th>
                   <th className="pb-2 text-xs font-bold uppercase text-gray-500">Prenda Adquirida</th>
+                  <th className="pb-2 text-xs font-bold uppercase text-gray-500">Talla / Color</th>
                   <th className="pb-2 text-xs font-bold uppercase text-gray-500 text-right">Monto (Bs.)</th>
                 </tr>
               </thead>
@@ -452,6 +453,10 @@ export default function AdminClientas() {
                         <span className="text-xs text-gray-500">{compra.hora}</span>
                       </td>
                       <td className="py-3 text-sm font-bold text-black">{compra.prenda}</td>
+                      <td className="py-3 text-sm text-gray-700">
+                        {compra.talla && <span className="mr-2">Talla: {compra.talla}</span>}
+                        {compra.color && <span>Color: {compra.color}</span>}
+                      </td>
                       <td className="py-3 text-sm font-black text-black text-right">{compra.monto.toFixed(2)}</td>
                     </tr>
                   ))
@@ -503,7 +508,7 @@ export default function AdminClientas() {
 
       {/* Modal del Directorio (Perfil de Clienta) */}
       {isClientModalOpen && clientaSeleccionada && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 no-print">
           <motion.div 
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -565,6 +570,7 @@ export default function AdminClientas() {
                           <tr>
                             <th className="p-4 text-xs font-bold uppercase text-foreground/50">Fecha</th>
                             <th className="p-4 text-xs font-bold uppercase text-foreground/50">Detalle</th>
+                            <th className="p-4 text-xs font-bold uppercase text-foreground/50">Talla / Color</th>
                             <th className="p-4 text-xs font-bold uppercase text-foreground/50">Monto</th>
                             {userRole === 'ADMINISTRADOR' && (
                               <th className="p-4 text-xs font-bold uppercase text-foreground/50 text-right">Acción</th>
@@ -579,6 +585,10 @@ export default function AdminClientas() {
                                 <span className="text-xs text-foreground/50">{compra.hora}</span>
                               </td>
                               <td className="p-4 font-bold text-foreground">{compra.prenda}</td>
+                              <td className="p-4 text-sm text-foreground/70">
+                                {compra.talla && <span className="mr-2 block md:inline">Talla: {compra.talla}</span>}
+                                {compra.color && <span className="block md:inline">Color: {compra.color}</span>}
+                              </td>
                               <td className="p-4 font-black text-foreground">Bs. {compra.monto.toFixed(2)}</td>
                               {userRole === 'ADMINISTRADOR' && (
                                 <td className="p-4 text-right">

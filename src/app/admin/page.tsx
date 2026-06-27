@@ -56,10 +56,10 @@ export default function DashboardInicio() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <div className="glass p-6 rounded-3xl border border-surface-border shadow-3d flex items-center gap-4">
-          <div className="p-4 bg-green-500/20 text-green-500 rounded-2xl"><DollarSign className="w-8 h-8" /></div>
-          <div>
-            <p className="text-sm font-bold text-foreground/60 uppercase tracking-widest">Ingresos</p>
+        <div className="glass p-4 rounded-3xl border border-surface-border shadow-3d flex items-center gap-3">
+          <div className="p-3 bg-green-500/20 text-green-500 rounded-2xl"><DollarSign className="w-6 h-6" /></div>
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-foreground/60 uppercase tracking-wide truncate">Ingresos</p>
             <p className="text-2xl font-black text-foreground">Bs. {stats.ingresosHoy} <span className="text-xs font-normal text-foreground/50">Hoy</span></p>
             <div className="flex gap-4 mt-2">
               <p className="text-sm font-bold text-foreground/80">Bs. {stats.ingresosMes} <span className="text-[10px] font-normal text-foreground/50">Mes</span></p>
@@ -67,24 +67,24 @@ export default function DashboardInicio() {
             </div>
           </div>
         </div>
-        <div className="glass p-6 rounded-3xl border border-surface-border shadow-3d flex items-center gap-4">
-          <div className="p-4 bg-brand-primary/20 text-brand-primary rounded-2xl"><ShoppingBag className="w-8 h-8" /></div>
-          <div>
-            <p className="text-sm font-bold text-foreground/60 uppercase tracking-widest">Nuevos Pedidos</p>
+        <div className="glass p-4 rounded-3xl border border-surface-border shadow-3d flex items-center gap-3">
+          <div className="p-3 bg-brand-primary/20 text-brand-primary rounded-2xl"><ShoppingBag className="w-6 h-6" /></div>
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-foreground/60 uppercase tracking-wide truncate">Nuevos Pedidos</p>
             <p className="text-3xl font-black text-foreground">{stats.pedidosHoy}</p>
           </div>
         </div>
-        <div className="glass p-6 rounded-3xl border border-surface-border shadow-3d flex items-center gap-4">
-          <div className="p-4 bg-yellow-500/20 text-yellow-500 rounded-2xl"><TrendingUp className="w-8 h-8" /></div>
-          <div>
-            <p className="text-sm font-bold text-foreground/60 uppercase tracking-widest">Más Vendido</p>
+        <div className="glass p-4 rounded-3xl border border-surface-border shadow-3d flex items-center gap-3">
+          <div className="p-3 bg-yellow-500/20 text-yellow-500 rounded-2xl"><TrendingUp className="w-6 h-6" /></div>
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-foreground/60 uppercase tracking-wide truncate">Más Vendido</p>
             <p className="text-lg font-black text-foreground leading-tight">{stats.masVendido}</p>
           </div>
         </div>
-        <div className="glass p-6 rounded-3xl border border-surface-border shadow-3d flex items-center gap-4">
-          <div className="p-4 bg-purple-500/20 text-purple-500 rounded-2xl"><Users className="w-8 h-8" /></div>
-          <div>
-            <p className="text-sm font-bold text-foreground/60 uppercase tracking-widest">Clientas Registradas</p>
+        <div className="glass p-4 rounded-3xl border border-surface-border shadow-3d flex items-center gap-3">
+          <div className="p-3 bg-purple-500/20 text-purple-500 rounded-2xl"><Users className="w-6 h-6" /></div>
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-foreground/60 uppercase tracking-wide truncate">Clientas Registradas</p>
             <p className="text-3xl font-black text-foreground">{stats.clientasTotales}</p>
           </div>
         </div>

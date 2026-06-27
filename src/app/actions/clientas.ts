@@ -33,6 +33,8 @@ export async function getClientas() {
         venta.items.map(item => ({
           ventaId: venta.id,
           prenda: item.prenda?.nombre || "Producto Eliminado",
+          talla: item.talla,
+          color: item.color,
           fecha: venta.fecha.toLocaleDateString(),
           hora: venta.fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           monto: item.precio * item.cantidad
