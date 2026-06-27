@@ -538,17 +538,17 @@ const imprimirVineta = (pedido: any) => {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse hidden lg:table">
             <thead>
-              <tr className="bg-surface border-b border-surface-border text-foreground/80 text-sm uppercase tracking-wider">
-                <th className="p-4 font-semibold w-10"></th>
-                <th className="p-4 font-semibold">ID Pedido</th>
-                <th className="p-4 font-semibold">Origen</th>
-                <th className="p-4 font-semibold">Fecha y Hora</th>
-                <th className="p-4 font-semibold">Prendas a Enviar</th>
-                <th className="p-4 font-semibold">Clienta</th>
-                <th className="p-4 font-semibold">Destino</th>
-                <th className="p-4 font-semibold">Total (Bs)</th>
-                <th className="p-4 font-semibold">Estado</th>
-                <th className="p-4 font-semibold text-center">Acciones</th>
+              <tr className="bg-surface border-b border-surface-border text-foreground/80 text-xs uppercase tracking-wider">
+                <th className="px-2 py-3 font-semibold w-8"></th>
+                <th className="px-2 py-3 font-semibold">ID Pedido</th>
+                <th className="px-2 py-3 font-semibold">Origen</th>
+                <th className="px-2 py-3 font-semibold">Fecha y Hora</th>
+                <th className="px-2 py-3 font-semibold">Prendas a Enviar</th>
+                <th className="px-2 py-3 font-semibold">Clienta</th>
+                <th className="px-2 py-3 font-semibold">Destino</th>
+                <th className="px-2 py-3 font-semibold">Total (Bs)</th>
+                <th className="px-2 py-3 font-semibold">Estado</th>
+                <th className="px-2 py-3 font-semibold text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-border">
@@ -564,7 +564,7 @@ const imprimirVineta = (pedido: any) => {
                 const todasEmpaquetadas = esTiendaDirecta ? true : (arts.length > 0 && arts.every((art: any) => art.empaquetado));
                 return (
                 <tr key={pedido.id} className="hover:bg-white/5 transition-colors">
-                  <td className="p-4">
+                  <td className="px-2 py-3">
                     {pedido.estado !== 'Rechazado' && (
                       <input 
                         type="checkbox" 
@@ -574,26 +574,26 @@ const imprimirVineta = (pedido: any) => {
                       />
                     )}
                   </td>
-                  <td className="p-4 font-mono font-medium text-brand-primary">{pedido.id.slice(-6).toUpperCase()}</td>
-                  <td className="p-4">
+                  <td className="px-2 py-3 font-mono font-medium text-brand-primary">{pedido.id.slice(-6).toUpperCase()}</td>
+                  <td className="px-2 py-3">
                     <div className="flex flex-col items-start">
                       <div className={`inline-flex px-2 py-1 rounded text-xs font-bold mb-1 ${pedido.origen === 'WEB' ? 'bg-blue-500/20 text-blue-500' : (pedido.origen === 'CAJA' || pedido.origen === 'POS') ? 'bg-purple-500/20 text-purple-500' : 'bg-pink-500/20 text-pink-500'}`}>
                         {pedido.origen === 'POS' ? 'CAJA' : pedido.origen}
                       </div>
                       {pedido.registradoPor ? (
-                        <div className="text-sm font-bold text-foreground mt-1 bg-surface-border/50 px-2 py-1 rounded-md">
-                          Atendido por: <span className="text-brand-primary">{pedido.registradoPor}</span>
+                        <div className="text-[10px] font-bold text-foreground/70 mt-1 bg-surface-border/50 px-1.5 py-0.5 rounded max-w-[120px] truncate" title={pedido.registradoPor}>
+                          👤 <span className="text-brand-primary">{pedido.registradoPor.split(' ')[0]}</span>
                         </div>
                       ) : (
                         <div className="text-xs text-foreground/50 mt-1 italic">Automático (Web)</div>
                       )}
                     </div>
                   </td>
-                  <td className="p-4">
+                  <td className="px-2 py-3">
                     <div className="text-sm font-bold text-foreground/80 whitespace-nowrap">{pedido.fecha.split(',')[0]}</div>
                     <div className="text-xs text-foreground/50">{pedido.fecha.split(',')[1]}</div>
                   </td>
-                  <td className="p-4">
+                  <td className="px-2 py-3">
                     {(() => {
                       if (pedido.estado !== 'Aprobado' && pedido.estado !== 'ENTREGADO' && pedido.estado !== 'PREPARANDO') {
                         return (
@@ -627,7 +627,7 @@ const imprimirVineta = (pedido: any) => {
                       );
                     })()}
                   </td>
-                  <td className="p-4">
+                  <td className="px-2 py-3">
                     <div className="font-bold text-foreground">{pedido.cliente}</div>
                     <a 
                       href={`https://wa.me/${pedido.celular?.startsWith("591") ? pedido.celular : `591${pedido.celular}`}`} 
@@ -662,7 +662,7 @@ const imprimirVineta = (pedido: any) => {
                       </div>
                     )}
                   </td>
-                  <td className="p-4 text-foreground/90">
+                  <td className="px-2 py-3 text-foreground/90">
                     <div>{pedido.destino}</div>
                     {pedido.empresaBusesPreferida && (
                       <div className="mt-2 p-1.5 bg-orange-500/10 border border-orange-500/20 rounded text-[10px] uppercase font-bold text-orange-600">
@@ -670,8 +670,8 @@ const imprimirVineta = (pedido: any) => {
                       </div>
                     )}
                   </td>
-                  <td className="p-4 font-bold text-foreground">{pedido.total.toFixed(2)}</td>
-                  <td className="p-4">
+                  <td className="px-2 py-3 font-bold text-foreground">{pedido.total.toFixed(2)}</td>
+                  <td className="px-2 py-3">
                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                       pedido.estado === 'Pendiente' ? 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/50' : 
                       (pedido.estado === 'Aprobado' || pedido.estado === 'PREPARANDO' || pedido.estado === 'ENTREGADO' || pedido.estado === 'ENVIADO') ? 'bg-green-500/20 text-green-600 border border-green-500/50' :
@@ -680,7 +680,7 @@ const imprimirVineta = (pedido: any) => {
                       {pedido.estado}
                     </span>
                   </td>
-                  <td className="p-4 flex flex-wrap justify-center gap-2">
+                  <td className="px-2 py-3 flex flex-wrap justify-center gap-2">
                     {pedido.estado === 'Pendiente' && (
                       <button 
                         onClick={() => setPedidoSeleccionado(pedido)}
