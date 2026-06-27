@@ -336,8 +336,11 @@ function CheckoutContent() {
     if (!comprobante) return toast.error("¡No olvides subir la foto de tu comprobante de pago!");
 
     const formData = new FormData(e.currentTarget);
-    setIsSubmitting(true);
+    
+    // OPTIMISTIC UI: Transición inmediata a paso 3 para que se sienta instantáneo
+    setPaso(3);
 
+    // Procesar en segundo plano
     let comprobanteRealUrl = "";
     try {
       const compressedFile = await compressImage(comprobante, 'baja'); 
@@ -347,13 +350,11 @@ function CheckoutContent() {
       if (resUpload.success && resUpload.url) {
         comprobanteRealUrl = resUpload.url;
       } else {
-        toast.error("Hubo un inconveniente subiendo tu comprobante. Intenta con otra foto por favor.");
-        setIsSubmitting(false);
+        toast.error("Tu comprobante no se pudo subir. Por favor envíalo por WhatsApp.");
         return;
       }
     } catch (err) {
-      toast.error("¡Uy! Tuvimos un problemita inesperado con tu foto. Por favor, intenta de nuevo.");
-      setIsSubmitting(false);
+      toast.error("Tuvimos un problemita con tu foto. Por favor envíalo por WhatsApp.");
       return;
     }
 
@@ -367,12 +368,9 @@ function CheckoutContent() {
     };
 
     const res = await confirmarPagoCheckout(ventaEnCurso.id, reqData);
-    setIsSubmitting(false);
-
-    if (res.success) {
-      setPaso(3);
-    } else {
-      toast.error("Tuvimos un inconveniente confirmando tu pago. Por favor, avísanos por WhatsApp.");
+    
+    if (!res.success) {
+      toast.error("Hubo un inconveniente confirmando tu pago en el sistema. Por favor, avísanos por WhatsApp.");
     }
   };
 

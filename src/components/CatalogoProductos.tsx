@@ -115,9 +115,23 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
 
   if (isLoading) {
     return (
-      <div className="w-full min-h-[50vh] flex justify-center items-center bg-[#fcfcfc]">
-        <div className="w-8 h-8 border-[2px] border-black border-t-transparent rounded-full animate-spin"></div>
-      </div>
+      <section className="w-full bg-[#fcfcfc] min-h-screen text-black pb-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16">
+          <div className="mb-12 border-b border-gray-100 pb-6">
+            <div className="h-10 w-48 bg-gray-200 animate-pulse rounded mb-2"></div>
+            <div className="h-4 w-64 bg-gray-100 animate-pulse rounded"></div>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-12 sm:gap-x-8 sm:gap-y-16">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div key={i} className="flex flex-col">
+                <div className="aspect-[3/4] w-full bg-gray-200 animate-pulse rounded-lg mb-4"></div>
+                <div className="h-4 w-3/4 bg-gray-200 animate-pulse rounded mb-2"></div>
+                <div className="h-4 w-1/2 bg-gray-100 animate-pulse rounded"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     );
   }
 

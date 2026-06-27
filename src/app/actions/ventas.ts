@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { revalidatePath, unstable_noStore as noStore } from "next/cache";
+import { revalidatePath, revalidateTag, unstable_noStore as noStore } from "next/cache";
 import { headers, cookies } from "next/headers";
 
 async function ajustarStock(tx: any, prendaId: string, cantidad: number, operacion: 'increment' | 'decrement', talla?: string | null, color?: string | null) {
@@ -107,6 +107,7 @@ export async function crearReservaAnonima(data: {
 
     revalidatePath("/admin/productos");
     revalidatePath('/', 'layout');
+    revalidateTag('prendas');
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -205,6 +206,7 @@ export async function vincularClientaReserva(ventaId: string, data: {
     });
 
     revalidatePath('/', 'layout');
+    revalidateTag('prendas');
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -243,6 +245,7 @@ export async function confirmarPagoCheckout(ventaId: string, data: {
     });
 
     revalidatePath('/', 'layout');
+    revalidateTag('prendas');
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -254,6 +257,7 @@ export async function cancelarVentaExpirada(ventaId: string) {
     const venta = await prisma.venta.findUnique({ where: { id: ventaId }, include: { items: true } });
     if (!venta || venta.estado !== "ESPERANDO_PAGO") {
       revalidatePath('/', 'layout');
+    revalidateTag('prendas');
       return { success: true, message: "No requiere acción" };
     }
 
@@ -272,6 +276,7 @@ export async function cancelarVentaExpirada(ventaId: string) {
 
     revalidatePath("/admin/productos");
     revalidatePath('/', 'layout');
+    revalidateTag('prendas');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -402,6 +407,7 @@ export async function createVenta(data: {
     revalidatePath("/admin/clientas");
     revalidatePath("/admin/productos");
     revalidatePath('/', 'layout');
+    revalidateTag('prendas');
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -478,6 +484,7 @@ export async function getVentas() {
     }));
 
     revalidatePath('/', 'layout');
+    revalidateTag('prendas');
     return { success: true, data: dataFormateada };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -516,6 +523,7 @@ export async function updateEstadoVenta(ventaId: string, nuevoEstado: string) {
       }
     });
     revalidatePath('/', 'layout');
+    revalidateTag('prendas');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -529,6 +537,7 @@ export async function toggleEmpaquetado(ventaItemId: string, estadoActual: boole
       data: { empaquetado: !estadoActual }
     });
     revalidatePath('/', 'layout');
+    revalidateTag('prendas');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -560,6 +569,7 @@ export async function subirGuiaEnvio(ventaId: string, guiaUrl: string) {
       }
     });
     revalidatePath('/', 'layout');
+    revalidateTag('prendas');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -613,6 +623,7 @@ export async function deleteVenta(id: string) {
     revalidatePath("/admin/clientas");
     revalidatePath("/admin/productos");
     revalidatePath('/', 'layout');
+    revalidateTag('prendas');
     
     return { success: true };
   } catch (error: any) {

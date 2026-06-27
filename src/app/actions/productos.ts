@@ -1,13 +1,11 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { revalidatePath, unstable_noStore as noStore } from "next/cache";
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { limpiarReservasExpiradas } from "./ventas";
 
-export async function getPrendas() {
-  noStore();
-  
-  try {
+const getCachedPrendas = unstable_cache(
+  async () => {
     const prendas = await prisma.prenda.findMany({
       orderBy: { createdAt: "desc" },
     });
@@ -24,8 +22,15 @@ export async function getPrendas() {
       }
       return p;
     });
+    return prendasMapeadas;
+  },
+  ['prendas-cache-key'],
+  { tags: ['prendas'] } // Cache permanente hasta que se invalide con revalidateTag
+);
 
-    revalidatePath('/', 'layout');
+export async function getPrendas() {
+  try {
+    const prendasMapeadas = await getCachedPrendas();
     return { success: true, data: prendasMapeadas };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -121,6 +126,7 @@ export async function createPrenda(data: any) {
 
     revalidatePath("/admin/productos");
     revalidatePath('/', 'layout');
+    revalidateTag('prendas');
     return { success: true, data: prenda };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -173,6 +179,7 @@ export async function updatePrenda(id: string, data: any) {
 
     revalidatePath("/admin/productos");
     revalidatePath('/', 'layout');
+    revalidateTag('prendas');
     return { success: true, data: prenda };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -196,6 +203,7 @@ export async function deletePrenda(id: string) {
 
     revalidatePath("/admin/productos");
     revalidatePath('/', 'layout');
+    revalidateTag('prendas');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

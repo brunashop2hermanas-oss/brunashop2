@@ -57,8 +57,14 @@ export async function getClientas() {
       };
     });
 
-    revalidatePath('/', 'layout');
-    return { success: true, data: clientasFormateadas };
+    // No quitar revalidatePath aquí si se requiere limpiar cache global de layout, 
+    // pero para performance es mejor no hacerlo en GET requests. Sin embargo, noStore() ya desactiva el cache.
+    // revalidatePath('/', 'layout'); // Comentado para evitar validaciones de cache innecesarias en GET
+    
+    return { 
+      success: true, 
+      data: clientasFormateadas,
+    };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

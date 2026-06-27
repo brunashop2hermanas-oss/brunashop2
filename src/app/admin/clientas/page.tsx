@@ -27,6 +27,7 @@ export default function AdminClientas() {
   const [fechaEspecifica, setFechaEspecifica] = useState("");
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [userRole, setUserRole] = useState('');
+  const [visibleCount, setVisibleCount] = useState(50);
   
   // Estados para el Modal de Clienta
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
@@ -236,61 +237,75 @@ export default function AdminClientas() {
                   </td>
                 </tr>
               ) : clientasFiltradas.length > 0 ? (
-                clientasFiltradas.map((clienta) => (
-                  <tr key={clienta.id} className="hover:bg-brand-primary/5 transition-colors">
-                    <td className="p-5">
-                      <p className="font-bold text-foreground text-lg">{clienta.nombre}</p>
-                    </td>
-                    <td className="p-5">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2 text-foreground/80 font-medium">
-                          <IdCard className="w-4 h-4 text-brand-primary" />
-                          <span className="font-bold">CI:</span> {clienta.ci || "Sin CI"}
-                        </div>
-                        <a 
-                          href={`https://wa.me/${clienta.celular?.startsWith("591") ? clienta.celular : `591${clienta.celular}`}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2 text-foreground/80 font-medium hover:text-brand-primary hover:underline cursor-pointer"
-                        >
-                          <WhatsappIcon className="w-4 h-4 text-[#25D366]" />
-                          {clienta.celular || "Sin Celular"}
-                        </a>
-                      </div>
-                    </td>
-                    <td className="p-5 text-center">
-                      <span className="font-black text-foreground text-lg">{clienta.totalPedidos}</span>
-                    </td>
-                    <td className="p-5 text-right">
-                      <span className="font-bold text-brand-primary text-lg">Bs. {clienta.dineroGastado.toFixed(2)}</span>
-                    </td>
-                    <td className="p-5 text-center">
-                      <div className="inline-flex items-center justify-center gap-2 bg-yellow-500/10 text-yellow-600 border border-yellow-500/30 px-4 py-2 rounded-xl font-black text-lg">
-                        <Star className="w-5 h-5 fill-yellow-500 text-yellow-500" />
-                        {clienta.prendasCompradas}
-                      </div>
-                    </td>
-                    <td className="p-5 text-center no-print">
-                      <div className="flex items-center justify-center gap-2">
-                        <button 
-                          onClick={() => handleVerClienta(clienta)}
-                          className="bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white px-4 py-2 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
-                        >
-                          <FileText className="w-4 h-4" /> Perfil
-                        </button>
-                        {userRole === 'ADMINISTRADOR' && (
-                          <button
-                            onClick={() => setClientaAEliminar(clienta.id)}
-                            className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white p-2 rounded-xl font-bold transition-colors flex items-center justify-center"
-                            title="Eliminar Clienta"
+                <>
+                  {clientasFiltradas.slice(0, visibleCount).map((clienta) => (
+                    <tr key={clienta.id} className="hover:bg-brand-primary/5 transition-colors">
+                      <td className="p-5">
+                        <p className="font-bold text-foreground text-lg">{clienta.nombre}</p>
+                      </td>
+                      <td className="p-5">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2 text-foreground/80 font-medium">
+                            <IdCard className="w-4 h-4 text-brand-primary" />
+                            <span className="font-bold">CI:</span> {clienta.ci || "Sin CI"}
+                          </div>
+                          <a 
+                            href={`https://wa.me/${clienta.celular?.startsWith("591") ? clienta.celular : `591${clienta.celular}`}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-foreground/80 font-medium hover:text-brand-primary hover:underline cursor-pointer"
                           >
-                            <Trash className="w-4 h-4" />
+                            <WhatsappIcon className="w-4 h-4 text-[#25D366]" />
+                            {clienta.celular || "Sin Celular"}
+                          </a>
+                        </div>
+                      </td>
+                      <td className="p-5 text-center">
+                        <span className="font-black text-foreground text-lg">{clienta.totalPedidos}</span>
+                      </td>
+                      <td className="p-5 text-right">
+                        <span className="font-bold text-brand-primary text-lg">Bs. {clienta.dineroGastado.toFixed(2)}</span>
+                      </td>
+                      <td className="p-5 text-center">
+                        <div className="inline-flex items-center justify-center gap-2 bg-yellow-500/10 text-yellow-600 border border-yellow-500/30 px-4 py-2 rounded-xl font-black text-lg">
+                          <Star className="w-5 h-5 fill-yellow-500 text-yellow-500" />
+                          {clienta.prendasCompradas}
+                        </div>
+                      </td>
+                      <td className="p-5 text-center no-print">
+                        <div className="flex items-center justify-center gap-2">
+                          <button 
+                            onClick={() => handleVerClienta(clienta)}
+                            className="bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white px-4 py-2 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                          >
+                            <FileText className="w-4 h-4" /> Perfil
                           </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                          {userRole === 'ADMINISTRADOR' && (
+                            <button
+                              onClick={() => setClientaAEliminar(clienta.id)}
+                              className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white p-2 rounded-xl font-bold transition-colors flex items-center justify-center"
+                              title="Eliminar Clienta"
+                            >
+                              <Trash className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {visibleCount < clientasFiltradas.length && (
+                    <tr>
+                      <td colSpan={6} className="p-4 text-center">
+                        <button 
+                          onClick={() => setVisibleCount(prev => prev + 50)}
+                          className="px-6 py-3 bg-brand-primary/10 text-brand-primary font-bold rounded-xl hover:bg-brand-primary/20 transition-colors"
+                        >
+                          Cargar más clientas
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+                </>
               ) : (
                 <tr>
                   <td colSpan={6} className="p-10 text-center text-foreground/50 font-medium">
@@ -309,65 +324,75 @@ export default function AdminClientas() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
             </div>
           ) : clientasFiltradas.length > 0 ? (
-            clientasFiltradas.map((clienta) => (
-              <div key={clienta.id} className="bg-surface border border-surface-border rounded-xl p-4 shadow-sm flex flex-col gap-3">
-                <div className="flex justify-between items-start border-b border-surface-border pb-3">
-                  <div>
-                    <h3 className="font-bold text-foreground text-lg leading-tight">{clienta.nombre}</h3>
-                    <div className="flex flex-col gap-1 mt-2">
-                      <div className="flex items-center gap-2 text-foreground/80 text-sm font-medium">
-                        <IdCard className="w-4 h-4 text-brand-primary" />
-                        <span className="font-bold">CI:</span> {clienta.ci || "Sin CI"}
+            <>
+              {clientasFiltradas.slice(0, visibleCount).map((clienta) => (
+                <div key={clienta.id} className="bg-surface border border-surface-border rounded-xl p-4 shadow-sm flex flex-col gap-3">
+                  <div className="flex justify-between items-start border-b border-surface-border pb-3">
+                    <div>
+                      <h3 className="font-bold text-foreground text-lg leading-tight">{clienta.nombre}</h3>
+                      <div className="flex flex-col gap-1 mt-2">
+                        <div className="flex items-center gap-2 text-foreground/80 text-sm font-medium">
+                          <IdCard className="w-4 h-4 text-brand-primary" />
+                          <span className="font-bold">CI:</span> {clienta.ci || "Sin CI"}
+                        </div>
+                        <a 
+                          href={`https://wa.me/${clienta.celular?.startsWith("591") ? clienta.celular : `591${clienta.celular}`}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-foreground/80 text-sm font-medium hover:text-brand-primary hover:underline cursor-pointer"
+                        >
+                          <WhatsappIcon className="w-4 h-4 text-[#25D366]" />
+                          {clienta.celular || "Sin Celular"}
+                        </a>
                       </div>
-                      <a 
-                        href={`https://wa.me/${clienta.celular?.startsWith("591") ? clienta.celular : `591${clienta.celular}`}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-foreground/80 text-sm font-medium hover:text-brand-primary hover:underline cursor-pointer"
-                      >
-                        <WhatsappIcon className="w-4 h-4 text-[#25D366]" />
-                        {clienta.celular || "Sin Celular"}
-                      </a>
+                    </div>
+                    <div className="text-right flex flex-col items-end gap-1">
+                      <span className="text-xs uppercase tracking-widest text-foreground/50 font-bold">Puntos</span>
+                      <div className="inline-flex items-center gap-1 bg-yellow-500/10 text-yellow-600 border border-yellow-500/30 px-2 py-1 rounded-lg font-black text-sm">
+                        <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                        {clienta.prendasCompradas}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right flex flex-col items-end gap-1">
-                    <span className="text-xs uppercase tracking-widest text-foreground/50 font-bold">Puntos</span>
-                    <div className="inline-flex items-center gap-1 bg-yellow-500/10 text-yellow-600 border border-yellow-500/30 px-2 py-1 rounded-lg font-black text-sm">
-                      <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
-                      {clienta.prendasCompradas}
+                  
+                  <div className="grid grid-cols-2 gap-4 bg-background/50 p-3 rounded-lg border border-surface-border">
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-foreground/50">Pedidos</p>
+                      <p className="font-black text-foreground">{clienta.totalPedidos}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-foreground/50">Gastado</p>
+                      <p className="font-bold text-brand-primary">Bs. {clienta.dineroGastado.toFixed(2)}</p>
                     </div>
                   </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 bg-background/50 p-3 rounded-lg border border-surface-border">
-                  <div>
-                    <p className="text-[10px] uppercase font-bold text-foreground/50">Pedidos</p>
-                    <p className="font-black text-foreground">{clienta.totalPedidos}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase font-bold text-foreground/50">Gastado</p>
-                    <p className="font-bold text-brand-primary">Bs. {clienta.dineroGastado.toFixed(2)}</p>
-                  </div>
-                </div>
-                
-                <div className="flex gap-2 mt-1 w-full">
-                  <button 
-                    onClick={() => handleVerClienta(clienta)}
-                    className="bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white px-4 py-2 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 flex-1"
-                  >
-                    <FileText className="w-4 h-4" /> Ver Perfil
-                  </button>
-                  {userRole === 'ADMINISTRADOR' && (
-                    <button
-                      onClick={() => setClientaAEliminar(clienta.id)}
-                      className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white p-2 rounded-xl font-bold transition-colors flex items-center justify-center"
+                  
+                  <div className="flex gap-2 mt-1 w-full">
+                    <button 
+                      onClick={() => handleVerClienta(clienta)}
+                      className="bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white px-4 py-2 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 flex-1"
                     >
-                      <Trash className="w-5 h-5" />
+                      <FileText className="w-4 h-4" /> Ver Perfil
                     </button>
-                  )}
+                    {userRole === 'ADMINISTRADOR' && (
+                      <button
+                        onClick={() => setClientaAEliminar(clienta.id)}
+                        className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white p-2 rounded-xl font-bold transition-colors flex items-center justify-center"
+                      >
+                        <Trash className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+              {visibleCount < clientasFiltradas.length && (
+                <button 
+                  onClick={() => setVisibleCount(prev => prev + 50)}
+                  className="w-full py-4 bg-brand-primary/10 text-brand-primary font-bold rounded-xl hover:bg-brand-primary/20 transition-colors"
+                >
+                  Cargar más clientas
+                </button>
+              )}
+            </>
           ) : (
             <div className="p-10 text-center text-foreground/50 font-medium bg-surface rounded-xl">
               {clientas.length === 0 ? "Todavía no hay clientas registradas." : "No se encontró ninguna clienta con esos datos."}
