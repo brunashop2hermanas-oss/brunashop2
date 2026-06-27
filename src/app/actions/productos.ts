@@ -1,8 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
 import prisma from "@/lib/prisma";
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
-import { limpiarReservasExpiradas } from "./ventas";
 
 const getCachedPrendas = unstable_cache(
   async () => {
@@ -52,7 +52,7 @@ async function adjustPiecesStock(tx: any, piezasDetalle: any, combosCount: numbe
     if (!prenda) continue;
 
     let newStockCount = prenda.stockCount;
-    let newStockPorTalla = { ...(prenda.stockPorTalla as any || {}) };
+    const newStockPorTalla = { ...(prenda.stockPorTalla as any || {}) };
 
     if (action === 'deduct') {
       newStockCount = Math.max(0, newStockCount - totalQty);
