@@ -293,8 +293,15 @@ export default function AdminProductos() {
   };
 
   const toggleVisibilidadBD = async (id: string, currentState: boolean) => {
-    setProductos(productos.map(p => p.id === id ? { ...p, visiblePublico: !currentState } : p));
-    await toggleVisibilidadPrenda(id, !currentState);
+    const newState = !currentState;
+    setProductos(productos.map(p => p.id === id ? { ...p, visiblePublico: newState } : p));
+    const res = await toggleVisibilidadPrenda(id, newState);
+    if (!res.success) {
+      mostrarNotificacion("Error: " + res.error);
+      setProductos(productos.map(p => p.id === id ? { ...p, visiblePublico: currentState } : p));
+    } else {
+      mostrarNotificacion(newState ? "Prenda PÚBLICA" : "Prenda OCULTA");
+    }
   };
 
   const confirmarStockBD = async (id: string, newStock: number) => {
