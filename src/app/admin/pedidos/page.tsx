@@ -96,6 +96,7 @@ export default function AdminDashboard() {
   const [isUploadingGuia, setIsUploadingGuia] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState("");
   const [pedidoACompletar, setPedidoACompletar] = useState<any>(null);
+  const [pedidoPreviewArticulos, setPedidoPreviewArticulos] = useState<any>(null);
   const [config, setConfig] = useState<any>({});
   const [guiaPreview, setGuiaPreview] = useState<{file: File, pedido: any} | null>(null);
   
@@ -646,11 +647,16 @@ const imprimirVineta = (pedido: any) => {
                   </td>
                   <td className="px-2 py-3">
                     {(() => {
-                      if (pedido.estado !== 'Aprobado' && pedido.estado !== 'ENTREGADO' && pedido.estado !== 'PREPARANDO') {
+                      if (pedido.estado !== 'Aprobado' && pedido.estado !== 'ENTREGADO' && pedido.estado !== 'PREPARANDO' && pedido.estado !== 'ENVIADO') {
                         return (
-                          <div className="flex flex-col items-center justify-center p-2 bg-surface-border/30 rounded-lg border border-dashed border-surface-border">
-                            <span className="text-[10px] text-foreground/50 uppercase tracking-widest font-bold text-center">Verificar Primero</span>
-                          </div>
+                          <button 
+                            onClick={() => setPedidoPreviewArticulos(pedido)}
+                            className="flex flex-col items-center justify-center p-2 bg-surface hover:bg-surface-border/50 transition-colors rounded-lg border border-dashed border-surface-border gap-1 w-full text-foreground/70 group"
+                            title="Ver Prendas"
+                          >
+                            <Eye className="w-5 h-5 group-hover:text-brand-primary transition-colors" />
+                            <span className="text-[10px] text-foreground/50 uppercase tracking-widest font-bold text-center group-hover:text-brand-primary transition-colors">Ver Prendas</span>
+                          </button>
                         );
                       }
 
@@ -912,7 +918,14 @@ const imprimirVineta = (pedido: any) => {
                 <div className="flex flex-wrap gap-2 pt-2 border-t border-surface-border mt-1">
                   {(() => {
                     if (pedido.estado !== 'Aprobado' && pedido.estado !== 'ENTREGADO' && pedido.estado !== 'PREPARANDO' && pedido.estado !== 'ENVIADO') {
-                      return null;
+                      return (
+                        <button 
+                          onClick={() => setPedidoPreviewArticulos(pedido)}
+                          className="w-full px-3 py-2 rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-sm bg-surface text-foreground/70 border border-dashed border-surface-border hover:bg-surface-border/50"
+                        >
+                          <Eye className="w-4 h-4" /> Ver Prendas Solicitadas
+                        </button>
+                      );
                     }
                     return (
                       <button 
@@ -1336,6 +1349,60 @@ const imprimirVineta = (pedido: any) => {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Modal de Previsualización de Artículos (Solo Lectura) */}
+      <AnimatePresence>
+        {pedidoPreviewArticulos && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-surface rounded-2xl shadow-2xl w-full max-w-lg border border-surface-border overflow-hidden flex flex-col max-h-[85vh]"
+            >
+              <div className="p-4 border-b border-surface-border bg-slate-50 flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-lg text-foreground">Prendas Solicitadas</h3>
+                  <p className="text-xs text-foreground/60 font-medium">Pedido de {pedidoPreviewArticulos.cliente}</p>
+                </div>
+                <button onClick={() => setPedidoPreviewArticulos(null)} className="p-2 rounded-full hover:bg-surface-border/50 transition-colors">
+                  <X className="w-5 h-5 text-foreground/60" />
+                </button>
+              </div>
+              <div className="p-4 overflow-y-auto flex-1 flex flex-col gap-3 bg-slate-50">
+                {(pedidoPreviewArticulos.articulos || []).map((art: any, i: number) => (
+                  <div key={i} className="flex gap-4 p-3 bg-white rounded-xl border border-surface-border shadow-sm items-center">
+                    <div className="w-16 h-16 rounded-lg bg-surface-border/30 overflow-hidden shrink-0 border border-surface-border/50 relative">
+                      {art.imagenUrl ? (
+                        <Image src={art.imagenUrl} alt={art.prenda} fill className="object-cover" sizes="64px" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-foreground/30"><PackageCheck className="w-6 h-6" /></div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-sm text-foreground truncate">{art.prenda}</div>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        <span className="text-[10px] px-2 py-0.5 bg-brand-primary/10 text-brand-primary rounded-md font-bold uppercase">Color: {art.color}</span>
+                        <span className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-bold uppercase">Talla: {art.talla}</span>
+                        <span className="text-[10px] px-2 py-0.5 bg-surface-border text-foreground/70 rounded-md font-bold">Cant: {art.cantidad}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="p-4 border-t border-surface-border bg-white flex justify-end">
+                <button 
+                  onClick={() => setPedidoPreviewArticulos(null)}
+                  className="px-6 py-2 bg-brand-primary text-white rounded-lg font-bold shadow-md hover:bg-brand-accent transition-colors"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Elemento de cierre necesario en map */}
       {(() => null)()}
     </div>
