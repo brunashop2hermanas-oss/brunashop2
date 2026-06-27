@@ -326,8 +326,24 @@ const imprimirVineta = (pedido: any) => {
   {guiaPreview && (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-surface p-6 rounded-2xl max-w-sm w-full shadow-2xl border border-surface-border">
-        <h3 className="text-xl font-bold mb-4">¿Confirmar subida de guía?</h3>
-        <p className="text-foreground/70 mb-6 text-sm">Vas a subir el archivo <strong>{guiaPreview.file.name}</strong> al pedido {guiaPreview.pedido.id.slice(-6).toUpperCase()}.</p>
+        <h3 className="text-xl font-bold mb-4 uppercase text-center">Verifica tu Imagen</h3>
+        <p className="text-foreground/70 mb-6 text-sm text-center">¿Estás segura de enviar esta guía de envío para el pedido de {guiaPreview.pedido.cliente}?</p>
+        
+        <div 
+          className="relative w-full h-64 bg-black rounded-xl overflow-hidden mb-8 border border-black/10 cursor-pointer group"
+          onClick={() => setComprobanteAmpliado(URL.createObjectURL(guiaPreview.file))}
+          title="Hacer clic para ver en pantalla completa"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src={URL.createObjectURL(guiaPreview.file)} 
+            alt="Previsualización de Guía" 
+            className="w-full h-full object-contain"
+          />
+          <div className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-2 backdrop-blur-sm shadow-md flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity">
+            <Search className="w-5 h-5" />
+          </div>
+        </div>
         <div className="flex gap-3">
           <button onClick={() => setGuiaPreview(null)} className="flex-1 py-2 rounded-lg bg-surface-border font-bold">Cancelar</button>
           <button onClick={confirmarSubirGuia} className="flex-1 py-2 rounded-lg bg-brand-primary text-white font-bold">Subir</button>

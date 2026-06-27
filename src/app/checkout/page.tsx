@@ -974,7 +974,11 @@ function CheckoutContent() {
                 <h3 className="text-2xl font-black uppercase mb-2">Verifica tu Imagen</h3>
                 <p className="text-foreground/70 mb-6 text-sm">¿Estás segura de que esta es la imagen correcta de tu transferencia?</p>
                 
-                <div className="relative w-full h-64 bg-black rounded-xl overflow-hidden mb-8 border border-black/10">
+                <div 
+                  className="relative w-full h-64 bg-black rounded-xl overflow-hidden mb-8 border border-black/10 cursor-pointer group"
+                  onClick={() => setPreviewAmpliada(true)}
+                  title="Hacer clic para ver en pantalla completa"
+                >
                   <Image 
                     fill 
                     sizes="(max-width: 768px) 100vw, 50vw" 
@@ -982,6 +986,9 @@ function CheckoutContent() {
                     alt="Previsualización de Comprobante" 
                     className="object-contain"
                   />
+                  <div className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-2 backdrop-blur-sm shadow-md flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity">
+                    <Search className="w-5 h-5" />
+                  </div>
                 </div>
                 
                 <div className="w-full flex flex-col gap-3">
