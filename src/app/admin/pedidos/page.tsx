@@ -1371,34 +1371,106 @@ const imprimirVineta = (pedido: any) => {
               </div>
               <div className="p-4 overflow-y-auto flex-1 flex flex-col gap-3 bg-slate-50">
                 {(pedidoPreviewArticulos.articulos || []).map((art: any, i: number) => {
-                  const imgUrl = resolveImage(art, art.color);
-                  return (
-                    <div key={i} className="flex gap-4 p-3 bg-white rounded-xl border border-surface-border shadow-sm items-center">
-                      <div 
-                        className={`w-16 h-16 rounded-lg bg-surface-border/30 overflow-hidden shrink-0 border border-surface-border/50 relative group ${imgUrl ? 'cursor-zoom-in' : ''}`}
-                        onClick={() => {
-                          if (imgUrl) setComprobanteAmpliado(imgUrl);
-                        }}
-                      >
-                        {imgUrl ? (
-                          <>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={imgUrl} alt={art.nombre || 'Prenda'} className="w-full h-full object-cover transition-opacity group-hover:opacity-80" />
-                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                              <Search className="w-4 h-4 text-white" />
-                            </div>
-                          </>
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-foreground/30"><PackageCheck className="w-6 h-6" /></div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-bold text-sm text-foreground truncate">{art.nombre || 'Prenda'}</div>
-                        <div className="flex flex-wrap gap-1.5 mt-1">
-                          <span className="text-[10px] px-2 py-0.5 bg-brand-primary/10 text-brand-primary rounded-md font-bold uppercase">Color: {art.color || 'N/A'}</span>
-                          <span className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-bold uppercase">Talla: {art.talla || 'ÚNICA'}</span>
-                          <span className="text-[10px] px-2 py-0.5 bg-surface-border text-foreground/70 rounded-md font-bold">Cant: {art.cantidad}</span>
+                  const prodRef = productos.find(p => p.id === art.id) || art;
+
+                  // Lógica para Combos (Conjuntos)
+                  if (art.isConjunto && art.piezasDetalle) {
+                    const piezas = Object.values(typeof art.piezasDetalle === 'string' ? JSON.parse(art.piezasDetalle) : art.piezasDetalle);
+                    return (
+                      <div key={i} className="flex flex-col p-3 bg-white rounded-xl border border-surface-border shadow-sm">
+                        <div className="font-bold text-sm text-brand-primary mb-2 flex items-center gap-2">
+                          <PackageCheck className="w-4 h-4" /> Combo: {art.nombre || 'Combo'}
                         </div>
+                        <div className="flex flex-col gap-2 pl-2 border-l-2 border-surface-border/50 ml-2">
+                          {piezas.map((pieza: any, idx: number) => {
+                            const piezaRef = productos.find(p => p.id === pieza.id) || pieza;
+                            const imgUrl = resolveImage(piezaRef, pieza.colorEspecifico);
+                            return (
+                              <div key={idx} className="flex gap-3 items-center">
+                                <div 
+                                  className={`w-12 h-12 rounded-lg bg-surface-border/30 overflow-hidden shrink-0 border border-surface-border/50 relative group ${imgUrl ? 'cursor-zoom-in' : ''}`}
+                                  onClick={() => { if (imgUrl) setComprobanteAmpliado(imgUrl); }}
+                                >
+                                  {imgUrl ? (
+                                    <>
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img src={imgUrl} alt={piezaRef?.nombre || 'Prenda'} className="w-full h-full object-cover transition-opacity group-hover:opacity-80" />
+                                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                        <Search className="w-3 h-3 text-white" />
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-foreground/30"><PackageCheck className="w-4 h-4" /></div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-bold text-xs text-foreground truncate"><span className="font-black text-brand-primary">{pieza.cantidad}x</span> {piezaRef?.nombre || 'Prenda'}</div>
+                                  <div className="flex flex-wrap gap-1 mt-0.5">
+                                    {pieza.colorEspecifico && <span className="text-[9px] px-1.5 py-0.5 bg-brand-primary/10 text-brand-primary rounded-md font-bold uppercase">Color: {pieza.colorEspecifico}</span>}
+                                    {pieza.tallaEspecifica && <span className="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded-md font-bold uppercase">Talla: {pieza.tallaEspecifica}</span>}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Lógica para Productos Normales
+                  const hasColor = art.color && art.color !== 'N/A';
+                  let imagenesParaMostrar: string[] = [];
+                  
+                  if (hasColor) {
+                    const resolved = resolveImage(prodRef, art.color);
+                    if (resolved) imagenesParaMostrar = [resolved];
+                  }
+
+                  if (imagenesParaMostrar.length === 0) {
+                    const imgs = prodRef?.imagenes || art.imagenes || [];
+                    if (imgs.length > 0) {
+                      imagenesParaMostrar = imgs;
+                    } else if (art.imagen || prodRef?.imagen) {
+                      imagenesParaMostrar = [art.imagen || prodRef?.imagen];
+                    } else if (art.imagenUrl) {
+                      imagenesParaMostrar = [art.imagenUrl];
+                    }
+                  }
+
+                  return (
+                    <div key={i} className="flex flex-col gap-2 p-3 bg-white rounded-xl border border-surface-border shadow-sm">
+                      <div className="flex gap-4 items-center">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-sm text-foreground truncate">{art.nombre || 'Prenda'}</div>
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            <span className="text-[10px] px-2 py-0.5 bg-brand-primary/10 text-brand-primary rounded-md font-bold uppercase">Color: {art.color || 'N/A'}</span>
+                            <span className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-bold uppercase">Talla: {art.talla || 'ÚNICA'}</span>
+                            <span className="text-[10px] px-2 py-0.5 bg-surface-border text-foreground/70 rounded-md font-bold">Cant: {art.cantidad}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2 overflow-x-auto pb-1 mt-1 scrollbar-hide">
+                        {imagenesParaMostrar.length > 0 ? (
+                          imagenesParaMostrar.map((imgUrl, imgIdx) => (
+                            <div 
+                              key={imgIdx}
+                              className="w-16 h-16 rounded-lg bg-surface-border/30 overflow-hidden shrink-0 border border-surface-border/50 relative group cursor-zoom-in"
+                              onClick={() => setComprobanteAmpliado(imgUrl)}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={imgUrl} alt={`${art.nombre || 'Prenda'} - img ${imgIdx + 1}`} className="w-full h-full object-cover transition-opacity group-hover:opacity-80" />
+                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                <Search className="w-4 h-4 text-white" />
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="w-16 h-16 rounded-lg bg-surface-border/30 border border-surface-border/50 flex items-center justify-center text-foreground/30">
+                            <PackageCheck className="w-6 h-6" />
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
