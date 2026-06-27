@@ -148,7 +148,7 @@ export default function AdminClientas() {
             </div>
             <div>
               <p className="text-foreground/70 font-medium text-sm uppercase tracking-wider">Total Clientas</p>
-              <p className="text-3xl font-black text-foreground">{isLoading ? "..." : clientas.length}</p>
+              {isLoading ? <div className="h-9 w-16 bg-surface-border/50 animate-pulse rounded"></div> : <p className="text-3xl font-black text-foreground">{clientas.length}</p>}
             </div>
           </motion.div>
 
@@ -229,13 +229,18 @@ export default function AdminClientas() {
               </thead>
               <tbody className="divide-y divide-surface-border">
                 {isLoading ? (
-                  <tr>
-                    <td colSpan={6} className="p-10 text-center">
-                      <div className="flex justify-center items-center h-20">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
-                      </div>
-                    </td>
-                  </tr>
+                  <>
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <tr key={i} className="animate-pulse border-b border-surface-border/50">
+                        <td className="p-5"><div className="h-6 w-32 bg-surface-border/50 rounded"></div></td>
+                        <td className="p-5 space-y-2"><div className="h-4 w-24 bg-surface-border/50 rounded"></div><div className="h-4 w-20 bg-surface-border/50 rounded"></div></td>
+                        <td className="p-5"><div className="h-6 w-12 bg-surface-border/50 rounded mx-auto"></div></td>
+                        <td className="p-5"><div className="h-6 w-16 bg-surface-border/50 rounded ml-auto"></div></td>
+                        <td className="p-5"><div className="h-6 w-20 bg-surface-border/50 rounded mx-auto"></div></td>
+                        <td className="p-5"><div className="h-8 w-24 bg-surface-border/50 rounded mx-auto"></div></td>
+                      </tr>
+                    ))}
+                  </>
                 ) : clientasFiltradas.length > 0 ? (
                   <>
                     {clientasFiltradas.slice(0, visibleCount).map((clienta) => (
@@ -320,9 +325,16 @@ export default function AdminClientas() {
           {/* Vista Móvil (Tarjetas) */}
           <div className="grid grid-cols-1 gap-4 p-4 lg:hidden">
             {isLoading ? (
-              <div className="flex justify-center items-center h-20">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
-              </div>
+              <>
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="bg-surface border border-surface-border rounded-xl p-4 flex flex-col gap-3 animate-pulse">
+                    <div className="h-6 w-32 bg-surface-border/50 rounded mb-2"></div>
+                    <div className="h-4 w-24 bg-surface-border/50 rounded mb-1"></div>
+                    <div className="h-4 w-28 bg-surface-border/50 rounded"></div>
+                    <div className="h-10 w-full bg-surface-border/50 rounded mt-2"></div>
+                  </div>
+                ))}
+              </>
             ) : clientasFiltradas.length > 0 ? (
               <>
                 {clientasFiltradas.slice(0, visibleCount).map((clienta) => (

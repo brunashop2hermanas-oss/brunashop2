@@ -32,6 +32,7 @@ export default function AdminProductos() {
     stockCount: "",
     material: "",
     marca: "",
+    isConjunto: false,
     piezasDetalle: {} as any,
     stockPorTalla: {} as any,
     nuevoStockPorTalla: {} as any,
@@ -212,19 +213,17 @@ export default function AdminProductos() {
           for (const color in formData.stockPorTalla[talla]) {
             // Solo contar 'Unico' si no hay colores especificados. Si hay colores, ignorar 'Unico'.
             if ((coloresLimpios.length === 0 && color === 'Unico') || coloresLimpios.includes(color)) {
-              let cantAnterior = Number(formData.stockPorTalla[talla][color]) || 0;
-              let cantNueva = formData.nuevoStockPorTalla?.[talla]?.[color] ? Number(formData.nuevoStockPorTalla[talla][color]) : 0;
-              let totalPorVariante = Math.max(0, cantAnterior + cantNueva);
-              stockTotal += totalPorVariante;
-              stockPorTallaLimpio[talla][color] = String(totalPorVariante);
+              const currentStock = Number(formData.stockPorTalla[talla][color]) || 0;
+              const addedStock = Number(formData.nuevoStockPorTalla?.[talla]?.[color]) || 0;
+              const finalStock = currentStock + addedStock;
+              stockTotal += finalStock;
+              stockPorTallaLimpio[talla][color] = finalStock.toString();
             }
           }
         }
       }
     } else {
-      let cantAnterior = Number(formData.stockCount) || 0;
-      let cantNuevaGeneral = Number(formData.nuevoStockPorTalla?.general) || 0;
-      stockTotal = Math.max(0, cantAnterior + cantNuevaGeneral);
+      stockTotal = Number(formData.stockCount) || 0;
     }
 
     const dataAEnviar = {
@@ -260,58 +259,6 @@ export default function AdminProductos() {
 
     setIsModalOpen(false);
     cargarProductos();
-  };
-
-  const manejarGuardarRapidoStock = async () => {
-    if (!productoEditando) return;
-    
-    setIsLoading(true);
-    let stockTotal = 0;
-    let stockPorTallaLimpio: any = {};
-    const coloresLimpios = formData.colores.split(",").map(c => c.trim()).filter(c => c);
-
-    if (tallasSeleccionadas.length > 0) {
-      for (const talla of tallasSeleccionadas) {
-        if (typeof formData.stockPorTalla[talla] === 'object') {
-          stockPorTallaLimpio[talla] = {};
-          for (const color in formData.stockPorTalla[talla]) {
-            if ((coloresLimpios.length === 0 && color === 'Unico') || coloresLimpios.includes(color)) {
-              let cantAnterior = Number(formData.stockPorTalla[talla][color]) || 0;
-              let cantNueva = formData.nuevoStockPorTalla?.[talla]?.[color] ? Number(formData.nuevoStockPorTalla[talla][color]) : 0;
-              let totalPorVariante = Math.max(0, cantAnterior + cantNueva);
-              stockTotal += totalPorVariante;
-              stockPorTallaLimpio[talla][color] = String(totalPorVariante);
-            }
-          }
-        }
-      }
-    } else {
-      let cantAnterior = Number(formData.stockCount) || 0;
-      let cantNuevaGeneral = Number(formData.nuevoStockPorTalla?.general) || 0;
-      stockTotal = Math.max(0, cantAnterior + cantNuevaGeneral);
-    }
-
-    try {
-      await updatePrenda(productoEditando.id, {
-        stockCount: stockTotal,
-        stockPorTalla: stockPorTallaLimpio
-      });
-      
-      setFormData({
-        ...formData,
-        stockCount: stockTotal.toString(),
-        stockPorTalla: stockPorTallaLimpio,
-        nuevoStockPorTalla: {}
-      });
-      
-      setProductos(productos.map(p => p.id === productoEditando.id ? { ...p, stockCount: stockTotal, stockPorTalla: stockPorTallaLimpio } : p));
-      mostrarNotificacion("¡Stock aplicado exitosamente!");
-    } catch (error) {
-      console.error(error);
-      mostrarNotificacion("Error al aplicar stock");
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleSubirFotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -631,8 +578,17 @@ export default function AdminProductos() {
 
         if (isLoading) {
           return (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="flex gap-4 p-4 bg-surface rounded-2xl border border-surface-border">
+                  <div className="w-24 h-32 bg-surface-border/50 animate-pulse rounded-xl"></div>
+                  <div className="flex-1 space-y-4 py-2">
+                    <div className="h-6 w-1/3 bg-surface-border/50 animate-pulse rounded"></div>
+                    <div className="h-4 w-1/4 bg-surface-border/50 animate-pulse rounded"></div>
+                    <div className="h-10 w-full bg-surface-border/50 animate-pulse rounded-xl mt-4"></div>
+                  </div>
+                </div>
+              ))}
             </div>
           );
         }
@@ -871,7 +827,6 @@ export default function AdminProductos() {
                     <p className="text-xs text-foreground/50 ml-auto hidden sm:block">Controla si los clientes pueden verla</p>
                   </div>
 
-                  {/* Solo mostramos la opción de hacer conjunto si es un producto nuevo, no en edición */}
                   {!productoEditando && (
                     <div className="flex items-center gap-3 mb-6 bg-surface p-4 rounded-xl border border-surface-border cursor-pointer" onClick={() => setFormData({ ...formData, isConjunto: !formData.isConjunto })}>
                       <input type="checkbox" checked={formData.isConjunto} onChange={() => { }} className="w-5 h-5 rounded text-brand-primary focus:ring-brand-primary" />
@@ -1054,33 +1009,16 @@ export default function AdminProductos() {
                           <table className="w-full text-left text-sm">
                             <thead>
                               <tr>
-                                <th className="pb-2 border-b border-surface-border font-bold uppercase text-xs tracking-wider text-left">Talla</th>
+                                <th className="pb-2 border-b border-surface-border font-black text-brand-primary">Talla</th>
                                 {formData.colores.split(",").filter(c => c.trim()).length > 0 ? (
                                   formData.colores.split(",").map(c => c.trim()).filter(c => c).map(color => (
-                                    <th key={color} className="pb-2 border-b border-surface-border font-bold uppercase text-xs tracking-wider text-center">
-                                      {productoEditando ? (
-                                        <div className="flex flex-col items-center">
-                                          <span>{color}</span>
-                                          <div className="flex gap-2 text-[10px] mt-1">
-                                            <span className="text-foreground/50">Actual</span>
-                                            <span className="text-brand-primary">Sumar</span>
-                                          </div>
-                                        </div>
-                                      ) : (
-                                        color
-                                      )}
+                                    <th key={color} className="pb-2 border-b border-surface-border font-bold uppercase text-xs tracking-wider">
+                                      {color}
                                     </th>
                                   ))
                                 ) : (
-                                  <th className="pb-2 border-b border-surface-border font-bold uppercase text-xs tracking-wider text-center">
-                                    {productoEditando ? (
-                                      <div className="flex gap-4 justify-center">
-                                        <span className="text-foreground/50">Stock Actual</span>
-                                        <span className="text-brand-primary">Sumar Nueva Cant.</span>
-                                      </div>
-                                    ) : (
-                                      "Cantidad"
-                                    )}
+                                  <th className="pb-2 border-b border-surface-border font-bold uppercase text-xs tracking-wider">
+                                    Cantidad
                                   </th>
                                 )}
                               </tr>
@@ -1092,150 +1030,88 @@ export default function AdminProductos() {
                                   {formData.colores.split(",").filter(c => c.trim()).length > 0 ? (
                                     formData.colores.split(",").map(c => c.trim()).filter(c => c).map(color => (
                                       <td key={color} className="py-2 pr-2 border-b border-surface-border/50">
-                                        {productoEditando ? (
-                                          <div className="flex gap-2 justify-center items-center">
-                                            <div className="bg-surface-border/20 p-2 rounded-lg w-14 text-center text-sm font-mono text-foreground/50 font-bold">
-                                              {formData.stockPorTalla?.[talla]?.[color] || 0}
-                                            </div>
-                                            <span className="text-foreground/30 font-bold">+</span>
+                                        <div className="flex items-end gap-2 pb-1">
+                                          <div className="flex flex-col items-center">
+                                            <span className="text-[9px] uppercase font-bold text-foreground/50 mb-1">Stock Actual</span>
+                                            <span className="text-sm font-medium w-12 text-center text-foreground/70 bg-surface-border/30 rounded py-1.5" title="Stock Actual">
+                                              {formData.stockPorTalla?.[talla]?.[color] || "0"}
+                                            </span>
+                                          </div>
+                                          <span className="text-foreground/40 font-bold mb-2">+</span>
+                                          <div className="flex flex-col items-center flex-1">
+                                            <span className="text-[9px] uppercase font-bold text-brand-primary/80 mb-1">Sumar Nueva Cantidad</span>
                                             <input
-                                              type="number"
+                                              type="number" min="0"
                                               value={formData.nuevoStockPorTalla?.[talla]?.[color] || ""}
                                               onChange={(e) => {
+                                                const val = Math.max(0, Number(e.target.value));
                                                 setFormData({
                                                   ...formData,
                                                   nuevoStockPorTalla: {
                                                     ...formData.nuevoStockPorTalla,
                                                     [talla]: {
                                                       ...(formData.nuevoStockPorTalla?.[talla] || {}),
-                                                      [color]: e.target.value
+                                                      [color]: e.target.value ? val.toString() : ""
                                                     }
                                                   }
                                                 });
                                               }}
-                                              className="w-16 bg-brand-primary/5 border border-brand-primary/30 p-2 rounded-lg outline-none focus:ring-2 focus:ring-brand-primary font-mono text-center font-bold text-brand-primary placeholder:text-brand-primary/30"
+                                              className="w-full bg-surface border-2 border-brand-primary/20 p-1 rounded-lg outline-none focus:ring-2 focus:ring-brand-primary font-mono text-center hover:border-brand-primary/40 transition-colors"
                                               placeholder="0"
                                             />
                                           </div>
-                                        ) : (
-                                          <input
-                                            type="number" min="0"
-                                            value={formData.stockPorTalla?.[talla]?.[color] || ""}
-                                            onChange={(e) => {
-                                              const val = Math.max(0, Number(e.target.value));
-                                              setFormData({
-                                                ...formData,
-                                                stockPorTalla: {
-                                                  ...formData.stockPorTalla,
-                                                  [talla]: {
-                                                    ...(formData.stockPorTalla[talla] || {}),
-                                                    [color]: val.toString()
-                                                  }
-                                                }
-                                              });
-                                            }}
-                                            className="w-full max-w-[120px] mx-auto bg-surface border border-surface-border p-2 rounded-lg outline-none focus:ring-2 focus:ring-brand-primary font-mono text-center"
-                                            placeholder="0"
-                                          />
-                                        )}
+                                        </div>
                                       </td>
                                     ))
                                   ) : (
-                                      <td className="py-2 pr-2 border-b border-surface-border/50">
-                                        {productoEditando ? (
-                                          <div className="flex gap-4 justify-center items-center">
-                                            <div className="bg-surface-border/20 p-2 rounded-lg w-16 text-center text-sm font-mono text-foreground/50 font-bold">
-                                              {formData.stockPorTalla?.[talla]?.['Unico'] || 0}
-                                            </div>
-                                            <span className="text-foreground/30 font-bold">+</span>
-                                            <input
-                                              type="number"
-                                              value={formData.nuevoStockPorTalla?.[talla]?.['Unico'] || ""}
-                                              onChange={(e) => {
-                                                setFormData({
-                                                  ...formData,
-                                                  nuevoStockPorTalla: {
-                                                    ...formData.nuevoStockPorTalla,
-                                                    [talla]: {
-                                                      ...(formData.nuevoStockPorTalla?.[talla] || {}),
-                                                      ['Unico']: e.target.value
-                                                    }
-                                                  }
-                                                });
-                                              }}
-                                              className="bg-brand-primary/5 border border-brand-primary/30 p-2 rounded-lg w-20 text-center text-sm font-mono font-bold outline-none focus:ring-1 focus:ring-brand-primary text-brand-primary placeholder:text-brand-primary/30"
-                                              placeholder="0"
-                                            />
-                                          </div>
-                                        ) : (
+                                    <td className="py-2 pr-2 border-b border-surface-border/50">
+                                      <div className="flex items-end gap-2 pb-1">
+                                        <div className="flex flex-col items-center">
+                                          <span className="text-[9px] uppercase font-bold text-foreground/50 mb-1">Stock Actual</span>
+                                          <span className="text-sm font-medium w-12 text-center text-foreground/70 bg-surface-border/30 rounded py-1.5" title="Stock Actual">
+                                            {formData.stockPorTalla?.[talla]?.['Unico'] || "0"}
+                                          </span>
+                                        </div>
+                                        <span className="text-foreground/40 font-bold mb-2">+</span>
+                                        <div className="flex flex-col items-center flex-1">
+                                          <span className="text-[9px] uppercase font-bold text-brand-primary/80 mb-1">Sumar Nueva Cantidad</span>
                                           <input
                                             type="number" min="0"
-                                            value={formData.stockPorTalla?.[talla]?.['Unico'] || ""}
+                                            value={formData.nuevoStockPorTalla?.[talla]?.['Unico'] || ""}
                                             onChange={(e) => {
                                               const val = Math.max(0, Number(e.target.value));
                                               setFormData({
                                                 ...formData,
-                                                stockPorTalla: {
-                                                  ...formData.stockPorTalla,
+                                                nuevoStockPorTalla: {
+                                                  ...formData.nuevoStockPorTalla,
                                                   [talla]: {
-                                                    ...(formData.stockPorTalla[talla] || {}),
-                                                    ['Unico']: val.toString()
+                                                    ...(formData.nuevoStockPorTalla?.[talla] || {}),
+                                                    ['Unico']: e.target.value ? val.toString() : ""
                                                   }
                                                 }
                                               });
                                             }}
-                                            className="w-full max-w-[120px] mx-auto bg-surface border border-surface-border p-2 rounded-lg outline-none focus:ring-2 focus:ring-brand-primary font-mono text-center"
+                                            className="w-full bg-surface border-2 border-brand-primary/20 p-1 rounded-lg outline-none focus:ring-2 focus:ring-brand-primary font-mono text-center hover:border-brand-primary/40 transition-colors"
                                             placeholder="0"
                                           />
-                                        )}
-                                      </td>
+                                        </div>
+                                      </div>
+                                    </td>
                                   )}
                                 </tr>
                               ))}
                             </tbody>
                           </table>
-                          {productoEditando && (
-                            <>
-                              <div className="mt-2 text-xs text-brand-primary font-bold bg-brand-primary/10 p-3 rounded-lg border border-brand-primary/20">
-                                💡 Consejo: Para restar stock, usa el signo menos (Ej. -2).
-                              </div>
-                              <div className="mt-4 flex justify-end">
-                                <button type="button" onClick={manejarGuardarRapidoStock} className="bg-brand-primary text-white font-bold py-2 px-4 rounded-xl shadow-lg hover:bg-brand-accent transition-colors text-sm">
-                                  Aplicar Stock Ahora
-                                </button>
-                              </div>
-                            </>
-                          )}
+                          <div className="mt-4 p-3 bg-brand-primary/5 rounded-xl border border-brand-primary/10 text-xs text-foreground/70 flex items-start gap-2">
+                            <span className="text-base leading-none">💡</span>
+                            <p><strong>Consejo:</strong> El número en gris es tu <strong>stock actual</strong>. Usa el campo de al lado para ingresar <strong>cuánto stock nuevo vas a sumar</strong>. Al guardar, ambos valores se sumarán automáticamente.</p>
+                          </div>
                         </div>
                       ) : (
                         <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-xl">
                           <label className="block text-sm font-bold text-yellow-700 dark:text-yellow-500 mb-2">Cantidad de Stock General</label>
                           <p className="text-xs text-foreground/60 mb-3">Selecciona tallas para llevar un inventario exacto. De lo contrario, usa este stock general.</p>
-                          {productoEditando ? (
-                            <div className="flex flex-col gap-3">
-                              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-center bg-background p-4 rounded-xl border border-surface-border">
-                                <div className="w-full sm:w-auto">
-                                  <label className="text-xs font-bold text-foreground/50 block mb-1">Stock Actual</label>
-                                  <div className="bg-surface-border/20 px-4 py-2 rounded-lg text-foreground font-bold w-full sm:min-w-[100px] text-center">{formData.stockCount || 0}</div>
-                                </div>
-                                <span className="text-foreground/30 font-black text-xl hidden sm:block">+</span>
-                                <div className="w-full sm:w-auto">
-                                  <label className="text-xs font-bold text-brand-primary block mb-1">Sumar/Restar Cantidad</label>
-                                  <input type="number" value={formData.nuevoStockPorTalla?.general || ""} onChange={e => setFormData({ ...formData, nuevoStockPorTalla: { ...formData.nuevoStockPorTalla, general: e.target.value } })} placeholder="Ej. 5 o -2" className="w-full max-w-[150px] bg-brand-primary/5 border border-brand-primary/30 p-2 rounded-lg focus:ring-2 focus:ring-brand-primary outline-none text-brand-primary font-bold placeholder:text-brand-primary/30" />
-                                </div>
-                                <div className="w-full sm:w-auto sm:ml-auto mt-2 sm:mt-0">
-                                  <button type="button" onClick={manejarGuardarRapidoStock} className="w-full sm:w-auto bg-brand-primary text-white font-bold py-2 px-4 rounded-xl shadow-lg hover:bg-brand-accent transition-colors text-sm">
-                                    Aplicar
-                                  </button>
-                                </div>
-                              </div>
-                              <div className="text-xs text-brand-primary font-bold bg-brand-primary/10 p-3 rounded-lg border border-brand-primary/20">
-                                💡 Consejo: Para restar stock, usa el signo menos (Ej. -2).
-                              </div>
-                            </div>
-                          ) : (
-                            <input type="number" min="0" value={formData.stockCount} onChange={e => setFormData({ ...formData, stockCount: e.target.value })} placeholder="Ej. 12" className="w-full max-w-xs bg-surface border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-yellow-500 outline-none" />
-                          )}
+                          <input type="number" min="0" value={formData.stockCount} onChange={e => setFormData({ ...formData, stockCount: e.target.value })} placeholder="Ej. 12" className="w-full max-w-xs bg-surface border border-surface-border p-3 rounded-xl focus:ring-2 focus:ring-yellow-500 outline-none" />
                         </div>
                       )}
                     </>

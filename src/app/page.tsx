@@ -77,7 +77,7 @@ export default function Home() {
       {/* Header Responsivo */}
       <header className={`w-full fixed top-0 z-40 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-sm py-1.5" : "bg-transparent py-2"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          
+
           {/* Menu Mobile Icon */}
           <button onClick={() => setMobileMenuOpen(true)} className="md:hidden text-black p-1">
             <Menu className={`w-6 h-6 ${isScrolled ? "text-black" : "text-white drop-shadow-md"}`} />
@@ -86,9 +86,9 @@ export default function Home() {
           {/* Logo */}
           <div className="flex items-center gap-3">
             <div className={`relative flex items-center justify-center rounded-full p-1 transition-all duration-300 ${isScrolled ? "bg-black/5" : "bg-white/10 backdrop-blur-sm"}`}>
-              <img 
-                src="/logo.png" 
-                alt="BrunaShop Logo" 
+              <img
+                src="/logo.png"
+                alt="BrunaShop Logo"
                 className="w-10 h-10 md:w-12 md:h-12 object-contain rounded-full shadow-sm"
               />
             </div>
@@ -100,13 +100,13 @@ export default function Home() {
           {/* Nav Desktop */}
           <nav className="hidden md:flex items-center gap-8 text-xs font-medium">
             <div className="relative group">
-              <button 
+              <button
                 onClick={() => { setColeccionActiva(null); scrollToSection('catalogo'); }}
                 className={`hover:opacity-70 transition-opacity uppercase tracking-widest flex items-center gap-1 ${isScrolled ? "text-black" : "text-white drop-shadow-md"}`}
               >
                 Colecciones <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
               </button>
-              
+
               {/* Invisible bridge to keep hover active */}
               <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 hidden group-hover:flex flex-col min-w-[220px]">
                 <div className="bg-white shadow-2xl py-3 rounded-xl border border-gray-100 flex flex-col">
@@ -136,34 +136,34 @@ export default function Home() {
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setMobileMenuOpen(false)}
               className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
             />
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: "-100%" }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: "-100%" }}
               transition={{ type: "tween", duration: 0.3 }}
               className="fixed top-0 left-0 h-full w-[85vw] max-w-[320px] bg-white z-50 flex flex-col pt-8 px-6 shadow-2xl rounded-r-3xl"
             >
-            <div className="flex justify-between items-center mb-12">
-              <h2 className="text-2xl font-extrabold tracking-tighter text-black">Bruna<span className="text-gray-400">Shop</span></h2>
-              <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-black bg-gray-50 rounded-full">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <nav className="flex flex-col gap-6 text-lg font-medium tracking-widest uppercase overflow-y-auto">
-              <button onClick={() => { setColeccionActiva(null); scrollToSection('catalogo'); }} className="text-left py-4 border-b border-gray-100 flex justify-between items-center text-sm">TODAS LAS COLECCIONES <ArrowRight className="w-5 h-5 text-gray-300"/></button>
-              {colecciones.map((col) => (
-                <button key={col} onClick={() => { setColeccionActiva(col); scrollToSection('catalogo'); }} className="text-left py-4 border-b border-gray-100 flex justify-between items-center text-sm">{col} <ArrowRight className="w-5 h-5 text-gray-300"/></button>
-              ))}
-              <button onClick={() => { setColeccionActiva(null); scrollToSection('catalogo'); }} className="text-left py-4 border-b border-gray-100 text-red-600 flex justify-between items-center text-sm">Ofertas / Sale <ArrowRight className="w-5 h-5 text-red-300"/></button>
-            </nav>
-            <div className="mt-auto mb-8 text-xs text-center text-gray-400 tracking-widest uppercase">
-              Descubre lo último en tendencia
-            </div>
+              <div className="flex justify-between items-center mb-12">
+                <h2 className="text-2xl font-extrabold tracking-tighter text-black">Bruna<span className="text-gray-400">Shop</span></h2>
+                <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-black bg-gray-50 rounded-full">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <nav className="flex flex-col gap-6 text-lg font-medium tracking-widest uppercase overflow-y-auto">
+                <button onClick={() => { setColeccionActiva(null); scrollToSection('catalogo'); }} className="text-left py-4 border-b border-gray-100 flex justify-between items-center text-sm">TODAS LAS COLECCIONES <ArrowRight className="w-5 h-5 text-gray-300" /></button>
+                {colecciones.map((col) => (
+                  <button key={col} onClick={() => { setColeccionActiva(col); scrollToSection('catalogo'); }} className="text-left py-4 border-b border-gray-100 flex justify-between items-center text-sm">{col} <ArrowRight className="w-5 h-5 text-gray-300" /></button>
+                ))}
+                <button onClick={() => { setColeccionActiva(null); scrollToSection('catalogo'); }} className="text-left py-4 border-b border-gray-100 text-red-600 flex justify-between items-center text-sm">Ofertas / Sale <ArrowRight className="w-5 h-5 text-red-300" /></button>
+              </nav>
+              <div className="mt-auto mb-8 text-xs text-center text-gray-400 tracking-widest uppercase">
+                Descubre lo último en tendencia
+              </div>
             </motion.div>
           </>
         )}
@@ -171,11 +171,11 @@ export default function Home() {
 
       {/* Hero Section a Pantalla Completa */}
       <main className="relative w-full h-[85vh] md:h-screen flex items-center justify-center overflow-hidden bg-[#1a0f0a]">
-        
+
         {/* Carrusel de Imágenes de fondo principal */}
         <div className="absolute inset-0 w-full h-full bg-[#1a0f0a]">
           <AnimatePresence>
-            <motion.div 
+            <motion.div
               key={currentHeroImage}
               className="absolute inset-0 w-full h-full"
               initial={{ opacity: 0, scale: 1.05 }}
@@ -183,7 +183,7 @@ export default function Home() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.8, ease: "easeInOut" }}
             >
-              <Image 
+              <Image
                 src={HERO_IMAGES[currentHeroImage]}
                 alt="Moda Femenina Elegante"
                 fill
@@ -195,16 +195,16 @@ export default function Home() {
           </AnimatePresence>
           {/* Overlay base para oscurecer suavemente y mantener nitidez */}
           <div className="absolute inset-0 bg-[#3e2723]/30"></div>
-          
+
           {/* Marca de agua del logo (integrada orgánicamente) */}
           <div className="absolute inset-0 w-full h-full flex items-center justify-center opacity-60 pointer-events-none">
-            <img 
-              src="/logo.png" 
-              alt="BrunaShop Watermark" 
+            <img
+              src="/logo.png"
+              alt="BrunaShop Watermark"
               className="w-[85%] md:w-[45%] h-auto object-contain mix-blend-overlay"
-              style={{ 
-                WebkitMaskImage: 'radial-gradient(circle, black 30%, transparent 60%)', 
-                maskImage: 'radial-gradient(circle, black 30%, transparent 60%)' 
+              style={{
+                WebkitMaskImage: 'radial-gradient(circle, black 30%, transparent 60%)',
+                maskImage: 'radial-gradient(circle, black 30%, transparent 60%)'
               }}
             />
           </div>
@@ -214,7 +214,7 @@ export default function Home() {
         </div>
 
         <div className="relative z-10 text-center px-4 max-w-4xl flex flex-col items-center mt-20 md:mt-0">
-          <motion.h2 
+          <motion.h2
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
@@ -222,7 +222,7 @@ export default function Home() {
           >
             BRUNAS
           </motion.h2>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.2 }}
@@ -230,12 +230,12 @@ export default function Home() {
           >
             Bolivia
           </motion.p>
-          
+
           <motion.div
-             initial={{ opacity: 0 }}
-             animate={{ opacity: 1 }}
-             transition={{ duration: 0.8, delay: 0.4 }}
-             className="flex flex-col items-center mb-12 relative"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="flex flex-col items-center mb-12 relative"
           >
             <div className="relative z-10">
               <p className="text-xl md:text-4xl font-serif italic text-white mb-2 drop-shadow-xl">
@@ -266,7 +266,7 @@ export default function Home() {
       <div id="catalogo">
         <CatalogoProductos liveActivoBanner={liveActivoBanner} setLiveActivoBanner={setLiveActivoBanner} coleccionFiltro={coleccionActiva} setColeccionFiltro={setColeccionActiva} />
       </div>
-      
+
       {/* Footer */}
       <Footer />
     </div>

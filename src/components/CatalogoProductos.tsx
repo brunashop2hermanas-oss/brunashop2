@@ -16,7 +16,7 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
   const [categorias, setCategorias] = useState<string[]>(["Todas"]);
   const [isLoading, setIsLoading] = useState(true);
   const [liveActivo, setLiveActivo] = useState(false);
-  
+
   const [carrito, setCarrito] = useState<any[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -24,7 +24,7 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
   const [isSubmittingCheckout, setIsSubmittingCheckout] = useState(false);
   const [tiktokUrl, setTiktokUrl] = useState("");
   const router = useRouter();
-  
+
   const [productoSeleccionado, setProductoSeleccionado] = useState<any | null>(null);
   const [visibleCount, setVisibleCount] = useState(12);
 
@@ -32,13 +32,13 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
     const fetchData = async () => {
       try {
         const [resProd, resConf] = await Promise.all([getPrendas(), getConfiguracion()]);
-        
+
         if (resProd.success) {
           setProductos(resProd.data || []);
           const cats = Array.from(new Set((resProd.data || []).map((p: any) => p.categoria).filter(Boolean))) as string[];
           setCategorias(["Todas", ...cats]);
         }
-        
+
         if (resConf.success && resConf.data) {
           setLiveActivo(resConf.data.liveActivo || false);
           setTiktokUrl(resConf.data.tiktokUrl || "");
@@ -46,14 +46,14 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
             setLiveActivoBanner(resConf.data.liveActivo || false);
           }
         }
-      } catch (e) {}
+      } catch (e) { }
       setIsLoading(false);
     };
     fetchData();
 
     const intervalo = setInterval(() => {
       fetchData();
-    }, 10000); 
+    }, 10000);
 
     return () => clearInterval(intervalo);
   }, []);
@@ -68,11 +68,11 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
   });
 
   const productosPaginados = productosFiltrados.slice(0, visibleCount);
-  
+
   const cargarMas = () => {
     setVisibleCount(prev => prev + 12);
   };
-  
+
   // Resetear paginación al cambiar filtros
   useEffect(() => {
     setVisibleCount(12);
@@ -150,7 +150,7 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
 
   return (
     <section className="w-full bg-[#fcfcfc] min-h-screen text-black pb-20 overflow-hidden">
-      
+
       {/* Toast Notificación */}
       <AnimatePresence>
         {toast && (
@@ -166,15 +166,15 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
       </AnimatePresence>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16">
-        
+
         <div className="flex flex-col md:flex-row justify-between items-center md:items-end mb-12 border-b border-gray-100 pb-6 gap-6">
           <div className="text-center md:text-left">
             <h2 className="text-3xl md:text-5xl font-serif text-black mb-2">Catálogo</h2>
             <p className="text-gray-400 text-xs tracking-widest uppercase">Explora nuestras categorías</p>
           </div>
-          
+
           <div className="flex items-center gap-6">
-            <div 
+            <div
               className="relative group flex items-center justify-center cursor-pointer p-2"
               onClick={() => setIsCartOpen(true)}
             >
@@ -185,8 +185,8 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
                 </span>
               )}
             </div>
-            
-            <button 
+
+            <button
               onClick={() => setIsCartOpen(true)}
               className="bg-black text-white text-xs uppercase tracking-widest font-medium px-6 py-3 hover:bg-gray-800 transition-colors flex items-center gap-2 rounded-sm"
             >
@@ -198,14 +198,13 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
         {/* Categorías Flotantes / Estilo Píldora (Mobile-first) */}
         <div className="flex overflow-x-auto pb-4 mb-10 gap-3 scrollbar-hide">
           {categorias.map(cat => (
-            <button 
+            <button
               key={cat}
               onClick={() => setFiltroCategoria(cat)}
-              className={`whitespace-nowrap px-6 py-2.5 text-xs tracking-widest uppercase transition-all rounded-full border ${
-                filtroCategoria === cat 
-                  ? "border-black bg-black text-white font-medium shadow-md" 
+              className={`whitespace-nowrap px-6 py-2.5 text-xs tracking-widest uppercase transition-all rounded-full border ${filtroCategoria === cat
+                  ? "border-black bg-black text-white font-medium shadow-md"
                   : "border-gray-200 bg-white text-gray-500 hover:border-black hover:text-black"
-              }`}
+                }`}
             >
               {cat}
             </button>
@@ -219,7 +218,7 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
               <span className="w-3 h-3 bg-red-600 rounded-full animate-pulse"></span>
               <h3 className="text-lg font-bold tracking-widest uppercase text-red-600">En Live Ahora</h3>
             </div>
-            
+
             <div className="flex flex-col lg:flex-row gap-8 items-start">
               {/* Sección Izquierda: Banner TikTok Live Compacto */}
               {tiktokUrl && tiktokUrl.includes("tiktok.com/@") && (
@@ -231,9 +230,9 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
                     </div>
                   </div>
                   <h4 className="text-white text-base font-bold mb-3">¡Transmisión en Vivo!</h4>
-                  <a 
-                    href={tiktokUrl} 
-                    target="_blank" 
+                  <a
+                    href={tiktokUrl}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="w-full bg-red-600 hover:bg-red-500 text-white text-sm font-bold py-2.5 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-[0_0_15px_rgba(220,38,38,0.3)] flex items-center justify-center gap-2"
                   >
@@ -274,8 +273,8 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
                 {coleccionFiltro ? `Colección: ${coleccionFiltro}` : "Catálogo General"}
               </h3>
               {coleccionFiltro && (
-                <button 
-                  onClick={() => setColeccionFiltro?.(null)} 
+                <button
+                  onClick={() => setColeccionFiltro?.(null)}
                   className="text-[10px] uppercase tracking-widest text-red-500 mt-2 hover:text-red-700 flex items-center gap-1"
                 >
                   <X className="w-3 h-3" /> Quitar Filtro de Colección
@@ -287,10 +286,10 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
                 <ProductoCard key={producto.id} producto={producto} index={index} abrirVistaRapida={abrirVistaRapida} agregarAlCarrito={agregarAlCarritoRapido} liveActivo={liveActivo} />
               ))}
             </div>
-            
+
             {visibleCount < productosFiltrados.length && (
               <div className="flex justify-center mt-8 mb-16">
-                <button 
+                <button
                   onClick={cargarMas}
                   className="bg-white border-2 border-black text-black px-8 py-3 text-sm font-bold tracking-widest uppercase hover:bg-black hover:text-white transition-colors duration-300 shadow-md"
                 >
@@ -309,11 +308,11 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
       {/* Modal Vista Rápida */}
       <AnimatePresence>
         {productoSeleccionado && (
-          <ModalVistaRapida 
+          <ModalVistaRapida
             producto={productoSeleccionado}
             todosLosProductos={productos}
-            cerrar={cerrarVistaRapida} 
-            agregar={agregarAlCarritoDesdeModal} 
+            cerrar={cerrarVistaRapida}
+            agregar={agregarAlCarritoDesdeModal}
             mostrarError={mostrarToast}
           />
         )}
@@ -324,13 +323,13 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
         {isCartOpen && (
           <>
             {/* Overlay */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setIsCartOpen(false)}
               className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
             />
             {/* Drawer */}
-            <motion.div 
+            <motion.div
               initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "tween", duration: 0.3 }}
               className="fixed top-0 right-0 h-full w-[85vw] max-w-[400px] bg-white z-50 shadow-2xl flex flex-col rounded-l-3xl"
             >
@@ -358,7 +357,7 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
                           let img = item.imagenes?.[0];
                           if (item.colorSeleccionado && item.imagenesPorColor) {
                             let raw = item.imagenesPorColor;
-                            if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch(e){} }
+                            if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch (e) { } }
                             if (typeof raw === 'object' && raw !== null) {
                               const keyMatch = Object.keys(raw).find(k => k.toLowerCase() === item.colorSeleccionado!.toLowerCase());
                               if (keyMatch && typeof raw[keyMatch] === 'string') {
@@ -425,7 +424,7 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
                     <span className="text-sm font-bold uppercase tracking-widest text-black">Total a Pagar</span>
                     <span className="text-2xl font-serif text-black">Bs. {totalCarrito.toFixed(2)}</span>
                   </div>
-                  <button 
+                  <button
                     onClick={async () => {
                       if (carrito.length === 0) return;
                       setIsSubmittingCheckout(true);
@@ -438,7 +437,7 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
                   >
                     {isSubmittingCheckout ? "Reservando..." : "Completar Compra"} <ArrowRight className="w-4 h-4" />
                   </button>
-                  <button 
+                  <button
                     onClick={() => setIsCartOpen(false)}
                     className="w-full mt-4 text-xs uppercase tracking-widest font-bold text-gray-500 hover:text-black transition-colors py-2"
                   >
@@ -454,9 +453,9 @@ export default function CatalogoProductos({ liveActivoBanner, setLiveActivoBanne
   );
 }
 
-function ProductoCard({ producto, index, abrirVistaRapida, agregarAlCarrito, liveActivo }: { producto: any, index: number, abrirVistaRapida: (p:any) => void, agregarAlCarrito: (p:any) => void, liveActivo?: boolean }) {
-  const imagenes = producto.imagenes && producto.imagenes.length > 0 
-    ? producto.imagenes 
+function ProductoCard({ producto, index, abrirVistaRapida, agregarAlCarrito, liveActivo }: { producto: any, index: number, abrirVistaRapida: (p: any) => void, agregarAlCarrito: (p: any) => void, liveActivo?: boolean }) {
+  const imagenes = producto.imagenes && producto.imagenes.length > 0
+    ? producto.imagenes
     : ["https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"];
 
   const descuento = producto.precioOriginal && producto.precioOriginal > producto.precioVenta
@@ -506,24 +505,24 @@ function ProductoCard({ producto, index, abrirVistaRapida, agregarAlCarrito, liv
       </div>
 
       {/* Imagen */}
-      <div 
-        className="relative aspect-[3/4] w-full overflow-hidden bg-gray-100 mb-4 rounded-sm group/gallery" 
+      <div
+        className="relative aspect-[3/4] w-full overflow-hidden bg-gray-100 mb-4 rounded-sm group/gallery"
         onClick={() => abrirVistaRapida(producto)}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => { setIsHovered(false); setCurrentImgIndex(0); }}
       >
-        <Image fill sizes="(max-width: 768px) 50vw, 33vw" 
-          src={imagenes[currentImgIndex]} 
-          alt={`${producto.nombre}`} 
+        <Image fill sizes="(max-width: 768px) 50vw, 33vw"
+          src={imagenes[currentImgIndex]}
+          alt={`${producto.nombre}`}
           className={`absolute inset-0 w-full h-full object-contain bg-slate-50 transition-transform duration-700 group-hover/gallery:scale-105 ${producto.stockCount === 0 && !producto.enPreventa ? 'grayscale opacity-60' : ''}`}
         />
-        
+
         {imagenes.length > 1 && (
           <>
             {/* Puntos de paginación (Dots) que funcionan al tocarlos en el celular */}
             <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">
               {imagenes.map((_: any, idx: number) => (
-                <button 
+                <button
                   key={idx}
                   onClick={(e) => { e.stopPropagation(); setCurrentImgIndex(idx); setIsHovered(false); }}
                   className={`w-1.5 h-1.5 rounded-full transition-all ${currentImgIndex === idx ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/80'}`}
@@ -532,13 +531,13 @@ function ProductoCard({ producto, index, abrirVistaRapida, agregarAlCarrito, liv
             </div>
 
             {/* Flechas para escritorio / móvil */}
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); setCurrentImgIndex((prev) => (prev === 0 ? imagenes.length - 1 : prev - 1)); setIsHovered(false); }}
               className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-white/70 hover:bg-white rounded-full flex items-center justify-center opacity-0 group-hover/gallery:opacity-100 transition-opacity z-10 text-black shadow-sm"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); setCurrentImgIndex((prev) => (prev + 1) % imagenes.length); setIsHovered(false); }}
               className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-white/70 hover:bg-white rounded-full flex items-center justify-center opacity-0 group-hover/gallery:opacity-100 transition-opacity z-10 text-black shadow-sm"
             >
@@ -551,17 +550,17 @@ function ProductoCard({ producto, index, abrirVistaRapida, agregarAlCarrito, liv
       {/* Info y Acción Rápida */}
       <div className="flex flex-col flex-1 px-1">
         <div className="flex justify-between items-start gap-2">
-            <div className="flex-1" onClick={() => abrirVistaRapida(producto)}>
-              <h3 className="font-medium text-sm text-gray-900 line-clamp-1">{producto.nombre}</h3>
-              <p className="text-[10px] text-gray-500 mb-2 capitalize">
-                {producto.categoria}
-                {producto.coleccion && <span className="font-bold text-brand-primary ml-1 uppercase opacity-80 tracking-widest">· Colección {producto.coleccion}</span>}
-              </p>
-            </div>
-          
+          <div className="flex-1" onClick={() => abrirVistaRapida(producto)}>
+            <h3 className="font-medium text-sm text-gray-900 line-clamp-1">{producto.nombre}</h3>
+            <p className="text-[10px] text-gray-500 mb-2 capitalize">
+              {producto.categoria}
+              {producto.coleccion && <span className="font-bold text-brand-primary ml-1 uppercase opacity-80 tracking-widest">· Colección {producto.coleccion}</span>}
+            </p>
+          </div>
+
           {/* Botón directo de agregar */}
           {(producto.stockCount > 0 || producto.enPreventa) ? (
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); agregarAlCarrito(producto); }}
               className="bg-black text-white p-2 rounded-full hover:bg-gray-800 hover:scale-110 transition-all shadow-md group-hover:shadow-xl"
               title="Añadir a la bolsa"
@@ -569,10 +568,10 @@ function ProductoCard({ producto, index, abrirVistaRapida, agregarAlCarrito, liv
               <ShoppingBag className="w-4 h-4" />
             </button>
           ) : (
-             <span className="text-[10px] uppercase font-bold text-gray-400 tracking-widest border border-gray-200 px-2 py-1">Agotado</span>
+            <span className="text-[10px] uppercase font-bold text-gray-400 tracking-widest border border-gray-200 px-2 py-1">Agotado</span>
           )}
         </div>
-        
+
         <div className="flex items-center gap-2 mt-auto" onClick={() => abrirVistaRapida(producto)}>
           <span className="text-sm font-bold text-black">Bs. {producto.precioVenta?.toFixed(2)}</span>
           {producto.precioOriginal && producto.precioOriginal > producto.precioVenta && (
@@ -584,10 +583,10 @@ function ProductoCard({ producto, index, abrirVistaRapida, agregarAlCarrito, liv
   );
 }
 
-function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostrarError }: { producto: any, todosLosProductos: any[], cerrar: () => void, agregar: (p:any, t:string, c:string) => void, mostrarError: (msg: string) => void }) {
+function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostrarError }: { producto: any, todosLosProductos: any[], cerrar: () => void, agregar: (p: any, t: string, c: string) => void, mostrarError: (msg: string) => void }) {
   const [tallaSeleccionada, setTallaSeleccionada] = useState("");
   const [colorSeleccionado, setColorSeleccionado] = useState("");
-  
+
   const imagenes = producto.imagenes?.length > 0 ? producto.imagenes : ["https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"];
   const [imagenActual, setImagenActual] = useState(imagenes[0]);
   const [imagenAmpliada, setImagenAmpliada] = useState<string | null>(null);
@@ -613,12 +612,12 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
     if (colorSeleccionado && producto.imagenesPorColor) {
       let obj = producto.imagenesPorColor;
       if (typeof obj === 'string') {
-        try { obj = JSON.parse(obj); } catch(e) {}
+        try { obj = JSON.parse(obj); } catch (e) { }
       }
-      
-      const savedUrl = obj[colorSeleccionado] || 
-                       Object.entries(obj).find(([k]) => k.toLowerCase() === colorSeleccionado.toLowerCase())?.[1];
-                       
+
+      const savedUrl = obj[colorSeleccionado] ||
+        Object.entries(obj).find(([k]) => k.toLowerCase() === colorSeleccionado.toLowerCase())?.[1];
+
       if (savedUrl && typeof savedUrl === 'string') {
         setImagenActual(savedUrl);
       }
@@ -631,7 +630,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
   const isTallaDisabled = (t: string) => {
     if (!hasStockPorTalla) return false;
     if (!stockPorTallaObj[t]) return true;
-    
+
     if (colorSeleccionado) {
       if (typeof stockPorTallaObj[t] === 'object' && stockPorTallaObj[t] !== null) {
         return parseInt(stockPorTallaObj[t][colorSeleccionado] || "0") <= 0;
@@ -649,7 +648,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
 
   const isColorDisabled = (c: string) => {
     if (!hasStockPorTalla) return false;
-    
+
     if (tallaSeleccionada) {
       const tStock = stockPorTallaObj[tallaSeleccionada];
       if (!tStock) return true;
@@ -687,12 +686,12 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
 
   return (
     <>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={cerrar}
         className="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm"
       />
-      <motion.div 
+      <motion.div
         initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 200 }}
         className="fixed bottom-0 left-0 w-full md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:bottom-auto md:w-[800px] md:rounded-lg bg-white z-50 flex flex-col md:flex-row overflow-hidden shadow-2xl max-h-[90vh]"
       >
@@ -701,7 +700,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
         </button>
 
         <div className="w-full md:w-1/2 h-[50vh] md:h-[60vh] flex flex-col bg-gray-100">
-          <div 
+          <div
             className="flex-1 relative group cursor-pointer min-h-0"
             onClick={() => setImagenAmpliada(imagenActual)}
           >
@@ -713,8 +712,8 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
           {imagenes.length > 1 && (
             <div className="flex gap-2 p-3 overflow-x-auto bg-white border-t border-gray-100 shrink-0 scrollbar-hide">
               {imagenes.map((img: string, idx: number) => (
-                <button 
-                  key={idx} 
+                <button
+                  key={idx}
                   onClick={(e) => { e.stopPropagation(); setImagenActual(img); }}
                   className={`relative w-14 h-14 md:w-16 md:h-16 shrink-0 border-2 rounded-sm overflow-hidden transition-all ${imagenActual === img ? 'border-black shadow-md scale-105' : 'border-transparent opacity-60 hover:opacity-100 hover:scale-105'}`}
                 >
@@ -744,7 +743,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
               </>
             )}
           </div>
-          
+
           {producto.descripcionLarga && (
             <p className="text-sm text-gray-600 mb-6 whitespace-pre-wrap">{producto.descripcionLarga}</p>
           )}
@@ -753,13 +752,13 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
             <div className="mb-6 space-y-1 bg-gray-50 p-3 rounded border border-gray-100">
               {producto.marca && (
                 <p className="text-sm text-gray-800">
-                  <span className="font-bold uppercase tracking-wider text-[10px] text-gray-500 mr-2">Marca:</span> 
+                  <span className="font-bold uppercase tracking-wider text-[10px] text-gray-500 mr-2">Marca:</span>
                   <span className="capitalize">{producto.marca}</span>
                 </p>
               )}
               {producto.material && (
                 <p className="text-sm text-gray-800">
-                  <span className="font-bold uppercase tracking-wider text-[10px] text-gray-500 mr-2">Material / Tela:</span> 
+                  <span className="font-bold uppercase tracking-wider text-[10px] text-gray-500 mr-2">Material / Tela:</span>
                   <span className="capitalize">{producto.material}</span>
                 </p>
               )}
@@ -771,7 +770,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
               <span className="text-xs font-bold uppercase tracking-widest text-black block mb-3">Este conjunto incluye:</span>
               <ul className="space-y-2">
                 {Object.values(typeof producto.piezasDetalle === 'string' ? JSON.parse(producto.piezasDetalle) : producto.piezasDetalle).map((pieza: any) => {
-                  const prodRef = todosLosProductos.find((p:any) => p.id === pieza.id);
+                  const prodRef = todosLosProductos.find((p: any) => p.id === pieza.id);
                   return (
                     <li key={pieza.id} className="text-sm text-gray-700 flex flex-col mb-3 last:mb-0">
                       <div className="flex items-center gap-3">
@@ -780,10 +779,10 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
                           const img = specificImg || prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80";
                           setImagenAmpliada(img);
                         }}>
-                          <Image fill sizes="(max-width: 768px) 50vw, 33vw" 
-                            src={(pieza.colorEspecifico && prodRef?.imagenesPorColor?.[pieza.colorEspecifico]) ? prodRef.imagenesPorColor[pieza.colorEspecifico] : (prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80")} 
-                            alt={prodRef?.nombre || "Prenda"} 
-                            className="object-contain bg-slate-50 rounded-sm border border-black/10 shadow-sm transition-opacity group-hover:opacity-75" 
+                          <Image fill sizes="(max-width: 768px) 50vw, 33vw"
+                            src={(pieza.colorEspecifico && prodRef?.imagenesPorColor?.[pieza.colorEspecifico]) ? prodRef.imagenesPorColor[pieza.colorEspecifico] : (prodRef?.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80")}
+                            alt={prodRef?.nombre || "Prenda"}
+                            className="object-contain bg-slate-50 rounded-sm border border-black/10 shadow-sm transition-opacity group-hover:opacity-75"
                           />
                           <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
                             <Search className="w-4 h-4 text-white drop-shadow-md" />
@@ -791,7 +790,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
                         </div>
                         <div className="flex flex-col">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-xs bg-black/5 px-1.5 py-0.5 rounded-sm">{pieza.cantidad}x</span> 
+                            <span className="font-bold text-xs bg-black/5 px-1.5 py-0.5 rounded-sm">{pieza.cantidad}x</span>
                             <span className="uppercase text-xs font-medium leading-tight">{prodRef?.nombre || "Prenda"}</span>
                           </div>
                           {(pieza.tallaEspecifica || pieza.colorEspecifico) && (
@@ -817,7 +816,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
                 {tallas.map((t: string) => {
                   const agotado = isTallaDisabled(t);
                   return (
-                    <button 
+                    <button
                       key={t}
                       onClick={() => !agotado && setTallaSeleccionada(t)}
                       disabled={agotado}
@@ -838,7 +837,7 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
                 {colores.map((c: string) => {
                   const agotado = isColorDisabled(c);
                   return (
-                    <button 
+                    <button
                       key={c}
                       onClick={() => !agotado && setColorSeleccionado(c)}
                       disabled={agotado}
@@ -853,19 +852,19 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
           )}
 
           <div className="mt-auto pt-6 border-t border-gray-100 pb-8 md:pb-0">
-             {producto.stockCount > 0 || producto.enPreventa ? (
-               <button 
-                 onClick={handleAgregar}
-                 disabled={isAddDisabled()}
-                 className={`w-full text-xs uppercase tracking-widest font-bold py-4 rounded-sm transition-colors ${isAddDisabled() ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-black text-white hover:bg-gray-800"}`}
-               >
-                 {isAddDisabled() ? "Agotado en esta selección" : "Añadir a la bolsa"}
-               </button>
-             ) : (
-               <button disabled className="w-full bg-gray-200 text-gray-500 text-xs uppercase tracking-widest font-bold py-4 rounded-sm cursor-not-allowed">
-                 Agotado
-               </button>
-             )}
+            {producto.stockCount > 0 || producto.enPreventa ? (
+              <button
+                onClick={handleAgregar}
+                disabled={isAddDisabled()}
+                className={`w-full text-xs uppercase tracking-widest font-bold py-4 rounded-sm transition-colors ${isAddDisabled() ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-black text-white hover:bg-gray-800"}`}
+              >
+                {isAddDisabled() ? "Agotado en esta selección" : "Añadir a la bolsa"}
+              </button>
+            ) : (
+              <button disabled className="w-full bg-gray-200 text-gray-500 text-xs uppercase tracking-widest font-bold py-4 rounded-sm cursor-not-allowed">
+                Agotado
+              </button>
+            )}
           </div>
         </div>
       </motion.div>
@@ -873,21 +872,21 @@ function ModalVistaRapida({ producto, todosLosProductos, cerrar, agregar, mostra
       {/* Lightbox para vista ampliada */}
       <AnimatePresence>
         {imagenAmpliada && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/90 p-4"
             onClick={() => setImagenAmpliada(null)}
           >
-            <button 
+            <button
               className="absolute top-6 right-6 text-white hover:text-gray-300 p-2"
               onClick={() => setImagenAmpliada(null)}
             >
               <X className="w-8 h-8" />
             </button>
-            <Image fill sizes="(max-width: 768px) 50vw, 33vw" 
-              src={imagenAmpliada} 
-              alt="Ampliada" 
-              className="max-w-full max-h-full object-contain cursor-zoom-out" 
+            <Image fill sizes="(max-width: 768px) 50vw, 33vw"
+              src={imagenAmpliada}
+              alt="Ampliada"
+              className="max-w-full max-h-full object-contain cursor-zoom-out"
               onClick={(e) => { e.stopPropagation(); setImagenAmpliada(null); }}
             />
           </motion.div>
