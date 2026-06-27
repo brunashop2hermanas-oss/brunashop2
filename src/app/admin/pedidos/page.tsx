@@ -97,6 +97,15 @@ export default function AdminDashboard() {
   const [busqueda, setBusqueda] = useState("");
   const [pedidoACompletar, setPedidoACompletar] = useState<any>(null);
   const [config, setConfig] = useState<any>({});
+  
+  const [visibleCount, setVisibleCount] = useState(15);
+  const cargarMas = () => setVisibleCount(prev => prev + 15);
+
+  // Reiniciar la paginación cuando cambia el filtro
+  useEffect(() => {
+    setVisibleCount(15);
+  }, [filtroTab, filtroFecha, busqueda]);
+
   // Función para obtener pedidos de la base de datos
   
   const handleCompletarSinGuia = async () => {
@@ -353,13 +362,15 @@ const imprimirVineta = (pedido: any) => {
     return true;
   });
 
-  const pedidosARenderizar = busqueda.trim() ? pedidos.filter(pedido => {
+  const pedidosARenderizarCompleto = busqueda.trim() ? pedidos.filter(pedido => {
     if (pedido.origen === 'CAJA' || pedido.origen === 'POS') return false;
     const t = busqueda.toLowerCase().trim();
     return (pedido.cliente && pedido.cliente.toLowerCase().includes(t)) || 
            (pedido.ci && pedido.ci.includes(t)) || 
            (pedido.id && pedido.id.toLowerCase().includes(t));
-  }) : (filtroTab === 'historial' ? pedidosFiltrados.slice(0, 50) : pedidosFiltrados);
+  }) : pedidosFiltrados;
+
+  const pedidosARenderizar = pedidosARenderizarCompleto.slice(0, visibleCount);
 
   const counts = { pagos: 0, empaquetar: 0, guias: 0, historial: 0, rechazados: 0 };
   pedidosPorFecha.forEach(pedido => {
@@ -799,7 +810,19 @@ const imprimirVineta = (pedido: any) => {
               })}
             </tbody>
           </table>
+          
+          {visibleCount < pedidosARenderizarCompleto.length && (
+            <div className="flex justify-center p-6 border-t border-surface-border">
+              <button 
+                onClick={cargarMas}
+                className="bg-surface hover:bg-surface-border text-foreground border border-surface-border px-8 py-3 rounded-full font-bold shadow-sm transition-colors"
+              >
+                Cargar más pedidos ({pedidosARenderizarCompleto.length - visibleCount} restantes)
+              </button>
+            </div>
+          )}
         </div>
+        
         <div className="grid grid-cols-1 gap-4 p-4 lg:hidden">
           {pedidosARenderizar.length === 0 ? (
             <div className="p-10 text-center text-foreground/50 font-medium bg-surface rounded-xl">No hay pedidos en esta sección.</div>
@@ -928,6 +951,17 @@ const imprimirVineta = (pedido: any) => {
               </div>
             )
           })}
+          
+          {visibleCount < pedidosARenderizarCompleto.length && (
+            <div className="flex justify-center mt-4 pb-6">
+              <button 
+                onClick={cargarMas}
+                className="bg-surface hover:bg-surface-border text-foreground border border-surface-border px-8 py-3 rounded-full font-bold shadow-sm transition-colors w-full"
+              >
+                Cargar más pedidos ({pedidosARenderizarCompleto.length - visibleCount} restantes)
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

@@ -44,6 +44,14 @@ export default function AdminProductos() {
   const [usarControlFinanciero, setUsarControlFinanciero] = useState(false);
   const [filtroVisibilidad, setFiltroVisibilidad] = useState<"Todas" | "En Live" | "Publicas" | "Ocultas">("Todas");
   const [ordenamiento, setOrdenamiento] = useState<"fecha_desc" | "fecha_asc" | "mod_desc" | "nombre_asc" | "nombre_desc" | "stock_asc" | "stock_desc">("fecha_desc");
+  const [visibleCount, setVisibleCount] = useState(12);
+
+  const cargarMas = () => setVisibleCount(prev => prev + 12);
+
+  // Reset pagination when filter changes
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [filtroVisibilidad, ordenamiento]);
 
   const [categorias, setCategorias] = useState(["Vestidos", "Conjuntos", "Blusas y Tops", "Pantalones y Jeans", "Chaquetas y Abrigos", "Enterizos", "Ofertas / Sale"]);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("");
@@ -581,30 +589,44 @@ export default function AdminProductos() {
           );
         }
 
+        const productosPaginados = productosAVisualizar.slice(0, visibleCount);
+
         return (
           <div className="space-y-12">
             {/* Sección EN LIVE */}
-            {productosAVisualizar.filter(p => p.enLive).length > 0 && (
+            {productosPaginados.filter(p => p.enLive).length > 0 && (
               <div>
                 <div className="flex items-center gap-3 mb-6 bg-red-500/10 border border-red-500/20 p-4 rounded-2xl">
                   <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
                   <h2 className="text-xl font-bold text-red-600 tracking-widest uppercase">Prendas Seleccionadas para Live</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {productosAVisualizar.filter(p => p.enLive).map(renderProductoCard)}
+                  {productosPaginados.filter(p => p.enLive).map(renderProductoCard)}
                 </div>
               </div>
             )}
 
             {/* Sección GENERAL */}
-            {productosAVisualizar.filter(p => !p.enLive).length > 0 && (
+            {productosPaginados.filter(p => !p.enLive).length > 0 && (
               <div>
-                {productosAVisualizar.filter(p => p.enLive).length > 0 && (
+                {productosPaginados.filter(p => p.enLive).length > 0 && (
                   <h2 className="text-sm font-bold tracking-widest uppercase text-foreground/50 mb-6">Catálogo General</h2>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {productosAVisualizar.filter(p => !p.enLive).map(renderProductoCard)}
+                  {productosPaginados.filter(p => !p.enLive).map(renderProductoCard)}
                 </div>
+              </div>
+            )}
+            
+            {/* Botón Cargar Más */}
+            {visibleCount < productosAVisualizar.length && (
+              <div className="flex justify-center mt-8 pb-12">
+                <button 
+                  onClick={cargarMas}
+                  className="bg-surface hover:bg-surface-border text-foreground border border-surface-border px-8 py-3 rounded-full font-bold shadow-sm transition-colors"
+                >
+                  Cargar más prendas ({productosAVisualizar.length - visibleCount} restantes)
+                </button>
               </div>
             )}
           </div>

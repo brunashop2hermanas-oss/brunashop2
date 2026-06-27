@@ -25,6 +25,7 @@ export default function AdminReportes() {
   });
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState("");
+  const [visibleCount, setVisibleCount] = useState(15);
 
   useEffect(() => {
     const fetchReportes = async () => {
@@ -42,6 +43,7 @@ export default function AdminReportes() {
       setLoading(false);
     };
     fetchReportes();
+    setVisibleCount(15);
   }, [rango, fechaEspecifica]);
 
   const handlePrintResumen = () => {
@@ -275,7 +277,7 @@ export default function AdminReportes() {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-border print-table-body">
-              {reportes.transacciones.length > 0 ? reportes.transacciones.map(t => (
+              {reportes.transacciones.length > 0 ? reportes.transacciones.slice(0, visibleCount).map(t => (
                 <tr key={t.id} className="hover:bg-brand-primary/5 transition-colors print-item">
                   <td className="p-4">
                     <p className="font-bold print-text-black">{t.prendaNombre}</p>
@@ -309,6 +311,17 @@ export default function AdminReportes() {
               )}
             </tbody>
           </table>
+          
+          {visibleCount < reportes.transacciones.length && (
+            <div className="flex justify-center p-6 print:hidden">
+              <button 
+                onClick={() => setVisibleCount(prev => prev + 15)}
+                className="bg-surface hover:bg-surface-border text-foreground border border-surface-border px-8 py-3 rounded-full font-bold shadow-sm transition-colors"
+              >
+                Cargar más transacciones ({reportes.transacciones.length - visibleCount} restantes)
+              </button>
+            </div>
+          )}
         </div>
       </div>
       </div> {/* FIN DEL BLOQUE DE TRANSACCIONES DETALLADAS */}

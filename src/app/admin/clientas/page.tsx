@@ -27,7 +27,7 @@ export default function AdminClientas() {
   const [fechaEspecifica, setFechaEspecifica] = useState("");
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [userRole, setUserRole] = useState('');
-  const [visibleCount, setVisibleCount] = useState(50);
+  const [visibleCount, setVisibleCount] = useState(15);
   
   // Estados para el Modal de Clienta
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
@@ -297,7 +297,7 @@ export default function AdminClientas() {
                     <tr>
                       <td colSpan={6} className="p-4 text-center">
                         <button 
-                          onClick={() => setVisibleCount(prev => prev + 50)}
+                          onClick={() => setVisibleCount(prev => prev + 15)}
                           className="px-6 py-3 bg-brand-primary/10 text-brand-primary font-bold rounded-xl hover:bg-brand-primary/20 transition-colors"
                         >
                           Cargar más clientas
@@ -386,7 +386,7 @@ export default function AdminClientas() {
               ))}
               {visibleCount < clientasFiltradas.length && (
                 <button 
-                  onClick={() => setVisibleCount(prev => prev + 50)}
+                  onClick={() => setVisibleCount(prev => prev + 15)}
                   className="w-full py-4 bg-brand-primary/10 text-brand-primary font-bold rounded-xl hover:bg-brand-primary/20 transition-colors"
                 >
                   Cargar más clientas
