@@ -182,7 +182,7 @@ export async function updatePrenda(id: string, data: any) {
           coleccion: data.coleccion,
           marca: data.marca,
           tallas: data.tallas,
-          visiblePublico: data.visiblePublico !== undefined ? data.visiblePublico : true,
+          visiblePublico: data.visiblePublico !== undefined ? data.visiblePublico : undefined,
           stockPorTalla: data.stockPorTalla,
           colores: data.colores,
           material: data.material,
