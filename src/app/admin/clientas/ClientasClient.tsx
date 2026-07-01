@@ -22,7 +22,7 @@ export default function AdminClientas() {
   const [clientas, setClientas] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [clientaSeleccionada, setClientaSeleccionada] = useState<any>(null);
-  const [criterioOrden, setCriterioOrden] = useState<"defecto" | "puntos">("defecto");
+  const [criterioOrden, setCriterioOrden] = useState<"defecto" | "fecha_asc" | "mod_desc" | "mod_asc" | "puntos" | "puntos_asc">("defecto");
   const [filtroFecha, setFiltroFecha] = useState<'hoy' | 'semana' | 'mes' | 'año' | 'todo' | 'especifica'>('todo');
   const [fechaEspecifica, setFechaEspecifica] = useState("");
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
@@ -97,10 +97,15 @@ export default function AdminClientas() {
 
     return true;
   }).sort((a, b) => {
-    if (criterioOrden === "puntos") {
-      return b.prendasCompradas - a.prendasCompradas;
+    switch (criterioOrden) {
+      case "puntos": return b.prendasCompradas - a.prendasCompradas;
+      case "puntos_asc": return a.prendasCompradas - b.prendasCompradas;
+      case "fecha_asc": return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      case "mod_desc": return new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime();
+      case "mod_asc": return new Date(a.updatedAt || a.createdAt).getTime() - new Date(b.updatedAt || b.createdAt).getTime();
+      case "defecto":
+      default: return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
   return (
@@ -173,6 +178,24 @@ export default function AdminClientas() {
           {/* Barra de Búsqueda y Filtros */}
           <div className="p-4 md:p-6 border-b border-surface-border bg-surface/50 flex flex-col sm:flex-row gap-4 justify-between items-center">
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-stretch sm:items-center">
+              <div className="flex items-center bg-background border border-surface-border px-3 py-2 rounded-xl shadow-inner relative group">
+                <select
+                  value={criterioOrden}
+                  onChange={(e) => setCriterioOrden(e.target.value as any)}
+                  className="bg-transparent border-none outline-none w-full sm:w-44 text-sm font-bold text-foreground cursor-pointer appearance-none pr-8"
+                >
+                  <option value="defecto">Más recientes (Defecto)</option>
+                  <option value="fecha_asc">Más antiguas</option>
+                  <option value="mod_desc">Modificación (Desc)</option>
+                  <option value="mod_asc">Modificación (Asc)</option>
+                  <option value="puntos">Top Clientas (Puntos)</option>
+                  <option value="puntos_asc">Menos Puntos</option>
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-foreground/50">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                </div>
+              </div>
+
               <div className="flex items-center bg-background border border-surface-border px-3 py-2 rounded-xl shadow-inner relative group">
                 <Calendar className="w-5 h-5 text-brand-primary mr-2 shrink-0" />
                 <select

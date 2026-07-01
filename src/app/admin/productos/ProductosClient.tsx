@@ -44,7 +44,7 @@ export default function AdminProductos() {
 
   const [usarControlFinanciero, setUsarControlFinanciero] = useState(false);
   const [filtroVisibilidad, setFiltroVisibilidad] = useState<"Todas" | "En Live" | "Publicas" | "Ocultas">("Todas");
-  const [ordenamiento, setOrdenamiento] = useState<"fecha_desc" | "fecha_asc" | "mod_desc" | "nombre_asc" | "nombre_desc" | "stock_asc" | "stock_desc">("fecha_desc");
+  const [ordenamiento, setOrdenamiento] = useState<"fecha_desc" | "fecha_asc" | "mod_desc" | "mod_asc" | "nombre_asc" | "nombre_desc" | "stock_asc" | "stock_desc">("fecha_desc");
   const [visibleCount, setVisibleCount] = useState(12);
 
   const cargarMas = () => setVisibleCount(prev => prev + 12);
@@ -546,7 +546,8 @@ export default function AdminProductos() {
           >
             <option value="fecha_desc">Más recientes</option>
             <option value="fecha_asc">Más antiguas</option>
-            <option value="mod_desc">Recién modificadas</option>
+            <option value="mod_desc">Modificación (Desc)</option>
+            <option value="mod_asc">Modificación (Asc)</option>
             <option value="nombre_asc">Nombre (A-Z)</option>
             <option value="nombre_desc">Nombre (Z-A)</option>
             <option value="stock_asc">Menor Stock</option>
@@ -567,6 +568,7 @@ export default function AdminProductos() {
           switch (ordenamiento) {
             case "fecha_asc": return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
             case "mod_desc": return new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime();
+            case "mod_asc": return new Date(a.updatedAt || a.createdAt).getTime() - new Date(b.updatedAt || b.createdAt).getTime();
             case "nombre_asc": return a.nombre.localeCompare(b.nombre);
             case "nombre_desc": return b.nombre.localeCompare(a.nombre);
             case "stock_asc": return a.stockCount - b.stockCount;

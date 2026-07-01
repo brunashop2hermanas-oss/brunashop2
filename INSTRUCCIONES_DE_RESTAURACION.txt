@@ -1,0 +1,23 @@
+Guía de Restauración del Sistema BrunaShop
+
+Si el sistema presenta algún fallo crítico y necesitas restaurarlo desde este backup, sigue estos pasos:
+
+1. EXTRAER ARCHIVOS:
+Extrae todo el contenido de este archivo .zip en la carpeta donde deseas alojar el proyecto (por ejemplo, puedes crear una nueva carpeta llamada 'BrunaShop_Restaurado' en tu Escritorio).
+
+2. ABRIR TERMINAL:
+Abre una terminal (Símbolo del sistema, PowerShell o la terminal de Visual Studio Code) apuntando a la carpeta donde acabas de extraer los archivos.
+
+3. INSTALAR DEPENDENCIAS:
+Ejecuta el siguiente comando para descargar e instalar todas las dependencias y librerías necesarias para que el sistema funcione (estas se excluyeron del backup para ahorrar espacio):
+> npm install
+
+4. INICIAR EL SISTEMA:
+Una vez que termine la instalación, ejecuta el siguiente comando para iniciar el sistema en modo de desarrollo:
+> npm run dev
+
+El sistema debería estar funcionando nuevamente y accesible desde tu navegador en http://localhost:3000
+
+Notas adicionales:
+- Si necesitas compilar el proyecto para producción, utiliza 'npm run build' y luego 'npm start'.
+- Asegúrate de tener Node.js instalado en tu computadora.

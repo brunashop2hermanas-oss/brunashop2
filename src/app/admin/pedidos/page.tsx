@@ -62,6 +62,7 @@ export default function AdminDashboard() {
   const [pedidos, setPedidos] = useState<any[]>([]);
   const [productos, setProductos] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [ordenFecha, setOrdenFecha] = useState<'desc' | 'asc'>('desc');
 
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState<any>(null); // Modal de Verificación de Pago
   const [pedidoEmpaquetando, setPedidoEmpaquetando] = useState<any>(null); // Modal de Empaquetado
@@ -453,13 +454,18 @@ export default function AdminDashboard() {
     return true;
   });
 
-  const pedidosARenderizarCompleto = busqueda.trim() ? pedidos.filter(pedido => {
-    if (pedido.origen === 'CAJA' || pedido.origen === 'POS') return false;
-    const t = busqueda.toLowerCase().trim();
+  const pedidosARenderizarCompletoSinSort = busqueda.trim() ? pedidos.filter(pedido => {
+    const t = busqueda.toLowerCase();
     return (pedido.cliente && pedido.cliente.toLowerCase().includes(t)) ||
       (pedido.ci && pedido.ci.includes(t)) ||
       (pedido.id && pedido.id.toLowerCase().includes(t));
   }) : pedidosFiltrados;
+
+  const pedidosARenderizarCompleto = [...pedidosARenderizarCompletoSinSort].sort((a, b) => {
+    const timeA = new Date(a.fechaRaw || 0).getTime();
+    const timeB = new Date(b.fechaRaw || 0).getTime();
+    return ordenFecha === 'asc' ? timeA - timeB : timeB - timeA;
+  });
 
   const pedidosARenderizar = pedidosARenderizarCompleto.slice(0, visibleCount);
 
@@ -534,6 +540,17 @@ export default function AdminDashboard() {
                 {!mesEspecifico && <span className="text-xs font-extrabold text-brand-primary animate-pulse whitespace-nowrap">👈 Toca para elegir</span>}
               </div>
             )}
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <select
+              value={ordenFecha}
+              onChange={(e) => setOrdenFecha(e.target.value as 'desc' | 'asc')}
+              className="bg-brand-primary/10 border-2 border-brand-primary px-4 py-2 rounded-xl text-sm font-bold text-brand-primary outline-none focus:ring-4 focus:ring-brand-primary/40 shadow-lg cursor-pointer"
+            >
+              <option value="desc">Más recientes primero</option>
+              <option value="asc">Más antiguos primero</option>
+            </select>
           </div>
 
           <div className="flex items-center bg-surface border border-surface-border px-4 py-2 rounded-xl shadow-inner w-full sm:min-w-[280px] sm:max-w-md relative flex-1 shrink-0">

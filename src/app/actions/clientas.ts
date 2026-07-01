@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { unstable_noStore as noStore } from "next/cache";
 
-export async function getClientas() {
+export async function getClientas(orderByField: 'puntos' | 'createdAt' | 'updatedAt' = 'puntos', orderByDirection: 'asc' | 'desc' = 'desc') {
   noStore();
   try {
     const clientas = await prisma.clienta.findMany({
@@ -25,7 +25,7 @@ export async function getClientas() {
           orderBy: { fecha: 'desc' }
         }
       },
-      orderBy: { puntos: "desc" },
+      orderBy: { [orderByField]: orderByDirection },
     });
     
     const clientasFormateadas = clientas.map(clienta => {
@@ -53,7 +53,8 @@ export async function getClientas() {
         totalPedidos: clienta.ventas.length,
         dineroGastado: clienta.ventas.reduce((sum, v) => sum + v.total, 0),
         prendasCompradas: clienta.puntos, // Asumiendo 1 punto = 1 prenda
-        compras: compras
+        compras: compras,
+        updatedAt: clienta.updatedAt,
       };
     });
 

@@ -414,12 +414,12 @@ export async function createVenta(data: {
   }
 }
 
-export async function getVentas() {
+export async function getVentas(orderByField: 'fecha' | 'updatedAt' = 'fecha', orderByDirection: 'asc' | 'desc' = 'desc') {
   noStore();
   
   try {
     const ventas = await prisma.venta.findMany({
-      orderBy: { fecha: 'desc' },
+      orderBy: { [orderByField]: orderByDirection },
       include: {
         clienta: true,
         vendedor: true,

@@ -28,10 +28,18 @@ const getCachedPrendas = unstable_cache(
   { tags: ['prendas'] } // Cache permanente hasta que se invalide con revalidateTag
 );
 
-export async function getPrendas() {
+export async function getPrendas(orderByField: 'createdAt' | 'updatedAt' = 'createdAt', orderByDirection: 'asc' | 'desc' = 'desc') {
   try {
     const prendasMapeadas = await getCachedPrendas();
-    return { success: true, data: prendasMapeadas };
+    
+    const sorted = [...prendasMapeadas].sort((a: any, b: any) => {
+      const dateA = new Date(a[orderByField] || 0).getTime();
+      const dateB = new Date(b[orderByField] || 0).getTime();
+      if (orderByDirection === 'asc') return dateA - dateB;
+      return dateB - dateA;
+    });
+
+    return { success: true, data: sorted };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
