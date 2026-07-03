@@ -721,12 +721,12 @@ export default function AdminProductos() {
                     {fotosPreview.map((url, i) => (
                       <div key={i} className="w-24 h-24 rounded-2xl bg-surface border border-surface-border relative overflow-hidden group">
                         <img src={url} alt={`Preview ${i}`} className="w-full h-full object-contain bg-slate-50" />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                          <button onClick={() => handleEditCrop(i)} className="text-white hover:text-brand-primary" title="Editar recorte">
-                            <Edit className="w-5 h-5" />
+                        <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2">
+                          <button onClick={() => handleEditCrop(i)} className="bg-brand-primary text-white p-1.5 rounded-full hover:scale-110 transition-transform" title="Editar recorte">
+                            <Edit className="w-4 h-4" />
                           </button>
-                          <button onClick={() => eliminarFotoPreview(i)} className="text-white hover:text-red-500" title="Eliminar">
-                            <Trash2 className="w-5 h-5" />
+                          <button onClick={() => eliminarFotoPreview(i)} className="bg-red-500 text-white p-1.5 rounded-full hover:scale-110 transition-transform" title="Eliminar">
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
