@@ -428,7 +428,7 @@ export default function AdminDashboard() {
   });
 
   const pedidosFiltrados = pedidosPorFecha.filter(pedido => {
-    if (pedido.origen === 'CAJA' || pedido.origen === 'POS') return false;
+    if ((pedido.origen === 'CAJA' || pedido.origen === 'POS') && pedido.tipoEntrega !== 'ENVIO') return false;
 
     const arts = pedido.articulos || [];
     const esTiendaDirecta = pedido.tipoEntrega === 'TIENDA' || (!pedido.tipoEntrega && (pedido.destino === 'Tienda Física' || pedido.origen === 'CAJA'));
@@ -471,7 +471,7 @@ export default function AdminDashboard() {
 
   const counts = { pagos: 0, empaquetar: 0, guias: 0, historial: 0, rechazados: 0 };
   pedidosPorFecha.forEach(pedido => {
-    if (pedido.origen === 'CAJA' || pedido.origen === 'POS') return;
+    if ((pedido.origen === 'CAJA' || pedido.origen === 'POS') && pedido.tipoEntrega !== 'ENVIO') return;
     const arts = pedido.articulos || [];
     const esTiendaDirecta = pedido.tipoEntrega === 'TIENDA' || (!pedido.tipoEntrega && (pedido.destino === 'Tienda Física' || pedido.origen === 'CAJA'));
     const todasEmpaquetadas = esTiendaDirecta ? true : (arts.length > 0 && arts.every((art: any) => art.empaquetado));
@@ -486,19 +486,20 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex-1 relative min-w-0 w-full">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold text-foreground mb-2">Gestión de Pedidos</h1>
-          <p className="text-foreground/70 mb-4">Verifica comprobantes y prepara envíos.</p>
-          <div className="p-4 bg-brand-primary/10 border border-brand-primary/20 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
-            <span className="text-xl shrink-0">💡</span>
-            <p className="text-sm font-medium text-foreground/80 leading-relaxed">
-              <strong>Tip de uso:</strong> Esta pantalla es el "corazón" de tus envíos. Sigue el flujo de izquierda a derecha en las pestañas: primero verifica los pagos (1), luego empaqueta las prendas (2) y por último, sube el comprobante de envío o despáchalo (3).
-            </p>
-          </div>
+      {/* Sección del encabezado y Tip de uso */}
+      <div className="mb-6 max-w-4xl">
+        <h1 className="text-3xl font-extrabold text-foreground mb-2">Gestión de Pedidos</h1>
+        <p className="text-foreground/70 mb-4">Verifica comprobantes y prepara envíos.</p>
+        <div className="p-4 bg-brand-primary/10 border border-brand-primary/20 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
+          <span className="text-xl shrink-0">💡</span>
+          <p className="text-sm font-medium text-foreground/80 leading-relaxed">
+            <strong>Tip de uso:</strong> Esta pantalla es el "corazón" de tus envíos. Sigue el flujo de izquierda a derecha en las pestañas: primero verifica los pagos (1), luego empaqueta las prendas (2) y por último, sube el comprobante de envío o despáchalo (3).
+          </p>
         </div>
+      </div>
 
-        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+      {/* Sección de Filtros */}
+      <div className="flex flex-col lg:flex-row items-center gap-3 w-full mb-8">
           {/* Selector de Fechas (Dropdown) */}
           <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
             <div className="flex items-center bg-surface border border-surface-border px-3 py-2 rounded-xl shadow-inner w-full sm:w-auto relative group">
@@ -565,7 +566,6 @@ export default function AdminDashboard() {
             {busqueda && <X className="w-4 h-4 text-foreground/50 cursor-pointer absolute right-4 shrink-0" onClick={() => setBusqueda("")} />}
           </div>
         </div>
-      </div>
 
       {/* Pestañas (Tabs) Pipeline */}
       <div className="mb-8">

@@ -109,8 +109,7 @@ export default function AdminClientas() {
       {/* VISTA PRINCIPAL (SE OCULTA EN PDF SI HAY CLIENTA SELECCIONADA) */}
       <div className={clientaSeleccionada ? "print-hidden-main" : ""}>
         {/* Encabezado */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
+        <div className="mb-6 max-w-4xl">
             <h1 className="text-4xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
               <Star className="w-10 h-10 text-yellow-500 fill-yellow-500" />
               Clientas VIP
@@ -126,7 +125,7 @@ export default function AdminClientas() {
               </p>
             </div>
           </div>
-          <div className="no-print">
+          <div className="no-print mb-8 flex gap-4">
             <button
               onClick={() => setIsResetModalOpen(true)}
               className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all"
@@ -134,8 +133,6 @@ export default function AdminClientas() {
               Resetear Todos los Puntos a 0
             </button>
           </div>
-        </div>
-
         {/* Tarjetas de Resumen Rápido */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <motion.div

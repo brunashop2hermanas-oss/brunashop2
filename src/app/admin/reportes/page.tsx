@@ -82,8 +82,7 @@ export default function AdminReportes() {
     <div className="space-y-8 animate-in fade-in duration-500">
       
       {/* Cabecera para Pantalla (Oculta en PDF) */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 no-print">
-        <div>
+      <div className="mb-6 max-w-4xl no-print">
           <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-3">
             <BarChart3 className="w-8 h-8 text-brand-primary" /> Reportes y Ganancias
           </h1>
@@ -97,7 +96,7 @@ export default function AdminReportes() {
             </p>
           </div>
         </div>
-        <div className="flex flex-col xl:flex-row gap-4 items-stretch xl:items-center w-full md:w-auto">
+        <div className="flex flex-col xl:flex-row gap-4 w-full mb-8 no-print">
           {/* Selector de Rango y Fecha */}
           <div className="flex flex-col sm:flex-row gap-2 w-full xl:w-auto">
             <div className="flex items-center bg-background border border-surface-border px-3 py-2 rounded-xl shadow-inner w-full sm:w-auto relative group">

@@ -322,7 +322,7 @@ export async function createVenta(data: {
   try {
     const nombreCompleto = `${data.nombres} ${data.apellidoPaterno} ${data.apellidoMaterno || ""}`.trim();
     const prendasTotales = data.items.reduce((acc, item) => acc + item.cantidad, 0);
-    const puntosAOtorgar = (data.estado === "ENTREGADO" || data.estado === "PREPARANDO") ? 1 : 0;
+    const puntosAOtorgar = (data.estado === "ENTREGADO" || data.estado === "PREPARANDO") ? prendasTotales : 0;
 
     const ciLimpio = data.ci ? data.ci.trim() : "";
     const celularLimpio = data.celular ? data.celular.trim() : "";
@@ -498,8 +498,10 @@ export async function updateEstadoVenta(ventaId: string, nuevoEstado: string) {
     if (nuevoEstado === 'Aprobado') estadoDB = 'PREPARANDO';
     if (nuevoEstado === 'Rechazado') estadoDB = 'RECHAZADO';
 
-    const venta = await prisma.venta.findUnique({ where: { id: ventaId } });
+    const venta = await prisma.venta.findUnique({ where: { id: ventaId }, include: { items: true } });
     if (!venta) throw new Error("Venta no encontrada");
+    
+    const prendasTotales = venta.items.reduce((acc, item) => acc + item.cantidad, 0);
 
     let otorgaPuntos = false;
     if ((estadoDB === 'PREPARANDO' || estadoDB === 'ENTREGADO') && !venta.puntosOtorgados && venta.clientaId) {
@@ -518,7 +520,7 @@ export async function updateEstadoVenta(ventaId: string, nuevoEstado: string) {
       if (otorgaPuntos && venta.clientaId) {
         await tx.clienta.update({
           where: { id: venta.clientaId },
-          data: { puntos: { increment: 1 } }
+          data: { puntos: { increment: prendasTotales } }
         });
       }
     });
@@ -546,8 +548,10 @@ export async function toggleEmpaquetado(ventaItemId: string, estadoActual: boole
 
 export async function subirGuiaEnvio(ventaId: string, guiaUrl: string) {
   try {
-    const venta = await prisma.venta.findUnique({ where: { id: ventaId } });
+    const venta = await prisma.venta.findUnique({ where: { id: ventaId }, include: { items: true } });
     if (!venta) throw new Error("Venta no encontrada");
+    
+    const prendasTotales = venta.items.reduce((acc, item) => acc + item.cantidad, 0);
 
     let otorgaPuntos = !venta.puntosOtorgados && !!venta.clientaId;
 
@@ -564,7 +568,7 @@ export async function subirGuiaEnvio(ventaId: string, guiaUrl: string) {
       if (otorgaPuntos && venta.clientaId) {
         await tx.clienta.update({
           where: { id: venta.clientaId },
-          data: { puntos: { increment: 1 } }
+          data: { puntos: { increment: prendasTotales } }
         });
       }
     });
@@ -604,11 +608,12 @@ export async function deleteVenta(id: string) {
 
       // 2. Si la clienta ganó puntos por esto, restárselos
       if (venta.clientaId && venta.puntosOtorgados) {
+        const prendasTotales = venta.items.reduce((acc, item) => acc + item.cantidad, 0);
         const clienta = await tx.clienta.findUnique({ where: { id: venta.clientaId }});
         if (clienta) {
           await tx.clienta.update({
             where: { id: venta.clientaId },
-            data: { puntos: Math.max(0, clienta.puntos - 1) } // evitar puntos negativos
+            data: { puntos: Math.max(0, clienta.puntos - prendasTotales) } // evitar puntos negativos
           });
         }
       }

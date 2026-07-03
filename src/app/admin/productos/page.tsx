@@ -540,8 +540,8 @@ export default function AdminProductos() {
 
   return (
     <div className="flex-1 p-6 md:p-10 relative">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
+      {/* Encabezado */}
+      <div className="mb-6 max-w-4xl">
           <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-3">
             <Video className="w-8 h-8 text-red-500" /> Catálogo y Live
           </h1>
@@ -554,7 +554,7 @@ export default function AdminProductos() {
             </p>
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+      <div className="flex flex-col sm:flex-row gap-4 w-full mb-8">
           <button
             onClick={() => setIsModalCategoriasOpen(true)}
             className="w-full sm:w-auto justify-center bg-surface border-2 border-brand-primary text-brand-primary px-4 py-3 rounded-full font-bold shadow hover:bg-brand-primary/10 transition-colors flex items-center gap-2 text-sm md:text-base"
@@ -574,7 +574,6 @@ export default function AdminProductos() {
             <Plus className="w-5 h-5 shrink-0" /> Nueva Prenda
           </button>
         </div>
-      </div>
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-surface-border pb-4">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide w-full sm:w-auto">
