@@ -327,6 +327,16 @@ export async function createVenta(data: {
     const ciLimpio = data.ci ? data.ci.trim() : "";
     const celularLimpio = data.celular ? data.celular.trim() : "";
 
+    // Extract cookies outside the transaction to prevent Prisma context loss
+    let vendedorId = null;
+    try {
+      const cookieStore = await cookies();
+      const storedUserId = cookieStore.get("bruna_user_id")?.value;
+      if (storedUserId) {
+        vendedorId = storedUserId;
+      }
+    } catch(e) {}
+
     // Iniciar transacción para asegurar que todo se guarde correctamente
     const result = await prisma.$transaction(async (tx) => {
       // 1. Buscar o Crear Clienta si hay CI
@@ -361,15 +371,6 @@ export async function createVenta(data: {
       }
 
       // 2. Crear la Venta
-      let vendedorId = null;
-      try {
-        const cookieStore = await cookies();
-        const storedUserId = cookieStore.get("bruna_user_id")?.value;
-        if (storedUserId) {
-          vendedorId = storedUserId;
-        }
-      } catch(e) {}
-
       const venta = await tx.venta.create({
         data: {
           clientaId: clientaId,
