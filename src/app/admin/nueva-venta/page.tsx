@@ -4,7 +4,7 @@ import { Search, Plus, X, Minus, Trash2, CheckCircle2, UserPlus, CreditCard, Ban
 import { motion, AnimatePresence } from 'framer-motion';
 import { getPrendas } from '@/app/actions/productos';
 import { getConfiguracion } from '@/app/actions/config';
-import { getClientaByCI, searchClientasByCI } from '@/app/actions/clientas';
+import { getClientaByCI, searchClientasByCI, updateClienta } from '@/app/actions/clientas';
 import { createVenta } from '@/app/actions/ventas';
 import { uploadImage } from '@/app/actions/upload';
 import { compressImage } from '@/lib/imageCompression';
@@ -24,6 +24,8 @@ export default function NuevaVenta() {
   const [buscandoCi, setBuscandoCi] = useState(false);
   const [busquedaRealizada, setBusquedaRealizada] = useState(false);
   const [sugerenciasCI, setSugerenciasCI] = useState<any[]>([]);
+  const [clientaId, setClientaId] = useState<string | null>(null);
+  const [isUpdatingClienta, setIsUpdatingClienta] = useState(false);
 
   const [metodoPago, setMetodoPago] = useState<string>('efectivo');
   const [tipoEntrega, setTipoEntrega] = useState<'directa' | 'envio'>('directa');
@@ -171,6 +173,22 @@ export default function NuevaVenta() {
     }
   };
 
+  const handleActualizarClienta = async () => {
+    if (!clientaId) {
+      setShowClientModal(false);
+      return;
+    }
+    setIsUpdatingClienta(true);
+    const res = await updateClienta(clientaId, { nombres, apellidos: apellidoPaterno, celular, ci });
+    setIsUpdatingClienta(false);
+    if (res.success) {
+      toast.success("Datos de la clienta actualizados.");
+      setShowClientModal(false);
+    } else {
+      toast.error("Error al actualizar: " + res.error);
+    }
+  };
+
   const handleBuscarCI = async () => {
     if (ci.trim().length === 0) return;
     setBuscandoCi(true);
@@ -178,11 +196,11 @@ export default function NuevaVenta() {
     const res = await getClientaByCI(ci);
     if (res.success && res.data) {
       setClientaExistente(true);
+      setClientaId(res.data.id);
       setNombres(res.data.nombres || '');
       setApellidoPaterno(res.data.apellidos || '');
       setApellidoMaterno('');
       setCelular(res.data.celular || '');
-      setShowClientModal(false); // Cierra el modal de búsqueda
     } else {
       setClientaExistente(false);
       // No la encontró, le sugerimos crear una nueva
@@ -832,11 +850,11 @@ export default function NuevaVenta() {
                             setCi(s.ci);
                             setSugerenciasCI([]);
                             setClientaExistente(true);
+                            setClientaId(s.id);
                             setNombres(s.nombres || '');
                             setApellidoPaterno(s.apellidos || '');
                             setApellidoMaterno('');
                             setCelular(s.celular || '');
-                            setShowClientModal(false);
                           }}
                         >
                           <span className="font-bold text-brand-primary">{s.ci}</span>
@@ -850,6 +868,56 @@ export default function NuevaVenta() {
               {!clientaExistente && ci && !buscandoCi && busquedaRealizada && (
                 <div className="text-center py-6 text-foreground/60 text-sm">
                   <p>Clienta no encontrada con el CI: {ci}</p>
+                </div>
+              )}
+
+              {clientaExistente && (
+                <div className="mt-4 bg-surface rounded-xl border border-surface-border p-4 space-y-3 animate-in fade-in zoom-in-95">
+                  <h3 className="font-bold text-brand-primary text-sm border-b border-surface-border pb-2">Clienta Encontrada - Editar Datos</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-foreground/60 mb-1 block">Nombres</label>
+                      <input 
+                        type="text" 
+                        value={nombres}
+                        onChange={(e) => setNombres(e.target.value)}
+                        className="w-full bg-background border border-surface-border p-2 rounded-lg outline-none focus:ring-1 focus:ring-brand-primary text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-foreground/60 mb-1 block">Apellidos</label>
+                      <input 
+                        type="text" 
+                        value={apellidoPaterno}
+                        onChange={(e) => setApellidoPaterno(e.target.value)}
+                        className="w-full bg-background border border-surface-border p-2 rounded-lg outline-none focus:ring-1 focus:ring-brand-primary text-sm"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="text-xs font-bold text-foreground/60 mb-1 block">Celular / WhatsApp</label>
+                      <input 
+                        type="text" 
+                        value={celular}
+                        onChange={(e) => setCelular(e.target.value)}
+                        className="w-full bg-background border border-surface-border p-2 rounded-lg outline-none focus:ring-1 focus:ring-brand-primary text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <button 
+                      onClick={() => setShowClientModal(false)}
+                      className="flex-1 bg-surface-border/50 text-foreground px-4 py-2 rounded-lg font-bold hover:bg-surface-border transition-colors text-sm border border-surface-border"
+                    >
+                      Continuar sin editar
+                    </button>
+                    <button 
+                      onClick={handleActualizarClienta}
+                      disabled={isUpdatingClienta}
+                      className="flex-1 bg-brand-primary text-background px-4 py-2 rounded-lg font-bold hover:brightness-110 transition-colors text-sm flex items-center justify-center gap-2"
+                    >
+                      {isUpdatingClienta ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar y Continuar'}
+                    </button>
+                  </div>
                 </div>
               )}
               
