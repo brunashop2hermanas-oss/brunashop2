@@ -7,6 +7,7 @@ import { getPrendas, createPrenda, updatePrenda, deletePrenda, toggleVisibilidad
 import { uploadImage } from "@/app/actions/upload";
 import { getConfiguracion, updateConfiguracion } from "@/app/actions/config";
 import { compressImage } from "@/lib/imageCompression";
+import ImageCropperModal from '@/components/ImageCropperModal';
 
 export default function AdminProductos() {
   const [productos, setProductos] = useState<any[]>([]);
@@ -66,6 +67,20 @@ export default function AdminProductos() {
   const [nuevaTalla, setNuevaTalla] = useState("");
 
   const [fotosPreview, setFotosPreview] = useState<string[]>([]);
+
+  // Estados para el Modal de Recorte
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [imagesQueue, setImagesQueue] = useState<File[]>([]);
+  const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
+
+  // Procesar la cola de imágenes
+  useEffect(() => {
+    if (imagesQueue.length > 0 && !imageToCrop) {
+      const nextFile = imagesQueue[0];
+      const url = URL.createObjectURL(nextFile);
+      setImageToCrop(url);
+    }
+  }, [imagesQueue, imageToCrop]);
 
   const guardarCategoriasEnBD = async (nuevasCategorias: string[]) => {
     try {
@@ -315,35 +330,69 @@ export default function AdminProductos() {
     }
   };
 
-  const handleSubirFotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
+  const handleSubirFotos = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
       const MAX_FOTOS = 10;
       const filesArray = Array.from(e.target.files).slice(0, MAX_FOTOS - fotosPreview.length);
-
-      const uploadedUrls: string[] = [];
-
-      for (const file of filesArray) {
-        // Comprimir imagen antes de enviarla
-        const compressedFile = await compressImage(file);
-
-        const formData = new FormData();
-        formData.append("file", compressedFile);
-
-        try {
-          // Reemplazamos la ruta local por la Server Action directa a Supabase Storage
-          const res = await uploadImage(formData);
-          if (res.success && res.url) {
-            uploadedUrls.push(res.url);
-          } else {
-            console.error("Error al subir:", res.error);
-          }
-        } catch (error) {
-          console.error("Error en la petición de subida:", error);
-        }
-      }
-
-      setFotosPreview(prev => [...prev, ...uploadedUrls].slice(0, MAX_FOTOS));
+      setImagesQueue(prev => [...prev, ...filesArray]);
     }
+    // Reseteamos el input para que permita seleccionar la misma foto si se borra y se vuelve a subir
+    if (e.target) {
+      e.target.value = '';
+    }
+  };
+
+  const manejarSubidaImagen = async (file: File, isEditingIndex: number | null = null) => {
+    try {
+      const compressedFile = await compressImage(file);
+      const formDataUpload = new FormData();
+      formDataUpload.append("file", compressedFile);
+
+      const res = await uploadImage(formDataUpload);
+      if (res.success && res.url) {
+        if (isEditingIndex !== null) {
+          // Reemplazar la foto existente
+          setFotosPreview(prev => {
+            const next = [...prev];
+            next[isEditingIndex] = res.url!;
+            return next;
+          });
+        } else {
+          // Agregar foto nueva
+          setFotosPreview(prev => [...prev, res.url!]);
+        }
+      } else {
+        console.error("Error al subir:", res.error);
+        mostrarNotificacion("Error al subir imagen");
+      }
+    } catch (error) {
+      console.error("Error en la petición de subida:", error);
+      mostrarNotificacion("Error en la petición de subida");
+    }
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    const isEditing = editingImageIndex !== null;
+    const currentIndex = editingImageIndex;
+
+    // 1. Limpiar estado actual de recorte
+    setImageToCrop(null);
+    setEditingImageIndex(null);
+
+    // 2. Si venía de la cola, sacarla
+    if (!isEditing) {
+      setImagesQueue(prev => prev.slice(1));
+    }
+
+    // 3. Subir
+    const file = new File([croppedBlob], `imagen_recortada_${Date.now()}.jpg`, { type: 'image/jpeg' });
+    await manejarSubidaImagen(file, isEditing ? currentIndex : null);
+  };
+
+  const handleEditCrop = async (index: number) => {
+    const urlToEdit = fotosPreview[index];
+    setEditingImageIndex(index);
+    setImageToCrop(urlToEdit);
   };
 
   const eliminarFotoPreview = (index: number) => {
@@ -715,7 +764,8 @@ export default function AdminProductos() {
                       <ImageIcon className="w-4 h-4 text-brand-primary" /> Fotos de la Prenda
                     </h3>
                     <span className="text-[10px] text-foreground/50 uppercase tracking-widest bg-surface px-2 py-0.5 rounded-full border border-surface-border">Click para subir foto</span>
-                  </div>  <div className="flex gap-4 flex-wrap">
+                  </div>
+                  <div className="flex gap-4 flex-wrap">
                     {fotosPreview.length < 10 && (
                       <label className="w-24 h-24 rounded-2xl border-2 border-dashed border-brand-primary text-brand-primary flex flex-col items-center justify-center hover:bg-brand-primary/10 transition-colors cursor-pointer relative">
                         <Plus className="w-6 h-6" />
@@ -725,10 +775,15 @@ export default function AdminProductos() {
                     )}
                     {fotosPreview.map((url, i) => (
                       <div key={i} className="w-24 h-24 rounded-2xl bg-surface border border-surface-border relative overflow-hidden group">
-                        <img src={url} alt={`Preview ${i}`} className="w-full h-full object-contain bg-slate-50" />
-                        <button onClick={() => eliminarFotoPreview(i)} className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Trash2 className="w-6 h-6" />
-                        </button>
+                        <img src={url} alt={`Preview ${i}`} className="w-full h-full object-cover object-top bg-slate-50" />
+                        <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => handleEditCrop(i)} className="bg-brand-primary text-white p-2 rounded-full hover:scale-110 transition-transform" title="Editar recorte">
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => eliminarFotoPreview(i)} className="bg-red-500 text-white p-2 rounded-full hover:scale-110 transition-transform" title="Eliminar">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1368,6 +1423,21 @@ export default function AdminProductos() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Renderizar ImageCropperModal fuera del AnimatePresence pero dentro del componente */}
+      {imageToCrop && (
+        <ImageCropperModal
+          imageSrc={imageToCrop}
+          onCropComplete={handleCropComplete}
+          onCancel={() => {
+            setImageToCrop(null);
+            setEditingImageIndex(null);
+            if (editingImageIndex === null) {
+              setImagesQueue(prev => prev.slice(1));
+            }
+          }}
+        />
+      )}
 
       <AnimatePresence>
         {productoABorrar && (
