@@ -144,7 +144,6 @@ export default function AdminReportes() {
             </button>
           </div>
         </div>
-      </div>
 
       {/* BLOQUE DE RESUMEN FINANCIERO */}
       <div className={printMode === "detalle" ? "print:hidden" : ""}>
