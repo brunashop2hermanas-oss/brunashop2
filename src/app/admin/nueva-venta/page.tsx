@@ -331,7 +331,7 @@ export default function NuevaVenta() {
               >
                 <div className="bg-gray-50 rounded-xl aspect-[4/5] mb-3 flex items-center justify-center relative overflow-hidden">
                   {prod.imagenes && prod.imagenes[0] ? (
-                    <img src={prod.imagenes[0]} alt={prod.nombre} className="w-full h-full object-contain" />
+                    <img src={prod.imagenes[0]} alt={prod.nombre} className="w-full h-full object-cover object-top" />
                   ) : (
                     <span className="text-4xl">👗</span>
                   )}

@@ -7,6 +7,7 @@ import { getPrendas, createPrenda, updatePrenda, deletePrenda, toggleVisibilidad
 import { uploadImage } from "@/app/actions/upload";
 import { getConfiguracion, updateConfiguracion } from "@/app/actions/config";
 import { compressImage } from "@/lib/imageCompression";
+import ImageCropperModal from '@/components/ImageCropperModal';
 
 export default function AdminProductos() {
   const [productos, setProductos] = useState<any[]>([]);
@@ -66,6 +67,18 @@ export default function AdminProductos() {
   const [nuevaTalla, setNuevaTalla] = useState("");
 
   const [fotosPreview, setFotosPreview] = useState<string[]>([]);
+  
+  const [imagesQueue, setImagesQueue] = useState<File[]>([]);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (imagesQueue.length > 0 && !imageToCrop) {
+      const nextFile = imagesQueue[0];
+      const objectUrl = URL.createObjectURL(nextFile);
+      setImageToCrop(objectUrl);
+    }
+  }, [imagesQueue, imageToCrop]);
 
   const guardarCategoriasEnBD = async (nuevasCategorias: string[]) => {
     try {
@@ -261,35 +274,59 @@ export default function AdminProductos() {
     cargarProductos();
   };
 
-  const handleSubirFotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
+  const handleSubirFotos = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
       const MAX_FOTOS = 10;
       const filesArray = Array.from(e.target.files).slice(0, MAX_FOTOS - fotosPreview.length);
-
-      const uploadedUrls: string[] = [];
-
-      for (const file of filesArray) {
-        // Comprimir imagen antes de enviarla
-        const compressedFile = await compressImage(file);
-
-        const formData = new FormData();
-        formData.append("file", compressedFile);
-
-        try {
-          // Reemplazamos la ruta local por la Server Action directa a Supabase Storage
-          const res = await uploadImage(formData);
-          if (res.success && res.url) {
-            uploadedUrls.push(res.url);
-          } else {
-            console.error("Error al subir:", res.error);
-          }
-        } catch (error) {
-          console.error("Error en la petición de subida:", error);
-        }
-      }
-
-      setFotosPreview(prev => [...prev, ...uploadedUrls].slice(0, MAX_FOTOS));
+      setImagesQueue(prev => [...prev, ...filesArray]);
     }
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], "cropped.jpg", { type: "image/jpeg" });
+    const compressedFile = await compressImage(croppedFile);
+    
+    const formData = new FormData();
+    formData.append("file", compressedFile);
+
+    try {
+      const res = await uploadImage(formData);
+      if (res.success && res.url) {
+        if (editingImageIndex !== null) {
+          setFotosPreview(prev => {
+            const newFotos = [...prev];
+            newFotos[editingImageIndex] = res.url!;
+            return newFotos;
+          });
+          setEditingImageIndex(null);
+        } else {
+          setFotosPreview(prev => [...prev, res.url!]);
+          setImagesQueue(prev => prev.slice(1));
+        }
+      } else {
+        console.error("Error al subir:", res.error);
+        if (editingImageIndex === null) setImagesQueue(prev => prev.slice(1));
+      }
+    } catch (error) {
+      console.error("Error en la petición de subida:", error);
+      if (editingImageIndex === null) setImagesQueue(prev => prev.slice(1));
+    }
+    
+    setImageToCrop(null);
+  };
+
+  const handleCropCancel = () => {
+    setImageToCrop(null);
+    if (editingImageIndex !== null) {
+      setEditingImageIndex(null);
+    } else {
+      setImagesQueue(prev => prev.slice(1));
+    }
+  };
+
+  const handleEditCrop = (index: number) => {
+    setEditingImageIndex(index);
+    setImageToCrop(fotosPreview[index]);
   };
 
   const eliminarFotoPreview = (index: number) => {
@@ -350,8 +387,8 @@ export default function AdminProductos() {
       className={`glass rounded-3xl overflow-hidden border shadow-3d transition-all ${producto.enLive ? 'border-red-500/50 shadow-red-500/20 ring-2 ring-red-500/20' : 'border-surface-border'}`}
     >
       {/* Imagen del producto */}
-      <div className="relative h-80 w-full bg-gray-50 flex items-center justify-center">
-        <img src={producto.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"} alt={producto.nombre} className={`w-full h-full object-contain ${producto.stockCount === 0 ? 'grayscale opacity-50' : ''}`} />
+      <div className="relative aspect-[4/5] w-full bg-gray-50 flex items-center justify-center">
+        <img src={producto.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"} alt={producto.nombre} className={`w-full h-full object-cover object-top ${producto.stockCount === 0 ? 'grayscale opacity-50' : ''}`} />
 
         <div className="absolute top-3 left-3 flex gap-2 flex-wrap max-w-[80%]">
           {producto.enLive && (
@@ -672,7 +709,8 @@ export default function AdminProductos() {
                       <ImageIcon className="w-4 h-4 text-brand-primary" /> Fotos de la Prenda
                     </h3>
                     <span className="text-[10px] text-foreground/50 uppercase tracking-widest bg-surface px-2 py-0.5 rounded-full border border-surface-border">Click para subir foto</span>
-                  </div>  <div className="flex gap-4 flex-wrap">
+                  </div>
+                  <div className="flex gap-4 flex-wrap">
                     {fotosPreview.length < 10 && (
                       <label className="w-24 h-24 rounded-2xl border-2 border-dashed border-brand-primary text-brand-primary flex flex-col items-center justify-center hover:bg-brand-primary/10 transition-colors cursor-pointer relative">
                         <Plus className="w-6 h-6" />
@@ -683,9 +721,14 @@ export default function AdminProductos() {
                     {fotosPreview.map((url, i) => (
                       <div key={i} className="w-24 h-24 rounded-2xl bg-surface border border-surface-border relative overflow-hidden group">
                         <img src={url} alt={`Preview ${i}`} className="w-full h-full object-contain bg-slate-50" />
-                        <button onClick={() => eliminarFotoPreview(i)} className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Trash2 className="w-6 h-6" />
-                        </button>
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                          <button onClick={() => handleEditCrop(i)} className="text-white hover:text-brand-primary" title="Editar recorte">
+                            <Edit className="w-5 h-5" />
+                          </button>
+                          <button onClick={() => eliminarFotoPreview(i)} className="text-white hover:text-red-500" title="Eliminar">
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1462,6 +1505,17 @@ export default function AdminProductos() {
         )}
       </AnimatePresence>
 
+      {/* Modal Cropper */}
+      <AnimatePresence>
+        {imageToCrop && (
+          <ImageCropperModal
+            imageSrc={imageToCrop}
+            onCropComplete={handleCropComplete}
+            onCancel={handleCropCancel}
+            aspectRatio={4 / 5}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
