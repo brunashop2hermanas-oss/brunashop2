@@ -404,8 +404,8 @@ export default function AdminProductos() {
       className={`glass rounded-3xl overflow-hidden border shadow-3d transition-all ${producto.enLive ? 'border-red-500/50 shadow-red-500/20 ring-2 ring-red-500/20' : 'border-surface-border'}`}
     >
       {/* Imagen del producto */}
-      <div className="relative h-64 w-full bg-gray-100">
-        <img src={producto.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"} alt={producto.nombre} className={`w-full h-full object-cover object-top bg-slate-50 ${producto.stockCount === 0 ? 'grayscale opacity-50' : ''}`} />
+      <div className="relative h-80 w-full bg-gray-50 flex items-center justify-center">
+        <img src={producto.imagenes?.[0] || "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=500&q=80"} alt={producto.nombre} className={`w-full h-full object-contain ${producto.stockCount === 0 ? 'grayscale opacity-50' : ''}`} />
 
         <div className="absolute top-3 left-3 flex gap-2 flex-wrap max-w-[80%]">
           {producto.enLive && (

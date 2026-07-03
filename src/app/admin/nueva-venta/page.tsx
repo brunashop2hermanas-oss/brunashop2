@@ -329,9 +329,9 @@ export default function NuevaVenta() {
                 onClick={() => agregarAlCarrito(prod)}
                 className={`bg-background border border-surface-border rounded-2xl p-4 transition-colors flex flex-col ${prod.stockCount > 0 ? 'hover:border-brand-primary cursor-pointer group' : 'opacity-50 cursor-not-allowed'}`}
               >
-                <div className="bg-surface rounded-xl aspect-square mb-3 flex items-center justify-center relative overflow-hidden">
+                <div className="bg-gray-50 rounded-xl aspect-[4/5] mb-3 flex items-center justify-center relative overflow-hidden">
                   {prod.imagenes && prod.imagenes[0] ? (
-                    <img src={prod.imagenes[0]} alt={prod.nombre} className="w-full h-full object-cover object-top bg-slate-50" />
+                    <img src={prod.imagenes[0]} alt={prod.nombre} className="w-full h-full object-contain" />
                   ) : (
                     <span className="text-4xl">👗</span>
                   )}
