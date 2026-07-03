@@ -1512,7 +1512,6 @@ export default function AdminProductos() {
             imageSrc={imageToCrop}
             onCropComplete={handleCropComplete}
             onCancel={handleCropCancel}
-            aspectRatio={4 / 5}
           />
         )}
       </AnimatePresence>
