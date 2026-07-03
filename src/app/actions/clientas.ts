@@ -135,3 +135,4 @@ export async function deleteClienta(id: string) {
     return { success: false, error: error.message };
   }
 }
+export async function searchClientasByCI(partialCi: string) { try { const clientas = await prisma.clienta.findMany({ where: { ci: { contains: partialCi.trim() } }, take: 5 }); return { success: true, data: clientas }; } catch (error: any) { return { success: false, error: error.message }; } }

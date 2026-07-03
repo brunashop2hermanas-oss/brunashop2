@@ -4,7 +4,7 @@ import { Search, Plus, X, Minus, Trash2, CheckCircle2, UserPlus, CreditCard, Ban
 import { motion, AnimatePresence } from 'framer-motion';
 import { getPrendas } from '@/app/actions/productos';
 import { getConfiguracion } from '@/app/actions/config';
-import { getClientaByCI } from '@/app/actions/clientas';
+import { getClientaByCI, searchClientasByCI } from '@/app/actions/clientas';
 import { createVenta } from '@/app/actions/ventas';
 import { uploadImage } from '@/app/actions/upload';
 import { compressImage } from '@/lib/imageCompression';
@@ -22,6 +22,8 @@ export default function NuevaVenta() {
   const [celular, setCelular] = useState('');
   const [clientaExistente, setClientaExistente] = useState(false);
   const [buscandoCi, setBuscandoCi] = useState(false);
+  const [busquedaRealizada, setBusquedaRealizada] = useState(false);
+  const [sugerenciasCI, setSugerenciasCI] = useState<any[]>([]);
 
   const [metodoPago, setMetodoPago] = useState<string>('efectivo');
   const [tipoEntrega, setTipoEntrega] = useState<'directa' | 'envio'>('directa');
@@ -153,9 +155,26 @@ export default function NuevaVenta() {
     setCarrito(prev => prev.filter(item => item.itemUnicoId !== itemUnicoId));
   };
 
+  const handleCiChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setCi(val);
+    setBusquedaRealizada(false);
+    if (val.trim().length >= 2) {
+      const res = await searchClientasByCI(val);
+      if (res.success && res.data) {
+        setSugerenciasCI(res.data);
+      } else {
+        setSugerenciasCI([]);
+      }
+    } else {
+      setSugerenciasCI([]);
+    }
+  };
+
   const handleBuscarCI = async () => {
-    if (ci.length < 5) return;
+    if (ci.trim().length === 0) return;
     setBuscandoCi(true);
+    setBusquedaRealizada(true);
     const res = await getClientaByCI(ci);
     if (res.success && res.data) {
       setClientaExistente(true);
@@ -778,32 +797,57 @@ export default function NuevaVenta() {
             <motion.div 
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              className="bg-background w-full max-w-lg rounded-3xl border border-surface-border shadow-2xl relative my-auto flex flex-col max-h-[90vh]"
+              className="bg-background w-full max-w-2xl rounded-3xl border border-surface-border shadow-2xl relative my-auto flex flex-col max-h-[90vh]"
             >
               <div className="flex justify-between items-center p-6 border-b border-surface-border shrink-0">
                 <h2 className="text-2xl font-black font-serif text-foreground">Buscar Clienta</h2>
                 <button onClick={() => setShowClientModal(false)} className="text-foreground/50 hover:text-foreground">X</button>
               </div>
               
-              <div className="p-6 overflow-y-auto flex-1">
-                <div className="relative mb-4 flex gap-2">
-                <input 
-                  type="text" 
-                  value={ci}
-                  onChange={(e) => setCi(e.target.value)}
-                  placeholder="Ingrese Carnet de Identidad (CI)..." 
-                  className="w-full bg-surface border border-surface-border p-3 rounded-xl outline-none focus:ring-2 focus:ring-brand-primary transition-all text-sm"
-                />
-                <button 
-                  onClick={handleBuscarCI}
-                  disabled={buscandoCi || !ci}
-                  className="bg-brand-primary text-background px-4 rounded-xl font-bold hover:brightness-110 flex items-center justify-center min-w-[100px]"
-                >
-                  {buscandoCi ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Buscar'}
-                </button>
-              </div>
+              <div className="p-6 overflow-visible flex-1">
+                <div className="relative mb-4">
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={ci}
+                      onChange={handleCiChange}
+                      placeholder="Ingrese Carnet de Identidad (CI)..." 
+                      className="w-full bg-surface border border-surface-border p-3 rounded-xl outline-none focus:ring-2 focus:ring-brand-primary transition-all text-sm"
+                    />
+                    <button 
+                      onClick={handleBuscarCI}
+                      disabled={buscandoCi || !ci}
+                      className="bg-brand-primary text-background px-4 rounded-xl font-bold hover:brightness-110 flex items-center justify-center min-w-[100px]"
+                    >
+                      {buscandoCi ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Buscar'}
+                    </button>
+                  </div>
+                  {sugerenciasCI.length > 0 && !busquedaRealizada && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-surface-border rounded-xl shadow-lg z-10 overflow-hidden max-h-48 overflow-y-auto">
+                      {sugerenciasCI.map(s => (
+                        <div 
+                          key={s.id} 
+                          className="p-3 hover:bg-surface cursor-pointer text-sm transition-colors border-b border-surface-border last:border-0 flex justify-between items-center"
+                          onClick={() => {
+                            setCi(s.ci);
+                            setSugerenciasCI([]);
+                            setClientaExistente(true);
+                            setNombres(s.nombres || '');
+                            setApellidoPaterno(s.apellidos || '');
+                            setApellidoMaterno('');
+                            setCelular(s.celular || '');
+                            setShowClientModal(false);
+                          }}
+                        >
+                          <span className="font-bold text-brand-primary">{s.ci}</span>
+                          <span className="text-foreground/70">{s.nombres} {s.apellidos}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-              {!clientaExistente && ci && !buscandoCi && (
+              {!clientaExistente && ci && !buscandoCi && busquedaRealizada && (
                 <div className="text-center py-6 text-foreground/60 text-sm">
                   <p>Clienta no encontrada con el CI: {ci}</p>
                 </div>
