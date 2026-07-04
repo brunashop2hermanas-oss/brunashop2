@@ -20,12 +20,16 @@ export default function AdminReportes() {
     mejorDia: "Cargando...",
     categorias: [] as { nombre: string, porcentaje: number }[],
     ciudades: [] as { nombre: string, cantidad: number }[],
+    prendasRanking: [] as { nombre: string, cantidad: number }[],
     transacciones: [] as any[],
     usarControlFinanciero: true
   });
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState("");
   const [visibleCount, setVisibleCount] = useState(15);
+  const [expandedCategorias, setExpandedCategorias] = useState(false);
+  const [expandedCiudades, setExpandedCiudades] = useState(false);
+  const [expandedPrendas, setExpandedPrendas] = useState(false);
 
   useEffect(() => {
     const fetchReportes = async () => {
@@ -172,7 +176,6 @@ export default function AdminReportes() {
             <p className="text-xs font-bold text-foreground/60 uppercase tracking-widest print-text-black">Ingresos Brutos</p>
           </div>
           <p className="text-3xl font-black text-foreground ml-2 print-text-black">Bs. {reportes.ingresosBrutos}</p>
-          <p className="text-xs text-green-500 font-bold mt-2 ml-2 no-print">+15% vs mes anterior</p>
         </div>
 
         {reportes.usarControlFinanciero && (
@@ -205,34 +208,76 @@ export default function AdminReportes() {
       </div>
 
       {/* Gráficos Simulados / Tablas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print-grid-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 print-grid-2">
         <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d print-card">
           <h2 className="text-xl font-bold text-foreground mb-6 print-text-black border-b border-gray-300 pb-2">Ventas por Categoría</h2>
-          <div className="space-y-4">
-            {reportes.categorias.length > 0 ? reportes.categorias.map((cat, idx) => (
-              <div key={idx}>
-                <div className="flex justify-between text-sm font-bold mb-1 print-text-black">
-                  <span>{cat.nombre}</span>
-                  <span>{cat.porcentaje}%</span>
+          <div className="flex-1 flex flex-col">
+            <div className={`space-y-4 ${expandedCategorias ? 'max-h-96 overflow-y-auto print:overflow-visible print:max-h-none pr-2' : ''}`}>
+              {reportes.categorias.length > 0 ? reportes.categorias.slice(0, expandedCategorias ? 50 : 5).map((cat, idx) => (
+                <div key={idx}>
+                  <div className="flex justify-between text-sm font-bold mb-1 print-text-black">
+                    <span>{cat.nombre}</span>
+                    <span>{cat.porcentaje}%</span>
+                  </div>
+                  <div className="w-full bg-surface-border rounded-full h-3 print-border">
+                    <div className={`h-3 rounded-full print-bar ${idx === 0 ? 'bg-brand-primary' : idx === 1 ? 'bg-purple-500' : 'bg-blue-500'}`} style={{ width: `${cat.porcentaje}%` }}></div>
+                  </div>
                 </div>
-                <div className="w-full bg-surface-border rounded-full h-3 print-border">
-                  <div className={`h-3 rounded-full print-bar ${idx === 0 ? 'bg-brand-primary' : idx === 1 ? 'bg-purple-500' : 'bg-blue-500'}`} style={{ width: `${cat.porcentaje}%` }}></div>
-                </div>
-              </div>
-            )) : <p className="text-sm text-foreground/60">Aún no hay datos.</p>}
+              )) : <p className="text-sm text-foreground/60">Aún no hay datos.</p>}
+            </div>
+            {reportes.categorias.length > 5 && (
+              <button 
+                onClick={() => setExpandedCategorias(!expandedCategorias)}
+                className="mt-4 text-brand-primary text-sm font-bold hover:underline self-start no-print"
+              >
+                {expandedCategorias ? "Ver menos" : "Ver más"}
+              </button>
+            )}
           </div>
         </div>
 
         <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d print-card">
           <h2 className="text-xl font-bold text-foreground mb-6 print-text-black border-b border-gray-300 pb-2">Ciudades de Envío Frecuentes</h2>
-          <ul className="space-y-4">
-            {reportes.ciudades.length > 0 ? reportes.ciudades.map((c, idx) => (
-              <li key={idx} className="flex justify-between items-center p-3 bg-background rounded-xl border border-surface-border print-item">
-                <span className="font-bold print-text-black">{idx + 1}. {c.nombre}</span>
-                <span className="bg-surface px-3 py-1 rounded-full text-xs font-bold print-tag">{c.cantidad} Pedidos</span>
-              </li>
-            )) : <p className="text-sm text-foreground/60">Aún no hay datos.</p>}
-          </ul>
+          <div className="flex-1 flex flex-col">
+            <ul className={`space-y-4 ${expandedCiudades ? 'max-h-96 overflow-y-auto print:overflow-visible print:max-h-none pr-2' : ''}`}>
+              {reportes.ciudades.length > 0 ? reportes.ciudades.slice(0, expandedCiudades ? 50 : 5).map((c, idx) => (
+                <li key={idx} className="flex justify-between items-center p-3 bg-background rounded-xl border border-surface-border print-item">
+                  <span className="font-bold print-text-black">{idx + 1}. {c.nombre}</span>
+                  <span className="bg-surface px-3 py-1 rounded-full text-xs font-bold print-tag">{c.cantidad} Pedidos</span>
+                </li>
+              )) : <p className="text-sm text-foreground/60">Aún no hay datos.</p>}
+            </ul>
+            {reportes.ciudades.length > 5 && (
+              <button 
+                onClick={() => setExpandedCiudades(!expandedCiudades)}
+                className="mt-4 text-brand-primary text-sm font-bold hover:underline self-start no-print"
+              >
+                {expandedCiudades ? "Ver menos" : "Ver más"}
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d print-card">
+          <h2 className="text-xl font-bold text-foreground mb-6 print-text-black border-b border-gray-300 pb-2">Prendas más Vendidas</h2>
+          <div className="flex-1 flex flex-col">
+            <ul className={`space-y-4 ${expandedPrendas ? 'max-h-96 overflow-y-auto print:overflow-visible print:max-h-none pr-2' : ''}`}>
+              {reportes.prendasRanking.length > 0 ? reportes.prendasRanking.slice(0, expandedPrendas ? 50 : 5).map((p, idx) => (
+                <li key={idx} className="flex justify-between items-center p-3 bg-background rounded-xl border border-surface-border print-item">
+                  <span className="font-bold print-text-black truncate mr-2" title={p.nombre}>{idx + 1}. {p.nombre}</span>
+                  <span className="bg-brand-primary/10 text-brand-primary px-3 py-1 rounded-full text-xs font-bold print-tag whitespace-nowrap">{p.cantidad} und.</span>
+                </li>
+              )) : <p className="text-sm text-foreground/60">Aún no hay datos.</p>}
+            </ul>
+            {reportes.prendasRanking.length > 5 && (
+              <button 
+                onClick={() => setExpandedPrendas(!expandedPrendas)}
+                className="mt-4 text-brand-primary text-sm font-bold hover:underline self-start no-print"
+              >
+                {expandedPrendas ? "Ver menos" : "Ver más"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
       </div> {/* FIN DEL BLOQUE DE RESUMEN */}
@@ -369,7 +414,7 @@ export default function AdminReportes() {
           
           .print-grid-2 {
             display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
+            grid-template-columns: repeat(3, 1fr) !important;
             gap: 1rem !important;
             page-break-inside: avoid;
           }
@@ -380,8 +425,8 @@ export default function AdminReportes() {
             border: 1px solid #000 !important;
             box-shadow: none !important;
             border-radius: 8px !important;
-            padding: 1rem !important;
-            page-break-inside: avoid;
+            padding: 0.75rem !important;
+            page-break-inside: auto; /* Permitir que la tarjeta se divida si es muy larga */
           }
           
           .print-highlight {

@@ -37,7 +37,8 @@ export async function getClientas(orderByField: 'puntos' | 'createdAt' | 'update
           color: item.color,
           fecha: venta.fecha.toLocaleDateString(),
           hora: venta.fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          monto: item.precio * item.cantidad
+          monto: item.precio * item.cantidad,
+          cantidad: item.cantidad
         }))
       );
       
@@ -135,4 +136,21 @@ export async function deleteClienta(id: string) {
     return { success: false, error: error.message };
   }
 }
-export async function searchClientasByCI(partialCi: string) { try { const clientas = await prisma.clienta.findMany({ where: { ci: { contains: partialCi.trim() } }, take: 5 }); return { success: true, data: clientas }; } catch (error: any) { return { success: false, error: error.message }; } }
+export async function searchClientasByCI(term: string) { 
+  try { 
+    const searchTerms = term.toLowerCase().trim().split(/\s+/);
+    const clientas = await prisma.clienta.findMany({
+      select: { id: true, ci: true, nombres: true, apellidos: true }
+    });
+    
+    const filtradas = clientas.filter(c => {
+      const nombreCompleto = `${c.nombres || ''} ${c.apellidos || ''}`.toLowerCase();
+      const carnet = (c.ci || '').toLowerCase();
+      return searchTerms.every(t => nombreCompleto.includes(t) || carnet.includes(t));
+    }).slice(0, 10);
+    
+    return { success: true, data: filtradas }; 
+  } catch (error: any) { 
+    return { success: false, error: error.message }; 
+  } 
+}

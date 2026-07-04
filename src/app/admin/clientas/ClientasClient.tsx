@@ -70,9 +70,12 @@ export default function AdminClientas() {
 
   const clientasFiltradas = clientas.filter(c => {
     // Search filter
-    const matchesSearch = (c.nombre || "").toLowerCase().includes(busqueda.toLowerCase()) ||
-      (c.ci || "").toLowerCase().includes(busqueda.toLowerCase()) ||
-      (c.celular || "").includes(busqueda);
+    const searchTerms = busqueda.toLowerCase().trim().split(/\s+/);
+    const matchesSearch = searchTerms.every(term => 
+      (c.nombre || "").toLowerCase().includes(term) ||
+      (c.ci || "").toLowerCase().includes(term) ||
+      (c.celular || "").includes(term)
+    );
     if (!matchesSearch) return false;
 
     // Date filter
@@ -642,7 +645,10 @@ export default function AdminClientas() {
                                 <span className="font-bold text-foreground">{compra.fecha}</span><br />
                                 <span className="text-xs text-foreground/50">{compra.hora}</span>
                               </td>
-                              <td className="p-4 font-bold text-foreground">{compra.prenda}</td>
+                              <td className="p-4 font-bold text-foreground">
+                                {compra.cantidad > 1 && <span className="text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded mr-2 text-xs">{compra.cantidad}x</span>}
+                                {compra.prenda}
+                              </td>
                               <td className="p-4 text-sm text-foreground/70">
                                 {compra.talla && <span className="mr-2 block md:inline">Talla: {compra.talla}</span>}
                                 {compra.color && <span className="block md:inline">Color: {compra.color}</span>}

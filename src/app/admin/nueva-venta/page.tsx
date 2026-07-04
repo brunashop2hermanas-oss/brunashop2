@@ -829,7 +829,7 @@ export default function NuevaVenta() {
                       type="text" 
                       value={ci}
                       onChange={handleCiChange}
-                      placeholder="Ingrese Carnet de Identidad (CI)..." 
+                      placeholder="Ingrese CI, Nombre o Apellido..." 
                       className="w-full bg-surface border border-surface-border p-3 rounded-xl outline-none focus:ring-2 focus:ring-brand-primary transition-all text-sm"
                     />
                     <button 

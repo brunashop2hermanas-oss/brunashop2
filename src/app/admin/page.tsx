@@ -21,6 +21,9 @@ export default function DashboardInicio() {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [rangoMas, setRangoMas] = useState("Mes"); 
   const [rangoMenos, setRangoMenos] = useState("Mes"); 
+  const [expandedMas, setExpandedMas] = useState(false);
+  const [expandedMenos, setExpandedMenos] = useState(false);
+  const [expandedAlertas, setExpandedAlertas] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -94,7 +97,7 @@ export default function DashboardInicio() {
         <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d flex flex-col">
           <div className="flex justify-between items-center mb-6 border-b border-surface-border pb-4">
             <h2 className="text-xl font-bold flex items-center gap-2 text-brand-primary">
-              <TrendingUp className="w-5 h-5" /> Top 5 Más Vendidos
+              <TrendingUp className="w-5 h-5" /> Prendas Más Vendidas
             </h2>
             <select 
               value={rangoMas} 
@@ -110,16 +113,26 @@ export default function DashboardInicio() {
           </div>
           
           {stats.masVendidosList.length > 0 && stats.masVendidosList[0].vendidos > 0 ? (
-            <ul className="space-y-4 flex-1">
-              {stats.masVendidosList.map((prenda: any, idx: number) => prenda.vendidos > 0 && (
-                <li key={idx} className="flex justify-between items-center bg-background/50 p-4 rounded-xl border border-surface-border">
-                  <span className="font-bold text-foreground truncate mr-2">{prenda.nombre}</span>
-                  <span className="bg-brand-primary/10 text-brand-primary px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
-                    {prenda.vendidos} vendidas
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <div className="flex-1 flex flex-col">
+              <ul className={`space-y-4 flex-1 ${expandedMas ? 'max-h-96 overflow-y-auto pr-2' : ''}`}>
+                {stats.masVendidosList.slice(0, expandedMas ? 50 : 5).map((prenda: any, idx: number) => prenda.vendidos > 0 && (
+                  <li key={idx} className="flex justify-between items-center bg-background/50 p-4 rounded-xl border border-surface-border">
+                    <span className="font-bold text-foreground truncate mr-2">{prenda.nombre}</span>
+                    <span className="bg-brand-primary/10 text-brand-primary px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
+                      {prenda.vendidos} vendidas
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {stats.masVendidosList.length > 5 && (
+                <button 
+                  onClick={() => setExpandedMas(!expandedMas)}
+                  className="mt-4 text-brand-primary text-sm font-bold hover:underline"
+                >
+                  {expandedMas ? "Ver menos" : "Ver más"}
+                </button>
+              )}
+            </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-foreground/50 py-10">
               <ShoppingBag className="w-10 h-10 mb-2 opacity-50" />
@@ -131,7 +144,7 @@ export default function DashboardInicio() {
         <div className="glass p-8 rounded-3xl border border-surface-border shadow-3d flex flex-col">
           <div className="flex justify-between items-center mb-6 border-b border-surface-border pb-4">
             <h2 className="text-xl font-bold flex items-center gap-2 text-red-500">
-              <TrendingUp className="w-5 h-5 rotate-180" /> Top 5 Menos Vendidos
+              <TrendingUp className="w-5 h-5 rotate-180" /> Reporte Catálogo Menos Vendidos
             </h2>
             <select 
               value={rangoMenos} 
@@ -148,19 +161,29 @@ export default function DashboardInicio() {
 
           <p className="text-xs text-foreground/60 mb-4">Muestra las prendas con menos movimiento o estancadas en el rango seleccionado.</p>
           
-          <ul className="space-y-4 flex-1">
-            {stats.menosVendidosList.map((prenda: any, idx: number) => (
-              <li key={idx} className="flex justify-between items-center bg-red-500/5 p-4 rounded-xl border border-red-500/20">
-                <div className="flex flex-col">
-                  <span className="font-bold text-foreground truncate mr-2">{prenda.nombre}</span>
-                  <span className="text-[10px] text-foreground/50 uppercase tracking-widest mt-1">Stock disponible: {prenda.stock}</span>
-                </div>
-                <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap shadow-sm">
-                  {prenda.vendidos} vendidas
-                </span>
-              </li>
-            ))}
-          </ul>
+          <div className="flex-1 flex flex-col">
+            <ul className={`space-y-4 flex-1 ${expandedMenos ? 'max-h-96 overflow-y-auto pr-2' : ''}`}>
+              {stats.menosVendidosList.slice(0, expandedMenos ? 50 : 5).map((prenda: any, idx: number) => (
+                <li key={idx} className="flex justify-between items-center bg-red-500/5 p-4 rounded-xl border border-red-500/20">
+                  <div className="flex flex-col">
+                    <span className="font-bold text-foreground truncate mr-2">{prenda.nombre}</span>
+                    <span className="text-[10px] text-foreground/50 uppercase tracking-widest mt-1">Stock disponible: {prenda.stock}</span>
+                  </div>
+                  <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap shadow-sm">
+                    {prenda.vendidos} vendidas
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {stats.menosVendidosList.length > 5 && (
+              <button 
+                onClick={() => setExpandedMenos(!expandedMenos)}
+                className="mt-4 text-red-500 text-sm font-bold hover:underline self-start"
+              >
+                {expandedMenos ? "Ver menos" : "Ver más"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -169,23 +192,33 @@ export default function DashboardInicio() {
             <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span> Alertas de Inventario
           </h2>
           {stats.alertasInventario.length > 0 ? (
-            <ul className="space-y-4">
-              {stats.alertasInventario.map((alerta: any, idx: number) => (
-                <li key={idx} className="flex justify-between items-center bg-background/50 p-4 rounded-xl border border-red-500/20">
-                  <div>
-                    <p className="font-bold">{alerta.nombre}</p>
-                    {alerta.tallasBajas.length > 0 ? (
-                      <p className="text-xs text-red-500 font-bold mt-1">Tallas bajas: {alerta.tallasBajas.join(", ")}</p>
-                    ) : (
-                      <p className="text-xs text-red-500 font-bold mt-1">Stock general bajo</p>
-                    )}
-                  </div>
-                  <div className="bg-red-500/10 text-red-500 px-4 py-2 rounded-xl font-black text-lg">
-                    {alerta.stock}
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <div className="flex-1 flex flex-col">
+              <ul className={`space-y-4 ${expandedAlertas ? 'max-h-96 overflow-y-auto pr-2' : ''}`}>
+                {stats.alertasInventario.slice(0, expandedAlertas ? 50 : 5).map((alerta: any, idx: number) => (
+                  <li key={idx} className="flex justify-between items-center bg-background/50 p-4 rounded-xl border border-red-500/20">
+                    <div>
+                      <p className="font-bold">{alerta.nombre}</p>
+                      {alerta.tallasBajas.length > 0 ? (
+                        <p className="text-xs text-red-500 font-bold mt-1">Tallas bajas: {alerta.tallasBajas.join(", ")}</p>
+                      ) : (
+                        <p className="text-xs text-red-500 font-bold mt-1">Stock general bajo</p>
+                      )}
+                    </div>
+                    <div className="bg-red-500/10 text-red-500 px-4 py-2 rounded-xl font-black text-lg">
+                      {alerta.stock}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {stats.alertasInventario.length > 5 && (
+                <button 
+                  onClick={() => setExpandedAlertas(!expandedAlertas)}
+                  className="mt-4 text-brand-primary text-sm font-bold hover:underline self-start"
+                >
+                  {expandedAlertas ? "Ver menos" : "Ver más"}
+                </button>
+              )}
+            </div>
           ) : (
             <p className="text-foreground/60 text-center py-8">Excelente. No tienes prendas con stock crítico.</p>
           )}

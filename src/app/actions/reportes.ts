@@ -79,7 +79,7 @@ export async function getDashboardStats(rangoMas: string = "Mes", rangoMenos: st
       id: p.id, nombre: p.nombre, stock: p.stockCount, vendidos: conteoPrendasMas[p.id] || 0
     }));
     arrayVentasMas.sort((a, b) => b.vendidos - a.vendidos);
-    const masVendidosList = arrayVentasMas.slice(0, 5);
+    const masVendidosList = arrayVentasMas.slice(0, 50);
     let masVendidoStr = masVendidosList[0]?.vendidos > 0 ? masVendidosList[0].nombre : "Aún no hay ventas";
 
     // MENOS VENDIDOS
@@ -98,7 +98,7 @@ export async function getDashboardStats(rangoMas: string = "Mes", rangoMenos: st
     }));
     const prendasConStockMenos = arrayVentasMenos.filter(p => p.stock > 0);
     prendasConStockMenos.sort((a, b) => a.vendidos - b.vendidos);
-    const menosVendidosList = prendasConStockMenos.slice(0, 5);
+    const menosVendidosList = prendasConStockMenos.slice(0, 50);
 
     // 3. Clientas Totales
     const clientasTotales = await prisma.clienta.count();
@@ -130,7 +130,7 @@ export async function getDashboardStats(rangoMas: string = "Mes", rangoMenos: st
         };
       })
       .filter(p => p.stock <= 3 || p.tallasBajas.length > 0)
-      .slice(0, 5);
+      .slice(0, 50);
 
     revalidatePath('/', 'layout');
     return {
@@ -215,6 +215,7 @@ export async function getReportesFinancieros(rango: string) {
     const ventasPorDia: Record<string, number> = {};
     const categorias: Record<string, number> = {};
     const ciudades: Record<string, number> = {};
+    const prendasRanking: Record<string, number> = {};
 
     const transaccionesDetalladas = [];
 
@@ -239,6 +240,9 @@ export async function getReportesFinancieros(rango: string) {
           // Categorías
           const cat = item.prenda.categoria || "Otros";
           categorias[cat] = (categorias[cat] || 0) + item.cantidad;
+
+          // Prendas
+          prendasRanking[item.prenda.nombre] = (prendasRanking[item.prenda.nombre] || 0) + item.cantidad;
 
             let responsableTexto = "Sistema Web";
             if (venta.origen !== "WEB") {
@@ -293,7 +297,13 @@ export async function getReportesFinancieros(rango: string) {
     const ciudadesOrdenadas = Object.entries(ciudades)
       .map(([nombre, cantidad]) => ({ nombre, cantidad }))
       .sort((a, b) => b.cantidad - a.cantidad)
-      .slice(0, 5); // Top 5
+      .slice(0, 50); // Top 50
+
+    // Ordenar Prendas
+    const prendasOrdenadas = Object.entries(prendasRanking)
+      .map(([nombre, cantidad]) => ({ nombre, cantidad }))
+      .sort((a, b) => b.cantidad - a.cantidad)
+      .slice(0, 50);
 
     revalidatePath('/', 'layout');
     return {
@@ -305,6 +315,7 @@ export async function getReportesFinancieros(rango: string) {
         mejorDia,
         categorias: categoriasPorcentaje,
         ciudades: ciudadesOrdenadas,
+        prendasRanking: prendasOrdenadas,
         transacciones: transaccionesDetalladas,
         usarControlFinanciero
       }

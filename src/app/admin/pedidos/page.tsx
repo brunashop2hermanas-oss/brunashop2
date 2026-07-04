@@ -438,10 +438,12 @@ export default function AdminDashboard() {
 
     const textoBusqueda = busqueda.toLowerCase().trim();
     if (textoBusqueda) {
-      const coincideBusqueda =
-        (pedido.cliente && pedido.cliente.toLowerCase().includes(textoBusqueda)) ||
-        (pedido.ci && pedido.ci.includes(textoBusqueda)) ||
-        (pedido.id && pedido.id.toLowerCase().includes(textoBusqueda));
+      const searchTerms = textoBusqueda.split(/\s+/);
+      const coincideBusqueda = searchTerms.every(term => 
+        (pedido.cliente && pedido.cliente.toLowerCase().includes(term)) ||
+        (pedido.ci && pedido.ci.includes(term)) ||
+        (pedido.id && pedido.id.toLowerCase().includes(term))
+      );
       return coincideBusqueda;
     }
 
@@ -455,10 +457,12 @@ export default function AdminDashboard() {
   });
 
   const pedidosARenderizarCompletoSinSort = busqueda.trim() ? pedidos.filter(pedido => {
-    const t = busqueda.toLowerCase();
-    return (pedido.cliente && pedido.cliente.toLowerCase().includes(t)) ||
-      (pedido.ci && pedido.ci.includes(t)) ||
-      (pedido.id && pedido.id.toLowerCase().includes(t));
+    const searchTerms = busqueda.toLowerCase().trim().split(/\s+/);
+    return searchTerms.every(term => 
+      (pedido.cliente && pedido.cliente.toLowerCase().includes(term)) ||
+      (pedido.ci && pedido.ci.includes(term)) ||
+      (pedido.id && pedido.id.toLowerCase().includes(term))
+    );
   }) : pedidosFiltrados;
 
   const pedidosARenderizarCompleto = [...pedidosARenderizarCompletoSinSort].sort((a, b) => {
