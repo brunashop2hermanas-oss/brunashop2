@@ -221,18 +221,14 @@ export default function AdminProductos() {
     let stockPorTallaLimpio: any = {};
     if (tallasSeleccionadas.length > 0) {
       for (const talla of tallasSeleccionadas) {
-        if (typeof formData.stockPorTalla[talla] === 'object') {
-          stockPorTallaLimpio[talla] = {};
-          for (const color in formData.stockPorTalla[talla]) {
-            // Solo contar 'Unico' si no hay colores especificados. Si hay colores, ignorar 'Unico'.
-            if ((coloresLimpios.length === 0 && color === 'Unico') || coloresLimpios.includes(color)) {
-              const currentStock = Number(formData.stockPorTalla[talla][color]) || 0;
-              const addedStock = Number(formData.nuevoStockPorTalla?.[talla]?.[color]) || 0;
-              const finalStock = currentStock + addedStock;
-              stockTotal += finalStock;
-              stockPorTallaLimpio[talla][color] = finalStock.toString();
-            }
-          }
+        stockPorTallaLimpio[talla] = {};
+        const colorsToIterate = coloresLimpios.length > 0 ? coloresLimpios : ['Unico'];
+        for (const color of colorsToIterate) {
+          const currentStock = Number(formData.stockPorTalla?.[talla]?.[color]) || 0;
+          const addedStock = Number(formData.nuevoStockPorTalla?.[talla]?.[color]) || 0;
+          const finalStock = Math.max(0, currentStock + addedStock);
+          stockTotal += finalStock;
+          stockPorTallaLimpio[talla][color] = finalStock.toString();
         }
       }
     } else {

@@ -223,18 +223,14 @@ export default function AdminProductos() {
     let stockPorTallaLimpio: any = {};
     if (tallasSeleccionadas.length > 0) {
       for (const talla of tallasSeleccionadas) {
-        if (typeof formData.stockPorTalla[talla] === 'object') {
-          stockPorTallaLimpio[talla] = {};
-          for (const color in formData.stockPorTalla[talla]) {
-            // Solo contar 'Unico' si no hay colores especificados. Si hay colores, ignorar 'Unico'.
-            if ((coloresLimpios.length === 0 && color === 'Unico') || coloresLimpios.includes(color)) {
-              let cantAnterior = Number(formData.stockPorTalla[talla][color]) || 0;
-              let cantNueva = formData.nuevoStockPorTalla?.[talla]?.[color] ? Number(formData.nuevoStockPorTalla[talla][color]) : 0;
-              let totalPorVariante = Math.max(0, cantAnterior + cantNueva);
-              stockTotal += totalPorVariante;
-              stockPorTallaLimpio[talla][color] = String(totalPorVariante);
-            }
-          }
+        stockPorTallaLimpio[talla] = {};
+        const colorsToIterate = coloresLimpios.length > 0 ? coloresLimpios : ['Unico'];
+        for (const color of colorsToIterate) {
+          let cantAnterior = Number(formData.stockPorTalla?.[talla]?.[color]) || 0;
+          let cantNueva = formData.nuevoStockPorTalla?.[talla]?.[color] ? Number(formData.nuevoStockPorTalla[talla][color]) : 0;
+          let totalPorVariante = Math.max(0, cantAnterior + cantNueva);
+          stockTotal += totalPorVariante;
+          stockPorTallaLimpio[talla][color] = String(totalPorVariante);
         }
       }
     } else {
@@ -288,17 +284,14 @@ export default function AdminProductos() {
 
     if (tallasSeleccionadas.length > 0) {
       for (const talla of tallasSeleccionadas) {
-        if (typeof formData.stockPorTalla[talla] === 'object') {
-          stockPorTallaLimpio[talla] = {};
-          for (const color in formData.stockPorTalla[talla]) {
-            if ((coloresLimpios.length === 0 && color === 'Unico') || coloresLimpios.includes(color)) {
-              let cantAnterior = Number(formData.stockPorTalla[talla][color]) || 0;
-              let cantNueva = formData.nuevoStockPorTalla?.[talla]?.[color] ? Number(formData.nuevoStockPorTalla[talla][color]) : 0;
-              let totalPorVariante = Math.max(0, cantAnterior + cantNueva);
-              stockTotal += totalPorVariante;
-              stockPorTallaLimpio[talla][color] = String(totalPorVariante);
-            }
-          }
+        stockPorTallaLimpio[talla] = {};
+        const colorsToIterate = coloresLimpios.length > 0 ? coloresLimpios : ['Unico'];
+        for (const color of colorsToIterate) {
+          let cantAnterior = Number(formData.stockPorTalla?.[talla]?.[color]) || 0;
+          let cantNueva = formData.nuevoStockPorTalla?.[talla]?.[color] ? Number(formData.nuevoStockPorTalla[talla][color]) : 0;
+          let totalPorVariante = Math.max(0, cantAnterior + cantNueva);
+          stockTotal += totalPorVariante;
+          stockPorTallaLimpio[talla][color] = String(totalPorVariante);
         }
       }
     } else {
