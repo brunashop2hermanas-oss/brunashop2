@@ -893,7 +893,16 @@ export default function NuevaVenta() {
                         className="w-full bg-background border border-surface-border p-2 rounded-lg outline-none focus:ring-1 focus:ring-brand-primary text-sm"
                       />
                     </div>
-                    <div className="col-span-2">
+                    <div>
+                      <label className="text-xs font-bold text-foreground/60 mb-1 block">Carnet (CI)</label>
+                      <input 
+                        type="text" 
+                        value={ci}
+                        onChange={(e) => setCi(e.target.value)}
+                        className="w-full bg-background border border-surface-border p-2 rounded-lg outline-none focus:ring-1 focus:ring-brand-primary text-sm"
+                      />
+                    </div>
+                    <div>
                       <label className="text-xs font-bold text-foreground/60 mb-1 block">Celular / WhatsApp</label>
                       <input 
                         type="text" 

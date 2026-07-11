@@ -140,7 +140,7 @@ export async function searchClientasByCI(term: string) {
   try { 
     const searchTerms = term.toLowerCase().trim().split(/\s+/);
     const clientas = await prisma.clienta.findMany({
-      select: { id: true, ci: true, nombres: true, apellidos: true }
+      select: { id: true, ci: true, nombres: true, apellidos: true, celular: true }
     });
     
     const filtradas = clientas.filter(c => {
