@@ -179,7 +179,7 @@ export default function NuevaVenta() {
       return;
     }
     setIsUpdatingClienta(true);
-    const res = await updateClienta(clientaId, { nombres, apellidos: apellidoPaterno, celular, ci });
+    const res = await updateClienta(clientaId, { nombres, apellidos: `${apellidoPaterno} ${apellidoMaterno}`.trim(), celular, ci });
     setIsUpdatingClienta(false);
     if (res.success) {
       toast.success("Datos de la clienta actualizados.");
@@ -885,11 +885,20 @@ export default function NuevaVenta() {
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-foreground/60 mb-1 block">Apellidos</label>
+                      <label className="text-xs font-bold text-foreground/60 mb-1 block">Apellido Paterno *</label>
                       <input 
                         type="text" 
                         value={apellidoPaterno}
                         onChange={(e) => setApellidoPaterno(e.target.value)}
+                        className="w-full bg-background border border-surface-border p-2 rounded-lg outline-none focus:ring-1 focus:ring-brand-primary text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-foreground/60 mb-1 block">Apellido Materno</label>
+                      <input 
+                        type="text" 
+                        value={apellidoMaterno}
+                        onChange={(e) => setApellidoMaterno(e.target.value)}
                         className="w-full bg-background border border-surface-border p-2 rounded-lg outline-none focus:ring-1 focus:ring-brand-primary text-sm"
                       />
                     </div>
