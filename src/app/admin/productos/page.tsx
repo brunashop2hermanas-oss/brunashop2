@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Video, Eye, EyeOff, Edit, Trash2, X, Palette, Scaling, Tag, Package, Image as ImageIcon } from "lucide-react";
+import { Plus, Video, Eye, EyeOff, Edit, Trash2, X, Palette, Scaling, Tag, Package, Image as ImageIcon, ZoomIn } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getPrendas, createPrenda, updatePrenda, deletePrenda, toggleVisibilidadPrenda } from "@/app/actions/productos";
 import { uploadImage } from "@/app/actions/upload";
@@ -769,11 +769,14 @@ export default function AdminProductos() {
                     {fotosPreview.map((url, i) => (
                       <div key={i} className="w-24 h-24 rounded-2xl bg-surface border border-surface-border relative overflow-hidden group">
                         <img src={url} alt={`Preview ${i}`} className="w-full h-full object-cover object-top bg-slate-50" />
-                        <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => handleEditCrop(i)} className="bg-brand-primary text-white p-2 rounded-full hover:scale-110 transition-transform" title="Editar recorte">
+                        <div className="absolute inset-0 bg-black/40 flex flex-row items-center justify-center gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={(e) => { e.preventDefault(); setImagenAmpliada(url); }} className="bg-blue-500 text-white p-2 rounded-full hover:scale-110 transition-transform shadow-sm" title="Ampliar">
+                            <ZoomIn className="w-4 h-4" />
+                          </button>
+                          <button onClick={(e) => { e.preventDefault(); handleEditCrop(i); }} className="bg-brand-primary text-white p-2 rounded-full hover:scale-110 transition-transform shadow-sm" title="Editar recorte">
                             <Edit className="w-4 h-4" />
                           </button>
-                          <button onClick={() => eliminarFotoPreview(i)} className="bg-red-500 text-white p-2 rounded-full hover:scale-110 transition-transform" title="Eliminar">
+                          <button onClick={(e) => { e.preventDefault(); eliminarFotoPreview(i); }} className="bg-red-500 text-white p-2 rounded-full hover:scale-110 transition-transform shadow-sm" title="Eliminar">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -1643,6 +1646,29 @@ export default function AdminProductos() {
                   </button>
                 </div>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Zoom Imagen */}
+      <AnimatePresence>
+        {imagenAmpliada && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setImagenAmpliada(null)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative z-10 w-full max-w-4xl max-h-[90vh] flex flex-col items-center justify-center"
+            >
+              <button 
+                onClick={() => setImagenAmpliada(null)} 
+                className="absolute -top-12 right-0 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors backdrop-blur-sm"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <img src={imagenAmpliada} alt="Imagen ampliada" className="w-full h-full object-contain rounded-xl shadow-2xl" />
             </motion.div>
           </div>
         )}
