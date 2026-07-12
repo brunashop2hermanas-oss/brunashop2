@@ -1513,6 +1513,8 @@ export default function AdminProductos() {
             onCancel={handleCropCancel}
           />
         )}
+      </AnimatePresence>
+      
       {/* Modal Zoom Imagen */}
       <AnimatePresence>
         {imagenAmpliada && (
