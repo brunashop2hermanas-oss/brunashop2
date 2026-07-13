@@ -100,7 +100,7 @@ export default function AdminSidebar() {
 
       {/* Menú Lateral (Sidebar) */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 bg-white border-r border-gray-200 flex flex-col shadow-2xl md:shadow-none print:hidden md:relative md:h-auto shrink-0
+        fixed inset-y-0 left-0 z-50 bg-white border-r border-gray-200 flex flex-col shadow-2xl md:shadow-none print:hidden md:sticky md:top-0 md:h-screen shrink-0
         transition-all duration-300 ease-in-out
         ${isOpenMobile ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0'}
         ${isCollapsed ? 'md:w-20' : 'md:w-52'}

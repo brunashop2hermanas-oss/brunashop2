@@ -745,9 +745,9 @@ export default function AdminDashboard() {
                             {esTiendaDirecta ? (
                               <><CheckCircle className="w-5 h-5" /> Entregado en Tienda</>
                             ) : todasEmpaquetadas ? (
-                              <><CheckCircle className="w-5 h-5" /> Listo (Ver)</>
+                              <><CheckCircle className="w-5 h-5" /> Listo (Ver Paquete)</>
                             ) : (
-                              <><PackageCheck className="w-5 h-5" /> Pendiente ({arts.filter((a: any) => a.empaquetado).length}/{arts.length})</>
+                              <><PackageCheck className="w-5 h-5" /> Empaquetar ({arts.filter((a: any) => a.empaquetado).length}/{arts.length})</>
                             )}
                           </button>
                         );
@@ -860,9 +860,9 @@ export default function AdminDashboard() {
                           href={`/admin/certificado/${pedido.id}`}
                           target="_blank"
                           className="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors shadow-md border border-slate-300 flex items-center gap-2 font-bold text-xs"
-                          title="Ver Acuerdo Legal (Términos Aceptados)"
+                          title="Ver Certificado Legal (Términos Aceptados)"
                         >
-                          <Printer className="w-4 h-4" /> Acuerdo Legal
+                          <Printer className="w-4 h-4" /> Certificado
                         </a>
                       )}
 
@@ -872,7 +872,7 @@ export default function AdminDashboard() {
                           className="px-3 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors shadow-md border border-slate-600 flex-shrink-0 flex items-center gap-2 font-bold text-xs"
                           title="Imprimir Viñeta"
                         >
-                          <Printer className="w-4 h-4" /> Ticket de Envío
+                          <Printer className="w-4 h-4" /> Ticket Envío
                         </button>
                       )}
 
@@ -914,11 +914,11 @@ export default function AdminDashboard() {
                           )}
                           {filtroTab === 'guias' && !pedido.guiaEnvioUrl && (
                             <button
-                              title="Completar sin Guía"
+                              title="Finalizar sin Guía"
                               onClick={() => setPedidoACompletar(pedido)}
                               className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors shadow-sm border border-slate-300 font-bold text-xs flex items-center justify-center gap-2"
                             >
-                              <CheckCircle className="w-4 h-4" /> Completar
+                              <CheckCircle className="w-4 h-4" /> Finalizar sin Guía
                             </button>
                           )}
 
@@ -1058,8 +1058,13 @@ export default function AdminDashboard() {
                     </div>
                   )}
 
-                  {(pedido.estado === 'Aprobado' || pedido.estado === 'PREPARANDO' || pedido.estado === 'Rechazado' || pedido.guiaEnvioUrl) && (
-                    <button onClick={() => reenviarWhatsApp(pedido)} className="px-3 py-1.5 bg-[#25D366] text-white hover:bg-[#1da851] rounded-lg shadow-md text-xs font-bold w-full flex items-center justify-center gap-2">
+                  {(pedido.estado === 'Aprobado' || pedido.estado === 'PREPARANDO') && filtroTab === 'empaquetar' && (
+                    <button onClick={() => enviarWhatsApp(pedido.celular, getWhatsAppMessage('APROBADO', pedido))} className="px-3 py-1.5 bg-[#25D366] text-white hover:bg-[#1da851] rounded-lg shadow-md text-xs font-bold w-full flex items-center justify-center gap-2">
+                      <WhatsappIcon className="w-4 h-4" /> Reenviar Msg
+                    </button>
+                  )}
+                  {pedido.estado === 'Rechazado' && filtroTab === 'rechazados' && (
+                    <button onClick={() => enviarWhatsApp(pedido.celular, getWhatsAppMessage('RECHAZADO', pedido))} className="px-3 py-1.5 bg-[#25D366] text-white hover:bg-[#1da851] rounded-lg shadow-md text-xs font-bold w-full flex items-center justify-center gap-2">
                       <WhatsappIcon className="w-4 h-4" /> Reenviar Msg
                     </button>
                   )}
@@ -1075,15 +1080,8 @@ export default function AdminDashboard() {
                     </div>
                   )}
 
-                  {filtroTab === 'guias' && (
-                    <button onClick={() => entregarPedidoEnTienda(pedido)} className="px-3 py-2 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-lg shadow-md flex flex-shrink-0 items-center gap-2 font-bold text-xs" title="Finalizar sin guía">
-                      <CheckCircle className="w-4 h-4" /> Finalizar
-                    </button>
-                  )}
-
-
-                  {filtroTab === 'guias' && (
-                    <button onClick={() => entregarPedidoEnTienda(pedido)} className="w-full mt-2 px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs rounded-lg flex items-center justify-center gap-2 shadow-md">
+                  {filtroTab === 'guias' && !pedido.guiaEnvioUrl && (
+                    <button onClick={() => setPedidoACompletar(pedido)} className="w-full mt-2 px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs rounded-lg flex items-center justify-center gap-2 shadow-md">
                       <CheckCircle className="w-4 h-4" /> Finalizar sin Guía
                     </button>
                   )}
